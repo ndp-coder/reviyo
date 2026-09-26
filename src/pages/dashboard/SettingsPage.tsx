@@ -11,7 +11,7 @@ import {
   MAX_CATEGORY_LENGTH,
   OTHER_CATEGORY,
 } from '@/config/categories';
-import { validateGoogleReviewUrl } from '@/lib/url-safety';
+import { directReviewUrl, validateGoogleReviewUrl } from '@/lib/url-safety';
 import { Alert, Card, Button, Input, Select, IconButton, Skeleton, PageHeader } from '@/components/ui';
 import { prepareLogo } from '@/lib/image';
 import { DataRightsCard } from '@/components/dashboard/DataRightsCard';
@@ -152,6 +152,11 @@ export function SettingsPage() {
       return;
     }
 
+    // Saved in the form that opens the review form itself (g.page links get
+    // "/review"), and shown that way in the field too.
+    const reviewLink = googleReviewUrl.trim() ? directReviewUrl(googleReviewUrl) : '';
+    setGoogleReviewUrl(reviewLink);
+
     setSaving(true);
     setStatus(null);
     const { data, error } = await supabase
@@ -159,7 +164,7 @@ export function SettingsPage() {
       .update({
         name: name.trim(),
         category: effectiveCategory,
-        google_review_url: googleReviewUrl || null,
+        google_review_url: reviewLink || null,
         welcome_message: welcomeMessage || null,
         logo_url: logoUrl || null,
         updated_at: new Date().toISOString(),

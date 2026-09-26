@@ -9,7 +9,7 @@ import {
   MAX_CATEGORY_LENGTH,
   OTHER_CATEGORY,
 } from '@/config/categories';
-import { validateGoogleReviewUrl } from '@/lib/url-safety';
+import { directReviewUrl, validateGoogleReviewUrl } from '@/lib/url-safety';
 import { prepareLogo } from '@/lib/image';
 import { Button, Input, Card, IconButton, Spinner } from '@/components/ui';
 import { buttonClasses } from '@/components/ui/button-styles';
@@ -148,7 +148,7 @@ export function OnboardingPage() {
       p_name: businessName.trim(),
       p_slug: slugify(businessName),
       p_category: effectiveCategory,
-      p_google_review_url: googleReviewUrl.trim() || null,
+      p_google_review_url: googleReviewUrl.trim() ? directReviewUrl(googleReviewUrl) : null,
       p_logo_url: logoUrl || null,
       p_welcome_message: `How was your experience at ${businessName.trim()}?`,
       p_topics: topics.map((t) => t.trim()).filter(Boolean),
@@ -173,7 +173,8 @@ export function OnboardingPage() {
 
   const nextStep = async () => {
     if (step === STEP.google) {
-      // Same check the database enforces: only absolute http(s) Google links.
+      // Only http(s) Google links that open the review form (the database also
+      // enforces the http(s) part).
       const urlProblem = validateGoogleReviewUrl(googleReviewUrl);
       setUrlError(urlProblem);
       if (urlProblem) return;

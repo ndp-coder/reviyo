@@ -5,11 +5,11 @@ import { MarketingHeader } from '@/components/MarketingHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SkipLink } from '@/components/SkipLink';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
-import { Alert, Button, Input } from '@/components/ui';
+import { Button, Input } from '@/components/ui';
 import { buttonClasses } from '@/components/ui/button-styles';
 import { legal } from '@/config/legal';
 import { reviewLinkToolFaqs } from '@/config/faq';
-import { directReviewUrl, isDirectReviewLink, isGooglePlaceId, reviewUrlFromPlaceId, validateGoogleReviewUrl } from '@/lib/url-safety';
+import { directReviewUrl, isGooglePlaceId, isSafeExternalUrl, reviewUrlFromPlaceId, validateGoogleReviewUrl } from '@/lib/url-safety';
 
 const PLACE_ID_FINDER_URL =
   'https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder';
@@ -28,8 +28,17 @@ export function ReviewLinkGeneratorPage() {
     let url: string | null = null;
     if (isGooglePlaceId(value)) {
       url = reviewUrlFromPlaceId(value);
-    } else if (value && validateGoogleReviewUrl(value) === null) {
-      // A g.page link is pointed at the review box rather than the profile.
+    } else if (isSafeExternalUrl(value)) {
+      // Says exactly what is wrong with a link, including a Maps share or
+      // listing link: a QR code for that would land customers on the
+      // business's page instead of the review form.
+      const problem = validateGoogleReviewUrl(value);
+      if (problem) {
+        setError(problem);
+        setReviewUrl(null);
+        return;
+      }
+      // A g.page link is pointed at the review form rather than the profile.
       url = directReviewUrl(value);
     }
     if (!url) {
@@ -114,13 +123,6 @@ export function ReviewLinkGeneratorPage() {
               {reviewUrl && (
                 <div className="mt-6 border-t border-gray-200 pt-6" aria-live="polite">
                   <h2 className="text-sm font-semibold text-gray-900">Your Google review link</h2>
-                {!isDirectReviewLink(reviewUrl) && (
-                  <Alert variant="warning" className="mt-2" title="This link opens your Google listing, not the review box">
-                    Customers would have to find &ldquo;Write a review&rdquo; themselves. For a link that opens the review box
-                    directly, paste your Place ID instead, or the link from <strong>Ask for reviews</strong> on your
-                    Business Profile.
-                  </Alert>
-                )}
                   <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
                     <code className="flex-1 break-all rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-800">{reviewUrl}</code>
                     <Button variant="outline" size="sm" onClick={() => void copyLink()}>

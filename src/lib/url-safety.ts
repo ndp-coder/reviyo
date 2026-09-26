@@ -42,7 +42,7 @@ export function validateGoogleReviewUrl(value: string): string | null {
   if (!trimmed) return null;
 
   if (!isSafeExternalUrl(trimmed)) {
-    return 'Enter a full link starting with https:// — for example https://g.page/r/…';
+    return 'Enter a full link starting with https:// — for example https://g.page/r/…/review';
   }
 
   const host = new URL(trimmed).hostname.toLowerCase();
@@ -55,11 +55,19 @@ export function validateGoogleReviewUrl(value: string): string | null {
     /(^|\.)google\.[a-z.]{2,6}$/.test(host);
 
   if (!looksLikeGoogle) {
-    return 'That does not look like a Google review link. It should point to google.com, g.page, or maps.app.goo.gl.';
+    return 'That does not look like a Google review link. Use the link from “Ask for reviews” on your Google Business Profile.';
   }
+
+  // Only links that open the review form itself are accepted, so every
+  // customer lands on the stars and the review box rather than the business's
+  // page, where many give up looking for "Write a review".
+  if (!isDirectReviewLink(trimmed)) return NOT_A_REVIEW_FORM_LINK;
 
   return null;
 }
+
+export const NOT_A_REVIEW_FORM_LINK =
+  'This link opens your Google listing, not the review form. Use the link from “Ask for reviews” on your Google Business Profile (it ends in /review), or use your Place ID instead.';
 
 // Google Place IDs are URL-safe base64-like strings, usually starting "ChIJ".
 const PLACE_ID_PATTERN = /^[A-Za-z0-9_-]{10,300}$/;
@@ -94,10 +102,13 @@ export function directReviewUrl(value: string): string {
 }
 
 /**
- * True when a Google link opens the review box directly. Other Google links
- * (a Maps share link such as maps.app.goo.gl, or a listing URL) open the
- * business's page, where customers must find "Write a review" themselves, and
- * many give up there.
+ * True when a Google link opens the review form (the stars and the text box)
+ * directly on a phone. Only Google's two documented formats qualify: the
+ * "Ask for reviews" link (g.page/…/review) and the Place ID link
+ * (search.google.com/local/writereview?placeid=…). Other Google links — a
+ * Maps share link such as maps.app.goo.gl, a listing URL, or a Google Search
+ * "#lrd" link, which opens the form only on desktop — land customers on the
+ * business's page, where they must find "Write a review" themselves.
  */
 export function isDirectReviewLink(value: string): boolean {
   try {
@@ -105,8 +116,6 @@ export function isDirectReviewLink(value: string): boolean {
     const host = url.hostname.toLowerCase();
     if (host === 'g.page') return /\/review\/?$/.test(url.pathname);
     if (host === 'search.google.com') return url.pathname.startsWith('/local/writereview') && Boolean(url.searchParams.get('placeid'));
-    // Google Search's own review dialog: #lrd=<id>,3 opens "Write a review".
-    if (/(^|\.)google\.[a-z.]{2,6}$/.test(host)) return /(^|[#&])lrd=[^,]+,3(,|$)/.test(url.hash.slice(1));
     return false;
   } catch {
     return false;

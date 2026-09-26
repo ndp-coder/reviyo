@@ -362,7 +362,7 @@ test('every navigation opens at the top of the page, and back restores the posit
   assert.match(scroll, /\[location, navigationType\]/);
 });
 
-test('customers are sent to Google\'s review box itself, not the business listing', async (t) => {
+test('customers are sent to Google\'s review form itself, never the business listing', async (t) => {
   // The helpers are plain TypeScript with no imports; Node 22.18+ runs them
   // directly. Older Node versions skip this check rather than fail.
   let safety;
@@ -372,7 +372,7 @@ test('customers are sent to Google\'s review box itself, not the business listin
     t.skip('this Node version cannot import TypeScript directly');
     return;
   }
-  const { directReviewUrl, isDirectReviewLink, customerReviewUrl } = safety;
+  const { directReviewUrl, isDirectReviewLink, customerReviewUrl, validateGoogleReviewUrl } = safety;
 
   // g.page short links open the profile; "/review" opens the review box.
   assert.equal(directReviewUrl('https://g.page/r/CQ3xAbCd'), 'https://g.page/r/CQ3xAbCd/review');
@@ -382,22 +382,35 @@ test('customers are sent to Google\'s review box itself, not the business listin
   for (const direct of [
     'https://g.page/r/CQ3xAbCd',
     'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4',
-    'https://www.google.com/search?q=cafe#lrd=0x3a35eff:0x9b8a4d,3,,,',
-  ]) assert.equal(isDirectReviewLink(direct), true, direct);
+  ]) {
+    assert.equal(isDirectReviewLink(direct), true, direct);
+    assert.equal(validateGoogleReviewUrl(direct), null, `${direct} must be accepted`);
+  }
   for (const listing of [
     'https://maps.app.goo.gl/AbC123',
     'https://www.google.com/maps/place/Kaveri+Cafe/@16.5,80.6,17z',
     'https://www.google.com/search?q=cafe#lrd=0x3a35eff:0x9b8a4d,1,,,',
-  ]) assert.equal(isDirectReviewLink(listing), false, listing);
+    // Opens the review form on desktop Google Search only, not on phones.
+    'https://www.google.com/search?q=cafe#lrd=0x3a35eff:0x9b8a4d,3,,,',
+  ]) {
+    assert.equal(isDirectReviewLink(listing), false, listing);
+    // Owners cannot save a link that would land customers on the listing.
+    assert.match(validateGoogleReviewUrl(listing) ?? '', /not the review form/, listing);
+  }
 
   // Still refuses anything that is not http(s).
   assert.equal(customerReviewUrl('javascript:alert(1)'), null);
 
-  const [page, help, overview] = await Promise.all([
+  const [page, help, overview, settings, onboarding] = await Promise.all([
     read('src/pages/customer/CustomerReviewPage.tsx'),
     read('src/components/GoogleReviewLinkHelp.tsx'),
     read('src/pages/dashboard/DashboardOverview.tsx'),
+    read('src/pages/dashboard/SettingsPage.tsx'),
+    read('src/pages/onboarding/OnboardingPage.tsx'),
   ]);
+  // Saved in the form that opens the review form (g.page links get /review).
+  assert.match(settings, /directReviewUrl\(googleReviewUrl\)/);
+  assert.match(onboarding, /directReviewUrl\(googleReviewUrl\)/);
   assert.match(page, /customerReviewUrl\(bizInfo\.business_google_review_url\)/);
   assert.match(help, /isDirectReviewLink\(currentUrl\)/);
   assert.match(overview, /isDirectReviewLink\(reviewLink\)/);
