@@ -296,3 +296,25 @@ test('owners get help finding their Google review link', async () => {
   assert.match(onboarding, /<GoogleReviewLinkHelp/);
   assert.match(settings, /<GoogleReviewLinkHelp/);
 });
+
+test('password reset lands on a page that sets the new password', async () => {
+  const [auth, app, page] = await Promise.all([
+    read('src/lib/auth-context.tsx'),
+    read('src/App.tsx'),
+    read('src/pages/auth/ResetPasswordPage.tsx'),
+  ]);
+
+  assert.match(auth, /redirectTo: `\$\{window\.location\.origin\}\/reset-password`/);
+  assert.match(auth, /PASSWORD_RECOVERY/);
+  assert.match(auth, /auth\.updateUser\(\{ password \}\)/);
+  assert.match(app, /path="\/reset-password"/);
+  assert.match(page, /updatePassword\(password\)/);
+});
+
+test('account deletion copies financial records before touching AutoPay or the account', async () => {
+  const fn = await read('supabase/functions/delete-account/index.ts');
+  const preserve = fn.indexOf('"preserve_financial_records_for_erasure"');
+  const cancel = fn.indexOf('await cancelMandateAtRazorpay(mandate)');
+  const remove = fn.indexOf('auth.admin.deleteUser(userId)');
+  assert.ok(preserve > 0 && cancel > preserve && remove > cancel, 'preserve, then cancel AutoPay, then delete');
+});

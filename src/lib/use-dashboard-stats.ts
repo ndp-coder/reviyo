@@ -51,6 +51,11 @@ const EMPTY: DashboardStats = {
 // of a skeleton every time.
 const cache = new Map<string, DashboardStats>();
 
+/** Forgets every cached business's numbers, e.g. when the owner signs out. */
+export function clearDashboardStatsCache() {
+  cache.clear();
+}
+
 async function fetchStats(business: Business): Promise<DashboardStats> {
   const eventCount = (types: string[]) =>
     supabase

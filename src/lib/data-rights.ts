@@ -25,7 +25,9 @@ export async function exportMyData(): Promise<{ data?: DataExport; error?: strin
   const { data, error } = await supabase.rpc('export_my_data');
 
   if (error) {
-    return { error: error.message || 'Could not prepare your data export.' };
+    // Database error text is for developers, not for the person downloading.
+    console.error('export_my_data failed:', error.message);
+    return { error: 'We couldn’t prepare your data export. Check your connection and try again, or contact support.' };
   }
   if (!data) {
     return { error: 'Could not prepare your data export.' };
@@ -94,7 +96,8 @@ export async function deleteMyAccount(confirmation: string): Promise<DeleteAccou
 
     // The account no longer exists; clear the local session so the app does not
     // keep trying to use a token for a deleted user.
-    await supabase.auth.signOut();
+    // Local only: the server-side session went with the account.
+    await supabase.auth.signOut({ scope: 'local' });
 
     return data;
   } catch (err) {

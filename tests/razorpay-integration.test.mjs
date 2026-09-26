@@ -213,3 +213,25 @@ test('public pages no longer promise "no card" or "no auto-renewal"', async () =
     assert.doesNotMatch(page, /Plans do not auto-renew|No auto-renewal/i);
   }
 });
+
+test('one-time payments count only once Razorpay has actually captured the money', async () => {
+  const [create, verify] = await Promise.all([
+    read('supabase/functions/create-razorpay-order/index.ts'),
+    read('supabase/functions/verify-razorpay-payment/index.ts'),
+  ]);
+
+  // Orders ask Razorpay to capture automatically, whatever the account default.
+  assert.match(create, /payment_capture:\s*true/);
+
+  // A valid signature only proves authorization. The browser path re-reads the
+  // payment, checks it belongs to this order and amount, captures it if needed,
+  // and refuses anything not captured — all before the plan is granted.
+  const fetchPayment = verify.indexOf('razorpay(`/payments/${encodeURIComponent(razorpay_payment_id)}`)');
+  const capture = verify.indexOf('/capture`');
+  const requireCaptured = verify.indexOf('payment.status !== "captured"');
+  const fulfil = verify.indexOf('"process_paid_order"');
+  assert.ok(fetchPayment > 0 && capture > fetchPayment && requireCaptured > capture, 'payment is checked and captured');
+  assert.ok(fulfil > requireCaptured, 'the plan is granted only after capture is confirmed');
+  assert.match(verify, /payment\?\.amount !== paymentOrder\.amount/);
+  assert.match(verify, /payment\?\.order_id !== razorpay_order_id/);
+});

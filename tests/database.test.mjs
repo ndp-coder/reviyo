@@ -215,10 +215,13 @@ check('owners see only their own mandates, and cannot write them', async () => {
   assert.ok(mine.length >= 1);
   const theirs = await asUser(U2, () => q(`SELECT id FROM autopay_mandates`));
   assert.equal(theirs.length, 0);
-  // No INSERT/UPDATE policy exists, so RLS blocks writes from the browser.
+  // Browsers have no write privilege on the table at all (and no RLS write
+  // policy), so the write is refused outright rather than matching no rows.
   await asUser(U1, async () => {
-    const r = await db.query(`UPDATE autopay_mandates SET status='active' WHERE business_id=$1 RETURNING id`, [B]);
-    assert.equal(r.rows.length, 0);
+    await assert.rejects(
+      db.query(`UPDATE autopay_mandates SET status='active' WHERE business_id=$1 RETURNING id`, [B]),
+      /permission denied/,
+    );
   });
 });
 
@@ -230,4 +233,67 @@ check('an expired business cannot start new QR review sessions', async () => {
 check('topic-suggestion rate limit: 10 per hour', async () => {
   for (let i = 0; i < 10; i += 1) assert.equal((await one(`SELECT claim_topic_suggestion($1) AS ok`, [U1])).ok, true);
   assert.equal((await one(`SELECT claim_topic_suggestion($1) AS ok`, [U1])).ok, false);
+});
+
+// --- owner write permissions and public review-page limits --------------------
+const asAnon = async (fn) => {
+  await db.exec(`SET ROLE anon;`);
+  try { return await fn(); } finally { await db.exec(`RESET ROLE;`); }
+};
+const deniedFor = async (run, sql, params, label) =>
+  run(() => assert.rejects(db.query(sql, params), /permission denied/, label));
+
+check('owners edit only their profile fields, never slug, rows, or customer data', async () => {
+  await db.exec(`UPDATE subscriptions SET expires_at = now() + interval '30 days', status = 'active' WHERE business_id='${B}'`);
+  const user = (fn) => asUser(U1, fn);
+
+  const renamed = await user(() => q(`UPDATE businesses SET name = 'Pet Spa & Salon' WHERE id = $1 RETURNING name`, [B]));
+  assert.equal(renamed[0].name, 'Pet Spa & Salon');
+
+  await deniedFor(user, `UPDATE businesses SET slug = 'stolen' WHERE id = $1`, [B], 'slug change');
+  await deniedFor(user, `UPDATE businesses SET is_active = false WHERE id = $1`, [B], 'deactivate');
+  await deniedFor(user, `DELETE FROM businesses WHERE id = $1`, [B], 'direct delete');
+  await deniedFor(user, `INSERT INTO businesses (owner_id, name, slug, category) VALUES ($1, 'X', 'x-biz', 'Other')`, [U1], 'direct insert');
+  await deniedFor(user, `UPDATE review_sessions SET rating = 5 WHERE business_id = $1`, [B], 'rewrite ratings');
+  await deniedFor(user, `UPDATE profiles SET email = 'other@x.in' WHERE id = $1`, [U1], 'profile email');
+
+  await user(() => q(`UPDATE profiles SET full_name = 'Asha' WHERE id = $1`, [U1]));
+  await rejects(`UPDATE businesses SET name = repeat('n', 201) WHERE id = $1`, [B], /businesses_name_length/, 'name length');
+  await rejects(`UPDATE businesses SET logo_url = 'data:image/png;base64,' || repeat('A', 600000) WHERE id = $1`, [B], /businesses_logo_url_size/, 'logo size');
+});
+
+let T;
+check('the public review page is limited: session required, one scan per visit, capped events and messages', async () => {
+  const session = await asAnon(() => one(`SELECT session_token FROM create_review_session('pet-spa')`));
+  T = session.session_token;
+  const track = (token, type, meta = '{}') =>
+    asAnon(() => q(`SELECT track_event('pet-spa', $1, $2, $3::jsonb)`, [token, type, meta]));
+
+  await assert.rejects(track(null, 'qr_page_view'), /Session not found/, 'event without a session');
+  await track(T, 'qr_page_view');
+  await track(T, 'qr_page_view');
+  const views = await one(`SELECT count(*)::int AS n FROM analytics_events e JOIN review_sessions s ON s.id = e.review_session_id WHERE s.session_token = $1 AND e.event_type = 'qr_page_view'`, [T]);
+  assert.equal(views.n, 1, 'a repeated page view counts once');
+
+  await assert.rejects(track(T, 'review_copied', JSON.stringify({ pad: 'x'.repeat(5000) })), /Invalid event metadata/, 'oversized metadata');
+  for (let i = 0; i < 99; i += 1) await track(T, 'review_copied');
+  await assert.rejects(track(T, 'review_copied'), /Too many events/, 'event cap');
+
+  const send = () => asAnon(() => q(`SELECT submit_private_feedback($1, 'Parking was hard to find', 3, 'v1')`, [T]));
+  await send(); await send(); await send();
+  await assert.rejects(send(), /Too many messages/, 'feedback cap');
+
+  await assert.rejects(
+    asAnon(() => q(`SELECT update_review_session($1, NULL, repeat('c', 2001))`, [T])),
+    /Comment too long/,
+    'comment length',
+  );
+});
+
+check('owners can change feedback status but not the customer\'s words', async () => {
+  const user = (fn) => asUser(U1, fn);
+  const updated = await user(() => q(`UPDATE private_feedback SET status = 'seen' WHERE business_id = $1 RETURNING status`, [B]));
+  assert.ok(updated.length >= 1 && updated.every((r) => r.status === 'seen'));
+  await deniedFor(user, `UPDATE private_feedback SET message = 'edited' WHERE business_id = $1`, [B], 'edit message');
+  await deniedFor(user, `DELETE FROM private_feedback WHERE business_id = $1`, [B], 'delete feedback');
 });

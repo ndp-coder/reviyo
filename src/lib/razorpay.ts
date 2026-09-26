@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { branding } from '@/config/branding';
+import { readFunctionError } from '@/lib/function-errors';
 import type {
   SubscriptionPlan,
   RazorpayOrderResponse,
@@ -88,7 +89,9 @@ export async function createRazorpayOrder(
     );
 
     if (error) {
-      return { error: error.message || 'Failed to create payment order' };
+      // error.message is only "Edge Function returned a non-2xx status code";
+      // the function's own explanation is in the response body.
+      return { error: await readFunctionError(error, 'We couldn’t start the payment. Please try again.') };
     }
 
     if (!data || !data.order_id) {
@@ -118,7 +121,13 @@ export async function verifyRazorpayPayment(payload: {
     });
 
     if (error) {
-      return { success: false, error: error.message || 'Failed to verify payment' };
+      return {
+        success: false,
+        error: await readFunctionError(
+          error,
+          'We couldn’t confirm the payment yet. If money was debited, your plan activates automatically within a few minutes — no need to pay again.'
+        ),
+      };
     }
 
     return {

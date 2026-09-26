@@ -23,6 +23,7 @@ import { ReviewLinkGeneratorPage } from '@/pages/marketing/ReviewLinkGeneratorPa
 
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage').then((module) => ({ default: module.LoginPage })));
 const SignupPage = lazy(() => import('@/pages/auth/SignupPage').then((module) => ({ default: module.SignupPage })));
+const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage })));
 const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage').then((module) => ({ default: module.ForgotPasswordPage })));
 const OnboardingPage = lazy(() => import('@/pages/onboarding/OnboardingPage').then((module) => ({ default: module.OnboardingPage })));
 const DashboardLayout = lazy(() => import('@/pages/dashboard/DashboardLayout').then((module) => ({ default: module.DashboardLayout })));
@@ -92,6 +93,7 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Customer review flow */}
       <Route path="/r/:slug" element={<CustomerReviewPage />} />

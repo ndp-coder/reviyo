@@ -237,6 +237,7 @@ const PRIVATE_TITLES: [RegExp, string][] = [
   [/^\/login/, 'Sign in'],
   [/^\/signup/, 'Create your account'],
   [/^\/forgot-password/, 'Reset your password'],
+  [/^\/reset-password/, 'Set a new password'],
   [/^\/r\//, 'Share your experience'],
 ];
 

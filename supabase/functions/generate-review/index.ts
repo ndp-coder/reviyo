@@ -274,7 +274,10 @@ Deno.serve(async (req: Request) => {
       businessCategory: businessResult.data.category,
       rating: session.rating,
       selectedTopics: (topicsResult.data ?? [])
-        .map((row: { review_topics: { label: string } | null }) => row.review_topics?.label)
+        // A many-to-one embed is one object at runtime; without generated types
+        // supabase-js declares it as an array. Accept both.
+        .map((row: { review_topics: { label: string } | { label: string }[] | null }) =>
+          Array.isArray(row.review_topics) ? row.review_topics[0]?.label : row.review_topics?.label)
         .filter((label: string | undefined): label is string => Boolean(label)),
     };
 

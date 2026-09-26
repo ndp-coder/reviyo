@@ -2,6 +2,7 @@
 // Verifies Razorpay payment signature and activates/extends the subscription
 
 import { getCorsHeaders, isAllowedBrowserOrigin } from "../_shared/cors.ts";
+import { razorpay, type RazorpayJson } from "../_shared/autopay.ts";
 
 function getSupabaseSecretKey(): string {
   const secretKeys = Deno.env.get("SUPABASE_SECRET_KEYS");
@@ -122,7 +123,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: paymentOrder, error: orderError } = await supabase
       .from("payment_orders")
-      .select("business_id, user_id, plan, status, payment_id")
+      .select("business_id, user_id, plan, status, payment_id, amount, currency")
       .eq("order_id", razorpay_order_id)
       .maybeSingle();
 
@@ -161,6 +162,57 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ error: "Invalid payment signature" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // A valid signature proves the payment was authorized, not that the money
+    // was taken: an uncaptured payment is refunded by Razorpay after a few days.
+    // Confirm it with Razorpay, capture it if the account has not, and only
+    // then grant the plan. (The webhook also fulfils on payment.captured.)
+    let payment: RazorpayJson;
+    try {
+      payment = await razorpay(`/payments/${encodeURIComponent(razorpay_payment_id)}`);
+      if (
+        payment?.order_id !== razorpay_order_id ||
+        payment?.amount !== paymentOrder.amount ||
+        payment?.currency !== paymentOrder.currency
+      ) {
+        console.error("Payment does not match its order:", razorpay_order_id, razorpay_payment_id);
+        return new Response(
+          JSON.stringify({ error: "This payment does not match the order" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (payment.status === "authorized") {
+        try {
+          payment = await razorpay(`/payments/${encodeURIComponent(razorpay_payment_id)}/capture`, {
+            method: "POST",
+            body: { amount: paymentOrder.amount, currency: paymentOrder.currency },
+          });
+        } catch (captureError) {
+          // Razorpay may have captured it in the meantime (auto-capture or the
+          // webhook path); read the current state rather than failing.
+          console.error("Capture attempt failed, re-checking payment:", captureError);
+          payment = await razorpay(`/payments/${encodeURIComponent(razorpay_payment_id)}`);
+        }
+      }
+    } catch (err) {
+      console.error("Could not confirm payment with Razorpay:", razorpay_payment_id, err);
+      return new Response(
+        JSON.stringify({
+          error: "We couldn't confirm your payment with Razorpay yet. If money was debited, your plan activates automatically within a few minutes — no need to pay again.",
+        }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (payment.status !== "captured") {
+      console.error("Payment not captured:", razorpay_payment_id, payment.status);
+      return new Response(
+        JSON.stringify({
+          error: "Your payment hasn't completed yet. If money was debited, your plan activates automatically within a few minutes — no need to pay again.",
+        }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

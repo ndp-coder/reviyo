@@ -352,6 +352,7 @@ export function OnboardingPage() {
                   placeholder="e.g. Smile Dental Clinic"
                   autoFocus
                   autoComplete="organization"
+                  maxLength={200}
                   onKeyDown={(e) => e.key === 'Enter' && canProceed() && nextStep()}
                 />
               </div>

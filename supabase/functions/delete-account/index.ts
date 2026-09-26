@@ -83,22 +83,6 @@ Deno.serve(async (req: Request) => {
 
     const userId = userData.user.id;
 
-    // Cancel any AutoPay mandate at the bank before the rows disappear, so the
-    // owner's UPI app or card no longer shows it. Best effort: once the account
-    // is gone nothing can be charged anyway, because only our scheduler charges.
-    const { data: mandates } = await admin
-      .from("autopay_mandates")
-      .select("id, method, razorpay_customer_id, token_id, businesses!inner(owner_id)")
-      .eq("businesses.owner_id", userId)
-      .in("status", ["authorized", "active", "paused"]);
-    for (const mandate of mandates ?? []) {
-      try {
-        await cancelMandateAtRazorpay(mandate);
-      } catch (err) {
-        console.error("delete-account: could not cancel mandate", mandate.id, err);
-      }
-    }
-
     // Step 1 — copy the statutory financial trail out before the cascade.
     const { data: preserved, error: preserveError } = await admin.rpc(
       "preserve_financial_records_for_erasure",
@@ -111,6 +95,24 @@ Deno.serve(async (req: Request) => {
         { error: "Could not complete deletion. Nothing was deleted. Please contact support." },
         500,
       );
+    }
+
+    // Cancel any AutoPay mandate at the bank before the rows disappear, so the
+    // owner's UPI app or card no longer shows it. This runs only after the
+    // financial records are safely copied: if that step fails, nothing —
+    // including AutoPay — has been touched. Best effort: once the account
+    // is gone nothing can be charged anyway, because only our scheduler charges.
+    const { data: mandates } = await admin
+      .from("autopay_mandates")
+      .select("id, method, razorpay_customer_id, token_id, businesses!inner(owner_id)")
+      .eq("businesses.owner_id", userId)
+      .in("status", ["authorized", "active", "paused"]);
+    for (const mandate of mandates ?? []) {
+      try {
+        await cancelMandateAtRazorpay(mandate);
+      } catch (err) {
+        console.error("delete-account: could not cancel mandate", mandate.id, err);
+      }
     }
 
     // Step 2 — delete the auth user. Everything else cascades from here.

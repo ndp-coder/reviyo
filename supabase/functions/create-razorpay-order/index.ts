@@ -126,6 +126,10 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         amount: planConfig.amount,
         currency: "INR",
+        // Capture as soon as the customer pays, whatever the account's default
+        // capture setting. An authorized-but-uncaptured payment is refunded by
+        // Razorpay after a few days, so it must never count as paid.
+        payment_capture: true,
         receipt,
         notes: {
           business_id: business.id,

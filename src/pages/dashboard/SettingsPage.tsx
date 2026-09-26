@@ -366,7 +366,7 @@ export function SettingsPage() {
           <Card className="p-5 sm:p-6">
             <h2 className="mb-4 text-sm font-semibold text-gray-900">Business information</h2>
             <div className="space-y-4">
-              <Input label="Business name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="organization" />
+              <Input label="Business name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="organization" maxLength={200} />
               <Select id="settings-category" label="Category" value={category} onChange={(e) => setCategory(e.target.value)}>
                 {businessCategories.map((cat) => (
                   <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -383,6 +383,7 @@ export function SettingsPage() {
               )}
               <Input
                 label="Welcome message"
+                maxLength={500}
                 value={welcomeMessage}
                 onChange={(e) => setWelcomeMessage(e.target.value)}
                 placeholder={`How was your experience at ${name || business.name}?`}
