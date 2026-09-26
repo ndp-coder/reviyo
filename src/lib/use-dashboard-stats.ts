@@ -13,6 +13,8 @@ export interface DashboardStats {
   ratingDistribution: number[];
   topTopics: { label: string; count: number }[];
   recentFeedback: (PrivateFeedback & { rating: number | null })[];
+  /** Scans and Google hand-offs per QR code or link (?src), last 90 days. */
+  sources: { id: string | null; scans: number; googleOpened: number }[];
   /** QR scans from the last 7 days, for the daily chart. */
   events: Pick<AnalyticsEvent, 'event_type' | 'created_at'>[];
   loading: boolean;
@@ -37,6 +39,7 @@ const EMPTY: DashboardStats = {
   ratingDistribution: [0, 0, 0, 0, 0],
   topTopics: [],
   recentFeedback: [],
+  sources: [],
   events: [],
   loading: true,
   refreshing: false,
@@ -58,7 +61,7 @@ async function fetchStats(business: Business): Promise<DashboardStats> {
 
   // Totals are exact counts. (They used to be counted from the latest 500
   // events, which silently capped every number for busier businesses.)
-  const [scansRes, startedRes, generatedRes, googleRes, feedbackCountRes, newFeedbackRes, eventsRes, feedbackRes, sessionsRes] =
+  const [scansRes, startedRes, generatedRes, googleRes, feedbackCountRes, newFeedbackRes, eventsRes, feedbackRes, sessionsRes, sourcesRes] =
     await Promise.all([
       eventCount(['qr_page_view']),
       eventCount(['review_started']),
@@ -80,16 +83,35 @@ async function fetchStats(business: Business): Promise<DashboardStats> {
       supabase.from('private_feedback').select('*').eq('business_id', business.id).order('created_at', { ascending: false }).limit(5),
       // Only the rating is needed; sessions are purged after 90 days.
       supabase.from('review_sessions').select('rating').eq('business_id', business.id).not('rating', 'is', null).order('created_at', { ascending: false }).limit(2000),
+      // Only the event type and its ?src tag, for the per-QR-code breakdown.
+      supabase
+        .from('analytics_events')
+        .select('event_type, source:metadata->>source')
+        .eq('business_id', business.id)
+        .in('event_type', ['qr_page_view', 'google_review_opened'])
+        .gte('created_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
+        .limit(20000),
     ]);
 
   const queryError =
     scansRes.error ?? startedRes.error ?? generatedRes.error ?? googleRes.error ??
-    feedbackCountRes.error ?? newFeedbackRes.error ?? eventsRes.error ?? feedbackRes.error ?? sessionsRes.error;
+    feedbackCountRes.error ?? newFeedbackRes.error ?? eventsRes.error ?? feedbackRes.error ?? sessionsRes.error ??
+    sourcesRes.error;
   if (queryError) throw queryError;
 
   const events = (eventsRes.data as DashboardStats['events']) ?? [];
   const feedback = (feedbackRes.data as PrivateFeedback[]) ?? [];
   const ratedSessions = (sessionsRes.data as { rating: number | null }[]) ?? [];
+
+  const bySource = new Map<string | null, { id: string | null; scans: number; googleOpened: number }>();
+  for (const row of (sourcesRes.data as { event_type: string; source: string | null }[]) ?? []) {
+    const id = row.source || null;
+    const entry = bySource.get(id) ?? { id, scans: 0, googleOpened: 0 };
+    if (row.event_type === 'qr_page_view') entry.scans += 1;
+    else entry.googleOpened += 1;
+    bySource.set(id, entry);
+  }
+  const sources = [...bySource.values()].sort((a, b) => b.scans - a.scans);
   const avgRating = ratedSessions.length > 0
     ? ratedSessions.reduce((sum, s) => sum + (s.rating ?? 0), 0) / ratedSessions.length
     : 0;
@@ -130,6 +152,7 @@ async function fetchStats(business: Business): Promise<DashboardStats> {
     ratingDistribution,
     topTopics,
     recentFeedback: feedback,
+    sources,
     events,
     loading: false,
     refreshing: false,

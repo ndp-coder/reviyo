@@ -1,7 +1,8 @@
-import { useOutletContext } from 'react-router-dom';
-import { Star, TrendingUp, BarChart3, Lightbulb } from 'lucide-react';
+import { Link, useOutletContext } from 'react-router-dom';
+import { Star, TrendingUp, BarChart3, Lightbulb, QrCode } from 'lucide-react';
 import { useDashboardStats } from '@/lib/use-dashboard-stats';
 import { Alert, Button, Card, Skeleton, EmptyState, PageHeader } from '@/components/ui';
+import { sourceLabel } from '@/lib/review-source';
 import type { Business } from '@/lib/types';
 
 export function AnalyticsPage() {
@@ -151,6 +152,52 @@ export function AnalyticsPage() {
         </div>
       </Card>
       </div>
+
+      {/* Per-QR-code comparison. Shown once there is more than one way in;
+          until then it explains how to get one. */}
+      <Card className="mt-4 p-5 sm:p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <QrCode className="h-4 w-4 text-gray-600" aria-hidden="true" />
+          <h2 className="text-sm font-semibold text-gray-900">Which QR code works best</h2>
+          <span className="ml-auto text-xs text-gray-600">Last 90 days</span>
+        </div>
+        {stats.sources.length > 1 ? (
+          <table className="w-full table-fixed text-left text-sm">
+            <thead className="text-xs text-gray-600">
+              <tr>
+                <th scope="col" className="pb-2 font-medium">Source</th>
+                <th scope="col" className="w-14 pb-2 text-right font-medium sm:w-20">Scans</th>
+                <th scope="col" className="w-16 pb-2 text-right font-medium sm:w-24">To Google</th>
+                <th scope="col" className="w-12 pb-2 text-right font-medium sm:w-16">Rate</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {stats.sources.map((row) => (
+                <tr key={row.id ?? 'main'}>
+                  <td className="max-w-0 truncate py-2.5 pr-3 text-gray-900" title={sourceLabel(row.id)}>
+                    {sourceLabel(row.id)}
+                  </td>
+                  <td className="py-2.5 text-right tabular-nums text-gray-700">{row.scans.toLocaleString('en-IN')}</td>
+                  <td className="py-2.5 text-right tabular-nums text-gray-700">{row.googleOpened.toLocaleString('en-IN')}</td>
+                  <td className="py-2.5 text-right tabular-nums font-medium text-gray-900">
+                    {row.scans > 0 ? `${Math.round((row.googleOpened / row.scans) * 100)}%` : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <EmptyState
+            title="Only one QR code so far"
+            description="Make a separate QR code for each table, desk, or staff member, or send your link on WhatsApp — this table then shows which one brings in the most reviews."
+            action={
+              <Link to="/dashboard/qr" className="text-sm font-medium text-blue-700 underline underline-offset-2">
+                Create QR codes
+              </Link>
+            }
+          />
+        )}
+      </Card>
 
       {/* Most mentioned topics */}
       <Card className="mt-4 p-5 sm:p-6">

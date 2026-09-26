@@ -4,6 +4,8 @@ import { Download, Copy, ExternalLink, Check, Printer } from 'lucide-react';
 import QRCode from 'qrcode';
 import { Alert, Card, Button, PageHeader } from '@/components/ui';
 import { buttonClasses } from '@/components/ui/button-styles';
+import { WhatsAppRequest } from '@/components/dashboard/WhatsAppRequest';
+import { ExtraQrCodes } from '@/components/dashboard/ExtraQrCodes';
 import type { Business } from '@/lib/types';
 
 export function QRManagementPage() {
@@ -142,6 +144,13 @@ export function QRManagementPage() {
             moment.
           </p>
         </Card>
+      </div>
+
+      {/* More ways to reach customers: a WhatsApp message after the visit, and
+          separate codes per spot so Analytics can compare them. */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <WhatsAppRequest business={business} />
+        <ExtraQrCodes business={business} />
       </div>
     </div>
   );

@@ -122,8 +122,8 @@ export function PrivacyPolicyPage() {
               'Your consent, given when you send it.',
             ],
             [
-              'Counts of steps reached — page opened, review started, rating given, review generated, Google opened',
-              'To show the business how many people used its page. These are counts tied to a session identifier, not to you.',
+              'Counts of steps reached — page opened, review started, rating given, review generated, Google opened — and which of the business’s QR codes or shared links you used to get there',
+              'To show the business how many people used its page and which of its QR codes or links works best. These are counts tied to a session identifier, not to you; the QR code tag names a place, such as a table or desk, never a person using the page.',
               'Necessary to provide the service to the business.',
             ],
           ]}

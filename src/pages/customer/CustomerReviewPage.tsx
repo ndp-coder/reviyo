@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { Star, ArrowRight, ArrowLeft, Check, Copy, ExternalLink, MessageSquare, Sparkles, RefreshCw, Edit3, AlertCircle, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { generateReview } from '@/lib/ai-client';
 import { trackEvent } from '@/lib/analytics';
 import { legal, displayValue } from '@/config/legal';
 import { safeExternalUrl } from '@/lib/url-safety';
+import { readSource } from '@/lib/review-source';
 import type { AIReviewStyle } from '@/lib/types';
 import { Alert, Button, Textarea, Spinner } from '@/components/ui';
 import { buttonClasses } from '@/components/ui/button-styles';
@@ -130,9 +131,21 @@ export function CustomerReviewPage() {
 
   // Analytics must never slow the customer down or block a step, so events are
   // sent in the background and failures are ignored (trackEvent logs them).
-  const track = (...args: Parameters<typeof trackEvent>) => {
-    void trackEvent(...args);
-  };
+  // Which QR code or WhatsApp link brought this customer here (?src=...), so
+  // the owner can see which spot works best. A place, never a person.
+  const source = readSource(useLocation().search);
+
+  const track = useCallback(
+    (
+      businessSlug: string,
+      sessionToken: string | null,
+      eventType: Parameters<typeof trackEvent>[2],
+      metadata: Record<string, unknown> = {}
+    ) => {
+      void trackEvent(businessSlug, sessionToken, eventType, source ? { ...metadata, source } : metadata);
+    },
+    [source]
+  );
 
   /** Runs a session RPC and reports whether it worked. */
   async function saveSession(fn: string, params: Record<string, unknown>): Promise<boolean> {
@@ -170,7 +183,7 @@ export function CustomerReviewPage() {
         const info = data[0] as BusinessPublicInfo;
         setBizInfo(info);
 
-        void trackEvent(slug, info.session_token, 'qr_page_view');
+        void trackEvent(slug, info.session_token, 'qr_page_view', source ? { source } : {});
 
         // Load topics
         const { data: topicData } = await supabase
@@ -194,7 +207,7 @@ export function CustomerReviewPage() {
     return () => {
       cancelled = true;
     };
-  }, [slug, loadAttempt]);
+  }, [slug, loadAttempt, source]);
 
   // Move focus to the new screen's heading whenever the step changes, so screen
   // reader and keyboard users land at the top of the new content instead of on
@@ -354,7 +367,7 @@ export function CustomerReviewPage() {
       setStep('review');
     }
     setAiLoading(false);
-  }, [bizInfo, rating, selectedTopics, topics, comment, aiLoading]);
+  }, [bizInfo, rating, selectedTopics, topics, comment, aiLoading, track]);
 
   // Fallback when no AI draft is available: the customer writes the review
   // themselves, starting from their own comment, and can still post it.
