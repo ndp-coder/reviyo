@@ -9,7 +9,7 @@ import { legal, displayValue } from '@/config/legal';
 import { Alert, Button, Skeleton } from '@/components/ui';
 import { getCategoryLabel } from '@/config/categories';
 import { hasSubscriptionAccess, PATHS_OPEN_WITHOUT_SUBSCRIPTION } from '@/lib/subscription';
-import type { Business, Subscription } from '@/lib/types';
+import type { AutopayMandate, Business, Subscription } from '@/lib/types';
 
 export function DashboardLayout() {
   const { user, signOut } = useAuth();
@@ -22,6 +22,8 @@ export function DashboardLayout() {
   // undefined = still loading, null = no subscription row at all.
   const [subscription, setSubscription] = useState<Subscription | null | undefined>(undefined);
   const [subscriptionCheckFailed, setSubscriptionCheckFailed] = useState(false);
+  // Latest AutoPay setup, so Overview can say whether a charge is coming.
+  const [mandate, setMandate] = useState<Pick<AutopayMandate, 'status' | 'plan' | 'method'> | null>(null);
   // Unread private feedback, shown next to the nav item: it is the one thing an
   // owner usually needs to act on.
   const [newFeedbackCount, setNewFeedbackCount] = useState(0);
@@ -95,17 +97,28 @@ export function DashboardLayout() {
 
   const refreshSubscription = useCallback(async () => {
     if (!business) return;
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('business_id', business.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const [{ data, error }, mandateRes] = await Promise.all([
+      supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('business_id', business.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from('autopay_mandates')
+        .select('status, plan, method')
+        .eq('business_id', business.id)
+        .neq('status', 'created')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
     // A failed lookup must not lock out a paying owner. The database enforces
     // access regardless, so the UI stays open and lets that decide.
     setSubscriptionCheckFailed(Boolean(error));
     setSubscription((data as Subscription | null) ?? null);
+    setMandate((mandateRes.data as Pick<AutopayMandate, 'status' | 'plan' | 'method'> | null) ?? null);
   }, [business]);
 
   useEffect(() => {
@@ -308,7 +321,7 @@ export function DashboardLayout() {
           ) : !hasAccess && !isOpenPath(location.pathname) ? (
             <Navigate to="/dashboard/billing" replace />
           ) : (
-            <Outlet context={{ business, setBusiness, refreshSubscription, refreshFeedbackCount }} />
+            <Outlet context={{ business, setBusiness, subscription, mandate, refreshSubscription, refreshFeedbackCount }} />
           )}
         </div>
 

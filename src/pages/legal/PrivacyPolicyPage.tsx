@@ -59,7 +59,7 @@ export function PrivacyPolicyPage() {
           columns={['What', 'Why', 'Legal basis (DPDPA)']}
           rows={[
             [
-              'Name and email address',
+              'Email address, and your name if you gave one',
               'To create and secure your account, sign you in, send password resets, and contact you about your subscription.',
               'Consent given at signup; and necessary to provide the service you asked for.',
             ],
@@ -205,7 +205,7 @@ export function PrivacyPolicyPage() {
             ],
             [
               'Razorpay Software Private Limited',
-              'Business owner name, email, plan, and amount. Card, UPI, and bank details go directly to Razorpay and never reach us.',
+              'Your name (or your business name if you did not give one), email, plan, and amount. Card, UPI, and bank details go directly to Razorpay and never reach us.',
               'Processing subscription payments. Razorpay is an RBI-authorised payment aggregator.',
             ],
             [

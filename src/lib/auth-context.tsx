@@ -13,7 +13,6 @@ interface AuthContextValue {
   signUp: (
     email: string,
     password: string,
-    fullName: string,
     termsConsentVersion: string
   ) => Promise<{ error: string | null; needsConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -98,7 +97,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signUp(
     email: string,
     password: string,
-    fullName: string,
     termsConsentVersion: string
   ) {
     // The consent version travels in the signup metadata and is written onto
@@ -108,8 +106,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
       options: {
+        // The confirmation email must bring the new owner straight into setup,
+        // not back to the marketing homepage. This URL has to be listed under
+        // Auth > URL Configuration > Redirect URLs.
+        emailRedirectTo: `${window.location.origin}/onboarding`,
         data: {
-          full_name: fullName,
           terms_consent_version: termsConsentVersion,
         },
       },

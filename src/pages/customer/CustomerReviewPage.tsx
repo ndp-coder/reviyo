@@ -17,13 +17,14 @@ interface TopicInfo {
   label: string;
 }
 
-type Step = 'loading' | 'error' | 'welcome' | 'rating' | 'topics' | 'comment' | 'generating' | 'review' | 'feedback' | 'done';
+type Step = 'loading' | 'error' | 'welcome' | 'rating' | 'topics' | 'generating' | 'review' | 'feedback' | 'done';
 
-// The four steps a customer moves through after agreeing to start. Shown as
-// "Step n of 4" so they know how much is left; the welcome, feedback, and
-// thank-you screens sit outside the count.
-const PROGRESS: Partial<Record<Step, number>> = { rating: 1, topics: 2, comment: 3, generating: 4, review: 4 };
-const PROGRESS_TOTAL = 4;
+// The three steps a customer moves through after agreeing to start: rate, say
+// what stood out (topics and an optional comment on one screen), then the
+// draft. Shown as "Step n of 3"; the welcome, feedback, and thank-you screens
+// sit outside the count.
+const PROGRESS: Partial<Record<Step, number>> = { rating: 1, topics: 2, generating: 3, review: 3 };
+const PROGRESS_TOTAL = 3;
 
 /**
  * Shared frame for every step: the business's name and logo stay visible after
@@ -263,12 +264,6 @@ export function CustomerReviewPage() {
       return;
     }
     track(slug, bizInfo.session_token, 'rating_selected', { rating: value });
-    // With no topics to pick there is nothing to ask, so go straight on to the
-    // comment (still recording the step, exactly as Continue would).
-    if (topics.length === 0) {
-      await proceedToComment();
-      return;
-    }
     goTo('topics');
   };
 
@@ -278,7 +273,8 @@ export function CustomerReviewPage() {
     );
   };
 
-  const proceedToComment = async () => {
+  // Saves what the customer picked, then goes straight on to writing the draft.
+  const writeReview = async () => {
     if (!slug || !bizInfo || busy) return;
     const topicLabels = selectedTopics
       .map((id) => topics.find((t) => t.id === id)?.label)
@@ -295,7 +291,7 @@ export function CustomerReviewPage() {
       return;
     }
     track(slug, bizInfo.session_token, 'topics_selected', { topics: topicLabels });
-    goTo('comment');
+    await generateAIReview('standard');
   };
 
   const generateAIReview = useCallback(async (style: AIReviewStyle = 'standard', isRegen = false) => {
@@ -613,89 +609,58 @@ export function CustomerReviewPage() {
     );
   }
 
-  // ===== Topics step =====
+  // ===== Topics + comment step =====
+  // One screen for "what stood out": tap topics, add a few words if you like,
+  // and the draft is written. (These used to be two screens.)
   if (step === 'topics') {
     const hasTopics = topics.length > 0;
+    const canWrite = !hasTopics || selectedTopics.length > 0 || comment.trim().length > 0;
     return (
       <Screen business={brand} step={step}>
         <h1 id="topics-heading" className="text-center text-2xl font-bold text-gray-900">
-          What would you like to mention?
+          {hasTopics ? 'What stood out?' : 'Tell us about your visit'}
         </h1>
         <p className="mt-2 text-center text-sm text-gray-600">
           {hasTopics
-            ? 'Tap everything that applies — at least one.'
-            : 'Continue to describe your visit in your own words.'}
+            ? 'Tap everything that applies, or write a few words below.'
+            : 'A few words of your own help the draft sound like you.'}
         </p>
         {/* aria-pressed makes the selected state audible; without it a screen
             reader user cannot tell which chips they have already chosen. */}
         {hasTopics && (
-          <>
-            <div
-              role="group"
-              aria-labelledby="topics-heading"
-              className="mt-6 flex flex-wrap justify-center gap-2"
-            >
-              {topics.map((topic) => {
-                const selected = selectedTopics.includes(topic.id);
-                return (
-                  <button
-                    key={topic.id}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => toggleTopic(topic.id)}
-                    className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium transition-colors active:scale-95 ${
-                      selected
-                        ? 'bg-blue-700 text-white'
-                        : 'border border-gray-400 bg-white text-gray-700 hover:border-gray-600'
-                    }`}
-                  >
-                    {selected && <Check className="mr-1 h-3.5 w-3.5" aria-hidden="true" />}
-                    {topic.label}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="mt-4 text-center text-xs text-gray-600">
-              {selectedTopics.length === 0 ? 'Nothing selected yet' : `${selectedTopics.length} selected`}
-            </p>
-          </>
-        )}
-        {stepError && <Alert variant="error" className="mt-6">{stepError}</Alert>}
-        <div className="mt-6 flex items-center gap-3">
-          <Button variant="ghost" onClick={() => goTo('rating')} disabled={busy}>
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
-          </Button>
-          <Button
-            className="flex-1"
-            onClick={proceedToComment}
-            // A business with no active topics must not strand the customer here.
-            disabled={hasTopics && selectedTopics.length === 0}
-            loading={busy}
+          <div
+            role="group"
+            aria-labelledby="topics-heading"
+            className="mt-6 flex flex-wrap justify-center gap-2"
           >
-            Continue <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Button>
-        </div>
-      </Screen>
-    );
-  }
-
-  // ===== Comment step =====
-  if (step === 'comment') {
-    return (
-      <Screen business={brand} step={step}>
-        <h1 className="text-center text-2xl font-bold text-gray-900">
-          Anything else you&apos;d like to mention?
-        </h1>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Optional — a few words of your own make the draft sound like you.
-        </p>
+            {topics.map((topic) => {
+              const selected = selectedTopics.includes(topic.id);
+              return (
+                <button
+                  key={topic.id}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => toggleTopic(topic.id)}
+                  className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium transition-colors active:scale-95 ${
+                    selected
+                      ? 'bg-blue-700 text-white'
+                      : 'border border-gray-400 bg-white text-gray-700 hover:border-gray-600'
+                  }`}
+                >
+                  {selected && <Check className="mr-1 h-3.5 w-3.5" aria-hidden="true" />}
+                  {topic.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
         <div className="mt-6">
           <Textarea
-            label="Your comment (optional)"
+            label={hasTopics ? 'Anything else? (optional)' : 'Your comment'}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="e.g. The staff explained everything clearly"
-            rows={4}
+            rows={3}
             maxLength={2000}
             aria-describedby="comment-privacy-hint"
           />
@@ -714,14 +679,24 @@ export function CustomerReviewPage() {
             </span>
           </p>
         </div>
+        {stepError && <Alert variant="error" className="mt-6">{stepError}</Alert>}
         <div className="mt-6 flex items-center gap-3">
-          <Button variant="ghost" onClick={() => goTo(topics.length > 0 ? 'topics' : 'rating')}>
+          <Button variant="ghost" onClick={() => goTo('rating')} disabled={busy}>
             <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
           </Button>
-          <Button className="flex-1" onClick={() => generateAIReview('standard')}>
+          <Button
+            className="flex-1"
+            onClick={writeReview}
+            // A business with no active topics must not strand the customer here.
+            disabled={!canWrite}
+            loading={busy}
+          >
             <Sparkles className="h-4 w-4" aria-hidden="true" /> Write my review
           </Button>
         </div>
+        {!canWrite && (
+          <p className="mt-2 text-center text-xs text-gray-600">Tap a topic or write a few words to continue.</p>
+        )}
       </Screen>
     );
   }
@@ -771,7 +746,7 @@ export function CustomerReviewPage() {
               <Edit3 className="h-4 w-4" aria-hidden="true" /> Write it myself
             </Button>
             <div className="flex items-center gap-3">
-              <Button variant="ghost" onClick={() => goTo('comment')}>
+              <Button variant="ghost" onClick={() => goTo('topics')}>
                 <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
               </Button>
               {!aiLimitReached && (
@@ -999,7 +974,7 @@ export function CustomerReviewPage() {
             <div className="mt-4 flex gap-3">
               {/* Back returns to wherever the customer came from: the draft if
                   there is one, otherwise the comment step. */}
-              <Button variant="ghost" onClick={() => goTo(generatedReview ? 'review' : 'comment')} disabled={busy}>
+              <Button variant="ghost" onClick={() => goTo(generatedReview ? 'review' : 'topics')} disabled={busy}>
                 <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
               </Button>
               <Button className="flex-1" onClick={submitFeedback} disabled={!feedbackMessage.trim()} loading={busy}>

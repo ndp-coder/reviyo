@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
-import { Mail, Lock, User, ArrowRight, Check } from 'lucide-react';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { branding } from '@/config/branding';
 import { legal } from '@/config/legal';
@@ -11,12 +11,13 @@ import { ConsentCheckbox } from '@/components/ConsentCheckbox';
 export function SignupPage() {
   const { signUp, user, loading } = useAuth();
   const navigate = useNavigate();
-  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   // Problems with individual fields, shown under the field they belong to.
-  const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; password?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  // Set when the email already has an account, so the error can offer sign-in.
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
   // Shown instead of the form when the project requires email confirmation.
   const [confirmationSentTo, setConfirmationSentTo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -32,11 +33,11 @@ export function SignupPage() {
     e.preventDefault();
     if (submitting) return;
     setError(null);
+    setAlreadyRegistered(false);
 
     // Check everything at once, top to bottom, so every problem is visible
     // together instead of one per attempt.
     const problems: typeof fieldErrors = {};
-    if (!fullName.trim()) problems.name = 'Enter your name.';
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) problems.email = 'Enter a valid email address, like you@example.com.';
     if (password.length < 8) problems.password = 'Use at least 8 characters.';
     setFieldErrors(problems);
@@ -45,18 +46,23 @@ export function SignupPage() {
       setConsentError('Please accept the Terms and Privacy Policy to create an account.');
     }
     if (Object.keys(problems).length > 0 || !acceptedTerms) {
-      const firstField = problems.name ? 'signup-name' : problems.email ? 'signup-email' : problems.password ? 'signup-password' : null;
+      const firstField = problems.email ? 'signup-email' : problems.password ? 'signup-password' : null;
       if (firstField) document.getElementById(firstField)?.focus();
       return;
     }
 
     setSubmitting(true);
-    const { error, needsConfirmation } = await signUp(email.trim(), password, fullName.trim(), legal.consentVersion);
+    const { error, needsConfirmation } = await signUp(email.trim(), password, legal.consentVersion);
     setSubmitting(false);
     if (needsConfirmation) {
       setConfirmationSentTo(email.trim());
     } else if (error) {
-      setError(error);
+      if (/already registered|already exists/i.test(error)) {
+        setAlreadyRegistered(true);
+        setError('An account with this email already exists.');
+      } else {
+        setError(error);
+      }
     } else {
       navigate('/onboarding');
     }
@@ -68,8 +74,8 @@ export function SignupPage() {
         <div className="w-full max-w-sm text-center">
           <h1 className="text-2xl font-bold text-gray-900">Check your email</h1>
           <p className="mt-2 text-sm text-gray-700">
-            We sent a confirmation link to <strong>{confirmationSentTo}</strong>. Open it to activate your
-            account, then sign in to set up your business.
+            We sent a confirmation link to <strong>{confirmationSentTo}</strong>. Open it on this device — it
+            takes you straight to setting up your business.
           </p>
           <p className="mt-4 text-sm text-gray-600">
             Nothing there? Check your spam folder, or{' '}
@@ -82,12 +88,12 @@ export function SignupPage() {
             </button>
             .
           </p>
-          <Link
-            to="/login"
-            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            Go to sign in
-          </Link>
+          <p className="mt-6 text-sm text-gray-600">
+            Already confirmed?{' '}
+            <Link to="/login" className="font-medium text-blue-700 underline underline-offset-2">
+              Sign in
+            </Link>
+          </p>
         </div>
       </AuthLayout>
     );
@@ -96,42 +102,21 @@ export function SignupPage() {
   return (
     <AuthLayout>
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-gray-900">Start free</h1>
-        <p className="mt-1.5 text-sm text-gray-600">
-          Create your {branding.name} account. Your free trial starts after a ₹1 AutoPay check, refunded straight away.
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900">Start your {legal.trialDays}-day free trial</h1>
+        <p className="mt-1.5 text-sm text-gray-600">Create your {branding.name} account with your email.</p>
 
-        <div className="mt-6 rounded-xl bg-blue-50 border border-blue-200 px-4 py-3 text-xs text-blue-900">
-          <p className="font-medium mb-1">Your {legal.trialDays}-day free trial includes:</p>
-          <ul className="space-y-1">
-            <li className="flex items-center gap-1.5">
-              <Check className="h-3.5 w-3.5" aria-hidden="true" /> A custom QR code for your business
-            </li>
-            <li className="flex items-center gap-1.5">
-              <Check className="h-3.5 w-3.5" aria-hidden="true" /> AI-assisted review writing
-            </li>
-            <li className="flex items-center gap-1.5">
-              <Check className="h-3.5 w-3.5" aria-hidden="true" /> A private feedback dashboard
-            </li>
-          </ul>
+        {/* What happens after this form, including when money is involved, so
+            nothing later comes as a surprise. */}
+        <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950">
+          <p className="font-medium">What happens next</p>
+          <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-blue-900">
+            <li>Add your business name, Google link, and review topics — about 3 minutes.</li>
+            <li>Verify UPI or a card with ₹1, refunded straight away. Your {legal.trialDays}-day trial starts.</li>
+            <li>Print your QR code. Nothing more is charged until the trial ends; cancel any time before.</li>
+          </ol>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
-          <Input
-            id="signup-name"
-            label="Full name"
-            icon={User}
-            name="name"
-            type="text"
-            required
-            autoComplete="name"
-            value={fullName}
-            onChange={(e) => {
-              setFullName(e.target.value);
-              if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: undefined }));
-            }}
-            error={fieldErrors.name}
-          />
           <Input
             id="signup-email"
             label="Email"
@@ -171,7 +156,7 @@ export function SignupPage() {
           {/* What we collect and why, stated before the account is created —
               the notice DPDPA s.5 requires to accompany consent. */}
           <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-xs leading-relaxed text-gray-700">
-            We store your name and email to run your account, and your business details to build your
+            We store your email to run your account, and your business details to build your
             review page. We do not sell your data and we serve no advertising. Full detail is in the{' '}
             <Link
               to="/privacy"
@@ -210,10 +195,24 @@ export function SignupPage() {
             , including the rules on incentivised and fake reviews. I am 18 or older.
           </ConsentCheckbox>
 
-          {error && <Alert variant="error">{error}</Alert>}
+          {error && (
+            <Alert
+              variant="error"
+              action={
+                alreadyRegistered ? (
+                  <span className="flex flex-wrap gap-x-4 gap-y-1">
+                    <Link to="/login" className="font-medium underline underline-offset-2">Sign in instead</Link>
+                    <Link to="/forgot-password" className="font-medium underline underline-offset-2">Reset your password</Link>
+                  </span>
+                ) : undefined
+              }
+            >
+              {error}
+            </Alert>
+          )}
 
           <Button type="submit" size="lg" loading={submitting} className="w-full">
-            Create account <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            Create account and set up <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Button>
         </form>
 

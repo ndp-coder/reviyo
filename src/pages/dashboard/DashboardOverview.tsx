@@ -2,7 +2,8 @@ import { Link, useOutletContext } from 'react-router-dom';
 import { Star, QrCode, ArrowRight, Check, Link2, MessageSquare } from 'lucide-react';
 import { useDashboardStats } from '@/lib/use-dashboard-stats';
 import { Alert, Button, Card, Skeleton, Badge, PageHeader, Spinner } from '@/components/ui';
-import type { Business, PrivateFeedbackStatus } from '@/lib/types';
+import { PlanStatus } from '@/components/dashboard/PlanStatus';
+import type { AutopayMandate, Business, PrivateFeedbackStatus, Subscription } from '@/lib/types';
 
 const statusLabel: Record<PrivateFeedbackStatus, string> = { new: 'New', seen: 'Seen', resolved: 'Resolved' };
 const statusVariant = { new: 'info', seen: 'default', resolved: 'success' } as const;
@@ -14,7 +15,11 @@ function percent(part: number, whole: number) {
 }
 
 export function DashboardOverview() {
-  const { business } = useOutletContext<{ business: Business | null }>();
+  const { business, subscription, mandate } = useOutletContext<{
+    business: Business | null;
+    subscription: Subscription | null;
+    mandate: Pick<AutopayMandate, 'status' | 'plan' | 'method'> | null;
+  }>();
   const stats = useDashboardStats(business);
 
   if (stats.loading) {
@@ -114,6 +119,8 @@ export function DashboardOverview() {
           ) : undefined
         }
       />
+
+      <PlanStatus subscription={subscription} mandate={mandate} />
 
       {setupRemaining > 0 && (
         <Card className="mt-6 p-5">

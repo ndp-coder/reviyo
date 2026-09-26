@@ -629,7 +629,7 @@ export function OnboardingPage() {
                   </Button>
                 )}
                 <Button onClick={nextStep} disabled={!canProceed() || saving} loading={saving} aria-describedby={blockedReason ? 'onboarding-blocked' : undefined}>
-                  {step === STEP.topics ? 'Create business' : 'Continue'}{' '}
+                  {step === STEP.topics ? 'Create business' : `Next: ${STEPS[step + 1].label}`}{' '}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>

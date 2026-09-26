@@ -36,7 +36,11 @@
    * around the whole page.
    */
   main:focus,
-  main:focus-visible {
+  main:focus-visible,
+  h1[tabindex='-1']:focus,
+  h1[tabindex='-1']:focus-visible,
+  h2[tabindex='-1']:focus,
+  h2[tabindex='-1']:focus-visible {
     outline: none;
   }
 }

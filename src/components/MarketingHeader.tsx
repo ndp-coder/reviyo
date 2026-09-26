@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
 import { TOOL_PATH } from '@/config/seo';
+import { useAuth } from '@/lib/auth-context';
 
 export interface MarketingLink {
   label: string;
@@ -27,6 +28,11 @@ const mobileLink = 'block rounded-lg px-3 py-3 text-base font-medium text-gray-8
  */
 export function MarketingHeader({ links = DEFAULT_MARKETING_LINKS }: { links?: MarketingLink[] }) {
   const [open, setOpen] = useState(false);
+  // Signed-in owners get a way back to their dashboard instead of sign-up
+  // prompts. Until auth has loaded this renders the signed-out header, which is
+  // also what the prerendered HTML contains, so hydration matches.
+  const { user, loading } = useAuth();
+  const signedIn = Boolean(user) && !loading;
   const { pathname, hash } = useLocation();
 
   useEffect(() => {
@@ -66,23 +72,34 @@ export function MarketingHeader({ links = DEFAULT_MARKETING_LINKS }: { links?: M
 
         <div className="hidden items-center gap-6 md:flex">
           {links.map((link) => renderLink(link, desktopLink))}
-          <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-gray-900">
-            Sign in
-          </Link>
-          <Link
-            to="/signup"
-            className="inline-flex min-h-10 items-center rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            Start Free
-          </Link>
+          {signedIn ? (
+            <Link
+              to="/dashboard"
+              className="inline-flex min-h-10 items-center rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Go to dashboard
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-gray-900">
+                Sign in
+              </Link>
+              <Link
+                to="/signup"
+                className="inline-flex min-h-10 items-center rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                Start free trial
+              </Link>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-1 md:hidden">
           <Link
-            to="/signup"
-            className="inline-flex min-h-10 items-center rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700"
+            to={signedIn ? '/dashboard' : '/signup'}
+            className="inline-flex min-h-10 items-center whitespace-nowrap rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700"
           >
-            Start Free
+            {signedIn ? 'Dashboard' : 'Start free trial'}
           </Link>
           <button
             type="button"
@@ -103,11 +120,13 @@ export function MarketingHeader({ links = DEFAULT_MARKETING_LINKS }: { links?: M
             {links.map((link) => (
               <li key={link.label}>{renderLink(link, mobileLink)}</li>
             ))}
-            <li>
-              <Link to="/login" className={mobileLink}>
-                Sign in
-              </Link>
-            </li>
+            {!signedIn && (
+              <li>
+                <Link to="/login" className={mobileLink}>
+                  Sign in
+                </Link>
+              </li>
+            )}
           </ul>
         </div>
       )}

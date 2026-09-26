@@ -145,7 +145,7 @@ export function IndustryPage() {
               to="/signup"
               className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3.5 text-base font-medium text-blue-700 hover:bg-blue-50"
             >
-              Start free <ArrowRight className="h-5 w-5" aria-hidden="true" />
+              Start your free trial <ArrowRight className="h-5 w-5" aria-hidden="true" />
             </Link>
           </div>
         </section>

@@ -15,6 +15,8 @@ export function AdminPage() {
     expiredSubs: 0,
     aiGenerations: 0,
     totalUsers: 0,
+    subscriptionsStarted: 0,
+    payingNow: 0,
     loading: true,
     error: null as string | null,
   });
@@ -24,7 +26,7 @@ export function AdminPage() {
       try {
         const [businessesRes, subsRes, usersRes, aiRes] = await Promise.all([
           supabase.from('businesses').select('id', { count: 'exact', head: true }),
-          supabase.from('subscriptions').select('status'),
+          supabase.from('subscriptions').select('status, expires_at'),
           supabase.from('profiles').select('id', { count: 'exact', head: true }),
           supabase.from('ai_generation_log').select('id', { count: 'exact', head: true }),
         ]);
@@ -32,9 +34,14 @@ export function AdminPage() {
         const queryError = businessesRes.error ?? subsRes.error ?? usersRes.error ?? aiRes.error;
         if (queryError) throw queryError;
 
-        const subs = subsRes.data ?? [];
-        const active = subs.filter((s: { status: string }) => s.status === 'active' || s.status === 'trial').length;
-        const expired = subs.filter((s: { status: string }) => s.status === 'expired').length;
+        const subs = (subsRes.data ?? []) as { status: string; expires_at: string | null }[];
+        const active = subs.filter((s) => s.status === 'active' || s.status === 'trial').length;
+        const expired = subs.filter((s) => s.status === 'expired').length;
+        // A subscription row exists once a business starts its AutoPay trial or
+        // pays once, so every row is a business that got past the payment step.
+        const payingNow = subs.filter(
+          (s) => s.status === 'active' && s.expires_at !== null && new Date(s.expires_at).getTime() > Date.now()
+        ).length;
 
         setStats({
           businessCount: businessesRes.count ?? 0,
@@ -42,6 +49,8 @@ export function AdminPage() {
           expiredSubs: expired,
           aiGenerations: aiRes.count ?? 0,
           totalUsers: usersRes.count ?? 0,
+          subscriptionsStarted: subs.length,
+          payingNow,
           loading: false,
           error: null,
         });
@@ -58,6 +67,15 @@ export function AdminPage() {
     { label: 'Expired subscriptions', value: stats.expiredSubs, icon: AlertTriangle },
     { label: 'AI drafts written', value: stats.aiGenerations, icon: Sparkles },
     { label: 'Users', value: stats.totalUsers, icon: Users },
+  ];
+
+  // Where new owners drop off, from data the database already holds: no extra
+  // tracking. Each stage is a subset of the one before it.
+  const funnel = [
+    { label: 'Created an account', value: stats.totalUsers },
+    { label: 'Set up a business', value: stats.businessCount },
+    { label: 'Started a trial or paid', value: stats.subscriptionsStarted },
+    { label: 'Paying now', value: stats.payingNow },
   ];
 
   async function handleSignOut() {
@@ -97,6 +115,29 @@ export function AdminPage() {
             </Card>
           ))}
         </div>
+      )}
+
+      {!stats.loading && !stats.error && (
+        <Card className="mt-6 p-5 sm:p-6">
+          <h2 className="text-sm font-semibold text-gray-900">Owner signup funnel</h2>
+          <p className="mt-0.5 text-xs text-gray-600">All time. The biggest drop between two stages is where owners give up.</p>
+          <ol className="mt-4 space-y-3">
+            {funnel.map((stage, i) => {
+              const previous = i > 0 ? funnel[i - 1].value : null;
+              return (
+                <li key={stage.label} className="flex items-baseline justify-between gap-3 text-sm">
+                  <span className="text-gray-700">{stage.label}</span>
+                  <span className="flex items-baseline gap-2">
+                    {previous !== null && previous > 0 && (
+                      <span className="text-xs text-gray-600">{Math.round((stage.value / previous) * 100)}% of previous</span>
+                    )}
+                    <span className="font-semibold tabular-nums text-gray-900">{stage.value}</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        </Card>
       )}
       </main>
     </div>

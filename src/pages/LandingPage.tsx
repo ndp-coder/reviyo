@@ -15,7 +15,7 @@ export function LandingPage() {
       <SkipLink />
       <MarketingHeader
         links={[
-          { href: '#how-it-works', label: 'How It Works' },
+          { href: '#how-it-works', label: 'How it works' },
           { href: '#features', label: 'Features' },
           { to: '/for', label: 'Industries' },
           { href: '#pricing', label: 'Pricing' },
@@ -40,10 +40,10 @@ export function LandingPage() {
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link to="/signup" className="inline-flex items-center gap-2 rounded-xl bg-blue-600 text-white px-6 py-3.5 text-base font-medium hover:bg-blue-700 transition-colors shadow-sm w-full sm:w-auto justify-center">
-              Start Free <ArrowRight className="h-5 w-5" aria-hidden="true" />
+              Start {legal.trialDays}-day free trial <ArrowRight className="h-5 w-5" aria-hidden="true" />
             </Link>
             <a href="#how-it-works" className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white text-gray-700 px-6 py-3.5 text-base font-medium hover:bg-gray-50 transition-colors w-full sm:w-auto justify-center">
-              See How It Works
+              See how it works
             </a>
           </div>
           <p className="mt-4 text-xs text-gray-600">{legal.trialDays}-day free trial. ₹1 AutoPay check, refunded. Cancel anytime.</p>
@@ -53,19 +53,19 @@ export function LandingPage() {
       {/* How It Works */}
       <section id="how-it-works" className="py-20 px-6">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-gray-900 text-center">How It Works</h2>
-          <p className="mt-3 text-gray-600 text-center max-w-xl mx-auto">Three simple steps from scan to review.</p>
+          <h2 className="text-3xl font-bold text-gray-900 text-center">How it works</h2>
+          <p className="mt-3 text-gray-600 text-center max-w-xl mx-auto">From scan to posted review in about a minute.</p>
           <div className="mt-12 grid md:grid-cols-3 gap-8">
             {[
-              { icon: QrCode, title: 'Customer Scans', desc: 'Customer scans your QR code at the counter. No app to install, no account to create.', color: 'text-blue-600 bg-blue-50' },
-              { icon: Sparkles, title: 'AI Helps Them Write', desc: 'They rate their experience, pick topics, and AI drafts a genuine review from their input.', color: 'text-amber-600 bg-amber-50' },
-              { icon: ExternalLink, title: 'Customer Posts on Google', desc: 'They review the draft, edit if they want, then copy and paste it on Google themselves.', color: 'text-green-600 bg-green-50' },
+              { icon: QrCode, title: 'Customer scans', desc: 'Customer scans your QR code at the counter. No app to install, no account to create.', color: 'text-blue-600 bg-blue-50' },
+              { icon: Sparkles, title: 'AI helps them write', desc: 'They rate their experience, pick topics, and AI drafts a genuine review from their input.', color: 'text-amber-600 bg-amber-50' },
+              { icon: ExternalLink, title: 'Customer posts on Google', desc: 'They review the draft, edit if they want, then copy and paste it on Google themselves.', color: 'text-green-600 bg-green-50' },
             ].map((step, i) => (
               <div key={step.title} className="text-center relative">
                 <div className={`inline-flex h-16 w-16 items-center justify-center rounded-2xl ${step.color} mb-4`}>
                   <step.icon className="h-8 w-8" aria-hidden="true" />
                 </div>
-                <div className="text-sm font-bold text-gray-500 mb-1">STEP {i + 1}</div>
+                <div className="mb-1 text-sm font-semibold text-gray-600">Step {i + 1}</div>
                 <h3 className="text-lg font-bold text-gray-900">{step.title}</h3>
                 <p className="mt-2 text-sm text-gray-600">{step.desc}</p>
                 {i < 2 && (
@@ -86,12 +86,12 @@ export function LandingPage() {
           <p className="mt-3 text-gray-600 text-center">Tools to collect genuine reviews and understand your customers.</p>
           <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: QrCode, title: 'Custom QR Code', desc: 'Generate and download a QR code for your counter. Customers scan and start writing instantly.' },
-              { icon: Sparkles, title: 'AI Review Writing', desc: 'AI helps customers express their experience naturally, based on their own input. No fake reviews.' },
-              { icon: BarChart3, title: 'Analytics Dashboard', desc: 'See how many people opened your page, started a review, generated a draft, and went on to Google.' },
-              { icon: MessageSquare, title: 'Private Feedback', desc: 'Customers can send private feedback too. Manage it with new, seen, and resolved statuses.' },
-              { icon: Shield, title: 'No Invented Experiences', desc: 'The AI is instructed to use only what the customer enters. The customer edits and posts the final review themselves.' },
-              { icon: Zap, title: 'Fast Mobile Flow', desc: 'Optimized for phones with a short, focused customer journey.' },
+              { icon: QrCode, title: 'Custom QR code', desc: 'Generate and download a QR code for your counter. Customers scan and start writing instantly.' },
+              { icon: Sparkles, title: 'AI review writing', desc: 'AI helps customers express their experience naturally, based on their own input. No fake reviews.' },
+              { icon: BarChart3, title: 'Analytics dashboard', desc: 'See how many people opened your page, started a review, generated a draft, and went on to Google.' },
+              { icon: MessageSquare, title: 'Private feedback', desc: 'Customers can send private feedback too. Manage it with new, seen, and resolved statuses.' },
+              { icon: Shield, title: 'No invented experiences', desc: 'The AI is instructed to use only what the customer enters. The customer edits and posts the final review themselves.' },
+              { icon: Zap, title: 'Fast on phones', desc: 'Optimized for phones with a short, focused customer journey.' },
             ].map((feature) => (
               <div key={feature.title} className="rounded-2xl bg-white border border-gray-200 p-6 shadow-sm">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 mb-4">
@@ -108,7 +108,7 @@ export function LandingPage() {
       {/* Who It's For */}
       <section className="py-20 px-6">
         <div className="max-w-5xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-gray-900">Who It's For</h2>
+          <h2 className="text-3xl font-bold text-gray-900">Who it's for</h2>
           <p className="mt-3 text-gray-600">Built for small, single-location businesses. See how it works for yours:</p>
           <ul className="mt-10 flex flex-wrap justify-center gap-3">
             {industries.map((industry) => (
@@ -135,7 +135,7 @@ export function LandingPage() {
       {/* Pricing */}
       <section id="pricing" className="py-20 px-6">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-gray-900 text-center">Simple Pricing</h2>
+          <h2 className="text-3xl font-bold text-gray-900 text-center">Simple pricing</h2>
           <p className="mt-3 text-gray-600 text-center">One subscription. One business. One location.</p>
           <div className="mt-10">
             <PlanCards />
@@ -163,8 +163,8 @@ export function LandingPage() {
         <div className="max-w-3xl mx-auto text-center rounded-3xl bg-gradient-to-br from-blue-600 to-blue-700 p-12 lg:p-16">
           <h2 className="text-3xl font-bold text-white">Start collecting better reviews today</h2>
           <p className="mt-3 text-blue-50">{legal.trialDays}-day free trial. ₹1 AutoPay check, refunded. Cancel anytime.</p>
-          <Link to="/signup" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white text-blue-600 px-6 py-3.5 text-base font-medium hover:bg-blue-50 transition-colors">
-            Start Free <ArrowRight className="h-5 w-5" aria-hidden="true" />
+          <Link to="/signup" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white text-blue-700 px-6 py-3.5 text-base font-medium hover:bg-blue-50 transition-colors">
+            Start your free trial <ArrowRight className="h-5 w-5" aria-hidden="true" />
           </Link>
         </div>
       </section>
