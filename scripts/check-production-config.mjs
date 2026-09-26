@@ -4,7 +4,7 @@ import { loadEnv } from 'vite';
 
 // This is the Supabase project the owner selected for production. Changing it
 // requires an explicit review of the migrations, functions, and legal region.
-const productionProjectRef = 'bpzcumfztnaouxwepvuf';
+const productionProjectRef = 'yagchgwgbttxfihlyddm';
 const env = loadEnv('production', process.cwd(), 'VITE_');
 const problems = [];
 

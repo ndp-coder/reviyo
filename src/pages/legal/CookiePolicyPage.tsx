@@ -3,6 +3,17 @@ import { branding } from '@/config/branding';
 import { legal, displayValue } from '@/config/legal';
 import { LegalPage, Clause, SubHeading, List, DataTable } from '@/components/legal/LegalPage';
 
+// The exact key supabase-js uses: "sb-" + the project ref + "-auth-token".
+// Worked out from the configured project at build time, so the policy always
+// names the real key.
+const authStorageKey = (() => {
+  try {
+    return `sb-${new URL(import.meta.env.VITE_SUPABASE_URL).hostname.split('.')[0]}-auth-token`;
+  } catch {
+    return 'sb-<project>-auth-token';
+  }
+})();
+
 const N = branding.name;
 
 export function CookiePolicyPage() {
@@ -56,7 +67,7 @@ export function CookiePolicyPage() {
           rows={[
             [
               <code key="k" className="text-xs">
-                sb-&lt;project&gt;-auth-token
+                {authStorageKey}
               </code>,
               'Local storage (first-party, set by us)',
               'Holds your signed-in session and refresh token so you stay signed in. Without it, the dashboard cannot work.',

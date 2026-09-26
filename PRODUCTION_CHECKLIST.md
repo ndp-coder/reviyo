@@ -4,15 +4,16 @@ Audit date: 26 September 2026
 
 Current decision: **HOLD — do not send production traffic yet.**
 
-The codebase builds and its automated security, database, payment, compliance,
-and accessibility checks pass except for intentional legal and provider gates.
-The selected production project is `bpzcumfztnaouxwepvuf` (Singapore). The
-Supabase CLI account currently gets HTTP 403 for this project's API keys,
-functions, secrets, and link operation, so its remote state has not been
-verified. The ignored local `.env.local` now has the selected project's URL
-and a deliberately blank publishable key, so local login fails closed instead
-of contacting the former project. The former CLI link was removed; no project
-is linked until access is granted.
+The underlying client/SSR build passed its last compile, and automated checks
+pass except for intentional legal and provider gates. The guarded release build
+remains blocked until those real details are provided.
+The owner corrected the selected production project to
+`yagchgwgbttxfihlyddm` (last verified in Seoul). The current Supabase CLI
+account gets HTTP 403 for this project's API keys and cannot list it, so its
+remote state cannot currently be rechecked. The ignored local `.env.local`
+points to this project, and its browser key received HTTP 200 from this
+project's public Auth settings endpoint. No project is currently linked in the
+CLI.
 
 ## Blocking before launch
 
@@ -24,29 +25,28 @@ is linked until access is granted.
   `TODO_GRIEVANCE_EMAIL` in `src/config/legal.ts` only after a send/receive
   test. The domain had no MX record during this audit, and you said the mailbox
   is not yet purchased.
-- [ ] Grant the Supabase CLI account Developer or Owner access to project
-  `bpzcumfztnaouxwepvuf`. Read its publishable key, link the repository, and
-  fill `.env.local` and the production host's `VITE_SUPABASE_URL` and
-  `VITE_SUPABASE_PUBLISHABLE_KEY` to that same project. Do not mix keys between
-  projects.
+- [ ] Sign the Supabase CLI into an account with Developer or Owner access to
+  `yagchgwgbttxfihlyddm`, or grant that access to the current account. Link
+  the repository and set the production host's `VITE_SUPABASE_URL` and
+  `VITE_SUPABASE_PUBLISHABLE_KEY` to this same project.
 - [ ] Verify the chosen production AI provider, key, model, and policy URL;
   replace `TODO_AI_PROVIDER_NAME` and `TODO_AI_PROVIDER_POLICY_URL` in
   `src/config/legal.ts` with the actual processor details. Then rerun `npm test`.
-- [ ] Run the guarded `npm run build` with the Singapore project's HTTPS URL
-  and publishable key. It now fails if the old project or any unfinished legal
-  field would be bundled into a release.
+- [ ] Run the guarded `npm run build` with the selected project's HTTPS URL and
+  publishable key. It fails if the wrong project or any unfinished legal field
+  would be bundled into a release.
 - [ ] Rotate any Razorpay credentials that were ever copied into source, chat,
   screenshots, or shell history. Use newly created test keys for staging and
   newly created live keys for production.
-- [ ] Compare local migrations with the selected production project, review
-  each pending migration, then apply them. The previously linked Seoul project
-  was missing migrations `20260925090000` through `20260925140000`; the
-  Singapore project's migration state is unknown because of the 403.
+- [ ] Compare local migrations with the selected project, review each pending
+  migration, then apply them. The last successful audit of this project found
+  migrations `20260925090000` through `20260925140000` missing remotely;
+  recheck that finding once access is restored.
 - [ ] Fill an ignored `supabase/functions/.env` from `supabase/.env.example`
   and upload it with `supabase secrets set --env-file supabase/functions/.env`.
-  The previously linked Seoul project lacked `APP_ORIGINS`,
-  `RAZORPAY_WEBHOOK_SECRET`, and `AUTOPAY_CRON_SECRET`; the selected project's
-  secret names cannot yet be inspected. Set `APP_ORIGINS` to the deployed origin.
+  The last successful audit of this project did not find `APP_ORIGINS`,
+  `RAZORPAY_WEBHOOK_SECRET`, or `AUTOPAY_CRON_SECRET`; recheck the secret names
+  once access is restored. Set `APP_ORIGINS` to the deployed origin.
 - [ ] Redeploy all Edge Functions after the migrations and secrets are in
   place. Use the complete list in `README.md`.
 - [ ] Configure the Razorpay webhook with the complete event list in

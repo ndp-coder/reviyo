@@ -79,8 +79,8 @@ export const legal = {
    * actual Supabase project region and configured AI provider before launch —
    * the Privacy Policy renders them verbatim.
    */
-  // Production project bpzcumfztnaouxwepvuf is in ap-southeast-1.
-  dataRegion: 'Asia Pacific (Singapore)',
+  // The selected project yagchgwgbttxfihlyddm was last verified in ap-northeast-2.
+  dataRegion: 'Northeast Asia (Seoul)',
   aiProviderName: 'TODO_AI_PROVIDER_NAME',
   aiProviderPolicyUrl: 'TODO_AI_PROVIDER_POLICY_URL',
 

@@ -107,22 +107,22 @@ owner-supplied URLs to safe schemes.
 
    ```bash
    supabase login
-   supabase link --project-ref YOUR_PROJECT_REF
-   supabase db push
+   supabase link --project-ref yagchgwgbttxfihlyddm
+   supabase db push --linked
    ```
 5. Deploy the Edge Functions:
 
    ```bash
-   supabase functions deploy generate-review
-   supabase functions deploy suggest-topics
-   supabase functions deploy create-razorpay-order
-   supabase functions deploy verify-razorpay-payment
-   supabase functions deploy razorpay-webhook
-   supabase functions deploy create-autopay-mandate
-   supabase functions deploy verify-autopay-mandate
-   supabase functions deploy cancel-autopay
-   supabase functions deploy autopay-scheduler
-   supabase functions deploy delete-account
+   supabase functions deploy generate-review --project-ref yagchgwgbttxfihlyddm
+   supabase functions deploy suggest-topics --project-ref yagchgwgbttxfihlyddm
+   supabase functions deploy create-razorpay-order --project-ref yagchgwgbttxfihlyddm
+   supabase functions deploy verify-razorpay-payment --project-ref yagchgwgbttxfihlyddm
+   supabase functions deploy razorpay-webhook --project-ref yagchgwgbttxfihlyddm
+   supabase functions deploy create-autopay-mandate --project-ref yagchgwgbttxfihlyddm
+   supabase functions deploy verify-autopay-mandate --project-ref yagchgwgbttxfihlyddm
+   supabase functions deploy cancel-autopay --project-ref yagchgwgbttxfihlyddm
+   supabase functions deploy autopay-scheduler --project-ref yagchgwgbttxfihlyddm
+   supabase functions deploy delete-account --project-ref yagchgwgbttxfihlyddm
    ```
 
    `delete-account` implements the right to erasure and needs no secrets of its
@@ -153,7 +153,7 @@ owner-supplied URLs to safe schemes.
    in shell history:
 
    ```bash
-   supabase secrets set --env-file supabase/functions/.env
+   supabase secrets set --env-file supabase/functions/.env --project-ref yagchgwgbttxfihlyddm
    ```
 
    `SUPABASE_URL` and the server-side Supabase secret keys are provided to hosted
@@ -199,7 +199,7 @@ npm run lint     # ESLint
 
 Build the frontend with `npm run build` and deploy `dist/` to your host.
 The build first checks that `VITE_SUPABASE_URL` targets the selected production
-project (`bpzcumfztnaouxwepvuf`), a publishable key is present, and the legal
+project (`yagchgwgbttxfihlyddm`), a publishable key is present, and the legal
 configuration has no `TODO_` values. It is expected to fail until those launch
 requirements are complete. Local development still uses `npm run dev`.
 
@@ -244,7 +244,7 @@ secret of at least 32 characters:
 
 ```powershell
 Copy-Item supabase/.env.example supabase/functions/.env
-supabase secrets set --env-file supabase/functions/.env
+supabase secrets set --env-file supabase/functions/.env --project-ref yagchgwgbttxfihlyddm
 ```
 
 Never use the Bolt project's credentials. Rotate any key that has previously
@@ -254,18 +254,18 @@ keys in staging and live-mode keys only in production.
 #### 2. Deploy Edge Functions
 Deploy every payment and AutoPay function:
 ```bash
-supabase functions deploy create-razorpay-order
-supabase functions deploy verify-razorpay-payment
-supabase functions deploy razorpay-webhook
-supabase functions deploy create-autopay-mandate
-supabase functions deploy verify-autopay-mandate
-supabase functions deploy cancel-autopay
-supabase functions deploy autopay-scheduler
+supabase functions deploy create-razorpay-order --project-ref yagchgwgbttxfihlyddm
+supabase functions deploy verify-razorpay-payment --project-ref yagchgwgbttxfihlyddm
+supabase functions deploy razorpay-webhook --project-ref yagchgwgbttxfihlyddm
+supabase functions deploy create-autopay-mandate --project-ref yagchgwgbttxfihlyddm
+supabase functions deploy verify-autopay-mandate --project-ref yagchgwgbttxfihlyddm
+supabase functions deploy cancel-autopay --project-ref yagchgwgbttxfihlyddm
+supabase functions deploy autopay-scheduler --project-ref yagchgwgbttxfihlyddm
 ```
 
 #### 3. Razorpay Webhook Configuration
 In the Razorpay Dashboard under **Settings > Webhooks**, add an endpoint:
-- **Webhook URL**: `https://<your-project-ref>.supabase.co/functions/v1/razorpay-webhook`
+- **Webhook URL**: `https://yagchgwgbttxfihlyddm.supabase.co/functions/v1/razorpay-webhook`
 - **Secret**: Value configured in `RAZORPAY_WEBHOOK_SECRET`
 - **Active Events**: `order.paid`, `payment.authorized`, `payment.captured`,
   `payment.failed`, `token.confirmed`, `token.rejected`, `token.paused`, and
@@ -278,7 +278,7 @@ open **Integrations > Cron**, create an HTTP job that runs every three hours
 (`0 */3 * * *`), and configure:
 
 - **Method**: `POST`
-- **URL**: `https://<your-project-ref>.supabase.co/functions/v1/autopay-scheduler`
+- **URL**: `https://yagchgwgbttxfihlyddm.supabase.co/functions/v1/autopay-scheduler`
 - **Headers**: `Content-Type: application/json` and `x-cron-secret` set to the
   exact same `AUTOPAY_CRON_SECRET` stored in Edge Function secrets
 - **Body**: `{}`
@@ -345,7 +345,7 @@ inventory:
 
 | What | Where | Classification |
 |------|-------|----------------|
-| `sb-<project>-auth-token` | Local storage, first-party | Strictly necessary — it is the signed-in session |
+| `sb-yagchgwgbttxfihlyddm-auth-token` | Local storage, first-party | Strictly necessary — it is the signed-in session |
 | Razorpay checkout cookies | Only after a signed-in owner clicks to pay | Strictly necessary for a payment the user requested |
 | Review-session id | In-page memory only, never persisted | Not storage at all |
 
@@ -456,7 +456,7 @@ Content-Security-Policy:
   style-src 'self' 'unsafe-inline';
   img-src 'self' data: blob:;
   font-src 'self';
-  connect-src 'self' https://<project-ref>.supabase.co wss://<project-ref>.supabase.co https://api.razorpay.com https://lumberjack.razorpay.com;
+  connect-src 'self' https://yagchgwgbttxfihlyddm.supabase.co wss://yagchgwgbttxfihlyddm.supabase.co https://api.razorpay.com https://lumberjack.razorpay.com;
   frame-src https://api.razorpay.com https://checkout.razorpay.com;
   form-action 'self';
   base-uri 'self';

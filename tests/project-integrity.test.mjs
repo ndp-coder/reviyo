@@ -11,14 +11,14 @@ test('the frontend has no Bolt-hosted metadata or deployment instructions', asyn
   assert.doesNotMatch(readme, /deploys automatically via Bolt/i);
 });
 
-test('production build refuses the old Supabase project and unfinished legal details', async () => {
+test('production build refuses the wrong Supabase project and unfinished legal details', async () => {
   const [pkg, guard] = await Promise.all([
     read('package.json'),
     read('scripts/check-production-config.mjs'),
   ]);
 
   assert.match(JSON.parse(pkg).scripts.build, /^node scripts\/check-production-config\.mjs &&/);
-  assert.match(guard, /bpzcumfztnaouxwepvuf/);
+  assert.match(guard, /yagchgwgbttxfihlyddm/);
   assert.match(guard, /VITE_SUPABASE_URL/);
   assert.match(guard, /VITE_SUPABASE_PUBLISHABLE_KEY/);
   assert.match(guard, /legalPlaceholders\.length/);
