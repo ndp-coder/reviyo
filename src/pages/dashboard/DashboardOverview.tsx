@@ -1,5 +1,5 @@
 import { Link, useOutletContext } from 'react-router-dom';
-import { Star, QrCode, ArrowRight, Check, Link2, MessageSquare } from 'lucide-react';
+import { Star, QrCode, Check, Link2, MessageSquare } from 'lucide-react';
 import { useDashboardStats } from '@/lib/use-dashboard-stats';
 import { Alert, Button, Card, Skeleton, Badge, PageHeader, Spinner } from '@/components/ui';
 import { PlanStatus } from '@/components/dashboard/PlanStatus';
@@ -150,7 +150,7 @@ export function DashboardOverview() {
                     to={step.to}
                     className="inline-flex min-h-9 flex-shrink-0 items-center gap-1 rounded-lg px-2 text-sm font-medium text-blue-700 hover:bg-blue-50"
                   >
-                    {step.cta} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    {step.cta}
                   </Link>
                 )}
               </li>
@@ -167,7 +167,7 @@ export function DashboardOverview() {
               <p className="text-sm text-gray-600">{kpi.label}</p>
               <p className={`mt-1 flex items-center gap-1.5 font-bold tabular-nums text-gray-900 ${i === 0 ? 'text-3xl' : 'text-2xl'}`}>
                 {kpi.value}
-                {kpi.star && <Star className="h-5 w-5 fill-amber-400 text-amber-500" aria-hidden="true" />}
+                {kpi.star && <Star className="h-5 w-5 fill-star text-star" aria-hidden="true" />}
               </p>
               <p className="mt-1 text-xs text-gray-600">{kpi.context}</p>
             </>
@@ -243,7 +243,7 @@ export function DashboardOverview() {
                         <Star
                           key={s}
                           aria-hidden="true"
-                          className={`h-3.5 w-3.5 ${s <= (fb.rating ?? 0) ? 'fill-amber-400 text-amber-500' : 'text-gray-300'}`}
+                          className={`h-3.5 w-3.5 ${s <= (fb.rating ?? 0) ? 'fill-star text-star' : 'text-gray-300'}`}
                         />
                       ))}
                     </div>

@@ -17,7 +17,7 @@ export function LegalPage({ title, summary, children }: LegalPageProps) {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <SkipLink />
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-200">
+      <header className="sticky top-0 z-40 border-b border-line bg-paper">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <Link to="/" aria-label="Reviyo home" className="inline-flex rounded-lg">
             <BrandLogo className="h-11 w-auto" />
@@ -33,7 +33,7 @@ export function LegalPage({ title, summary, children }: LegalPageProps) {
 
       <main id="main-content" tabIndex={-1} className="flex-1 px-6 py-12">
         <article className="max-w-3xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
+          <h1 className="font-wide text-3xl font-bold tracking-[-0.015em] text-ink sm:text-4xl">{title}</h1>
           <p className="mt-3 text-base text-gray-700">{summary}</p>
           <p className="mt-4 text-sm text-gray-600">
             Last updated: {new Date(legal.policyLastUpdated).toLocaleDateString('en-IN', {
@@ -56,7 +56,7 @@ export function LegalPage({ title, summary, children }: LegalPageProps) {
 export function Clause({ id, heading, children }: { id: string; heading: string; children: ReactNode }) {
   return (
     <section id={id} aria-labelledby={`${id}-heading`} className="scroll-mt-24">
-      <h2 id={`${id}-heading`} className="text-xl font-bold text-gray-900">
+      <h2 id={`${id}-heading`} className="font-semiwide text-xl font-bold tracking-[-0.01em] text-ink">
         {heading}
       </h2>
       <div className="mt-3 space-y-3 text-sm leading-relaxed text-gray-700">{children}</div>

@@ -276,7 +276,7 @@ export function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-sky-50">
+    <div className="min-h-screen bg-paper">
       {/* Header */}
       <SkipLink />
       <header className="flex items-center justify-between px-4 py-4 sm:px-6 sm:py-5">
@@ -342,7 +342,7 @@ export function OnboardingPage() {
         <div key={step} ref={headingRef}>
           {step === STEP.business && (
             <Card className="p-5 sm:p-8">
-              <h2 className="text-xl font-bold text-gray-900">Tell us about your business</h2>
+              <h2 className="font-semiwide text-xl font-bold tracking-[-0.01em] text-ink">Tell us about your business</h2>
               <p className="mt-1.5 text-sm text-gray-600">Customers see your name on the review page. The type helps us suggest review topics.</p>
               <div className="mt-6">
                 <Input
@@ -399,7 +399,7 @@ export function OnboardingPage() {
 
           {step === STEP.google && (
             <Card className="p-5 sm:p-8">
-              <h2 className="text-xl font-bold text-gray-900">Your Google review link</h2>
+              <h2 className="font-semiwide text-xl font-bold tracking-[-0.01em] text-ink">Your Google review link</h2>
               <p className="mt-1.5 text-sm text-gray-600">
                 Where customers land to post their review. Optional now — you can add it later in Settings.
               </p>
@@ -434,7 +434,7 @@ export function OnboardingPage() {
 
           {step === STEP.logo && (
             <Card className="p-5 sm:p-8">
-              <h2 className="text-xl font-bold text-gray-900">Add your logo</h2>
+              <h2 className="font-semiwide text-xl font-bold tracking-[-0.01em] text-ink">Add your logo</h2>
               <p className="mt-1.5 text-sm text-gray-600">Shown at the top of your review page. Optional, but it helps customers trust the page.</p>
               <div className="mt-6 flex flex-col items-center">
                 {logoUrl ? (
@@ -476,7 +476,7 @@ export function OnboardingPage() {
 
           {step === STEP.topics && (
             <Card className="p-5 sm:p-8">
-              <h2 className="text-xl font-bold text-gray-900">Choose review topics</h2>
+              <h2 className="font-semiwide text-xl font-bold tracking-[-0.01em] text-ink">Choose review topics</h2>
               <p className="mt-1.5 text-sm text-gray-600">
                 Customers tap these to say what they liked. We&apos;ve suggested some for your business type — edit, reorder, or remove any.
               </p>
@@ -543,7 +543,7 @@ export function OnboardingPage() {
 
           {step === STEP.trial && business && (
             <Card className="p-5 sm:p-8">
-              <h2 className="text-xl font-bold text-gray-900">Start your {legal.trialDays}-day free trial</h2>
+              <h2 className="font-semiwide text-xl font-bold tracking-[-0.01em] text-ink">Start your {legal.trialDays}-day free trial</h2>
               <p className="mt-1.5 text-sm text-gray-600">
                 Your business is saved. Set up AutoPay with a ₹1 verification payment, which we refund straight
                 away. You won&apos;t be charged for the plan until your trial ends, and you can cancel any time
@@ -566,7 +566,7 @@ export function OnboardingPage() {
               <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
                 <Check className="h-7 w-7 text-green-700" aria-hidden="true" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Your QR code is ready</h2>
+              <h2 className="font-semiwide text-xl font-bold tracking-[-0.01em] text-ink">Your QR code is ready</h2>
               <p className="mt-1.5 text-sm text-gray-600">
                 Put it where customers pay or wait. Scanning it opens your review page.
               </p>

@@ -12,7 +12,7 @@ const footerLinks = [
 
 export function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-sky-50">
+    <div className="min-h-screen flex flex-col bg-paper">
       <SkipLink />
       <header className="px-6 py-5">
         <Link to="/" aria-label="Reviyo home" className="inline-flex rounded-lg">

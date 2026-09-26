@@ -106,7 +106,7 @@ export function AutopaySetup({
                   className="sr-only"
                 />
                 <span className="text-sm font-medium text-gray-700">{option.label}</span>
-                <span className="mt-1 text-2xl font-bold text-gray-900">{formatRupees(option.price)}</span>
+                <span className="mt-1 font-semiwide text-2xl font-bold tracking-[-0.01em] text-ink">{formatRupees(option.price)}</span>
                 <span className="text-xs text-gray-600">
                   {perMonth(key)}, billed every {option.months} months
                 </span>

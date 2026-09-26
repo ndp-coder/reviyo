@@ -153,7 +153,7 @@ export function PrivateFeedbackPage() {
                       <Star
                         key={s}
                         aria-hidden="true"
-                        className={`h-3.5 w-3.5 ${s <= fb.rating! ? 'fill-amber-400 text-amber-500' : 'text-gray-300'}`}
+                        className={`h-3.5 w-3.5 ${s <= fb.rating! ? 'fill-star text-star' : 'text-gray-300'}`}
                       />
                     ))}
                   </div>

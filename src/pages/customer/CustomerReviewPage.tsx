@@ -45,7 +45,7 @@ function Screen({
   const position = step ? PROGRESS[step] : undefined;
   const width = wide ? 'max-w-md' : 'max-w-sm';
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-blue-50 via-white to-sky-50">
+    <div className="flex min-h-screen flex-col bg-paper">
       {business && (
         <header className={`mx-auto w-full px-4 pt-4 sm:px-6 sm:pt-6 ${width}`}>
           <div className="flex items-center gap-2.5">
@@ -424,7 +424,7 @@ export function CustomerReviewPage() {
           <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
             <AlertCircle className="h-7 w-7 text-red-600" aria-hidden="true" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900">
+          <h1 className="font-semiwide text-xl font-bold tracking-[-0.01em] text-ink">
             {loadRetryable ? 'Couldn’t open this page' : 'Page not available'}
           </h1>
           <p role="alert" className="mt-2 text-sm text-gray-600">{errorMsg}</p>
@@ -469,7 +469,7 @@ export function CustomerReviewPage() {
                 className="mx-auto mb-5 h-20 w-20 rounded-2xl border border-gray-200 object-cover"
               />
             )}
-            <h1 className="text-2xl font-bold text-gray-900">{welcomeMessage}</h1>
+            <h1 className="font-semiwide text-2xl font-bold tracking-[-0.01em] text-ink">{welcomeMessage}</h1>
             <p className="mt-2 text-sm text-gray-600">
               Your feedback helps {bizInfo.business_name} improve. Takes about a minute.
             </p>
@@ -553,7 +553,7 @@ export function CustomerReviewPage() {
     return (
       <Screen business={brand} step={step}>
         <div className="text-center">
-          <h1 id="rating-heading" className="text-2xl font-bold text-gray-900">
+          <h1 id="rating-heading" className="font-semiwide text-2xl font-bold tracking-[-0.01em] text-ink">
             How was your experience?
           </h1>
           <p className="mt-2 text-sm text-gray-600">Tap a star to rate from 1 to 5.</p>
@@ -584,7 +584,7 @@ export function CustomerReviewPage() {
                   aria-hidden="true"
                   className={`h-11 w-11 transition-colors sm:h-12 sm:w-12 ${
                     star <= (hoverRating || rating)
-                      ? 'fill-amber-400 text-amber-500'
+                      ? 'fill-star text-star'
                       : 'fill-gray-200 text-gray-400'
                   }`}
                 />
@@ -617,7 +617,7 @@ export function CustomerReviewPage() {
     const canWrite = !hasTopics || selectedTopics.length > 0 || comment.trim().length > 0;
     return (
       <Screen business={brand} step={step}>
-        <h1 id="topics-heading" className="text-center text-2xl font-bold text-gray-900">
+        <h1 id="topics-heading" className="text-center font-semiwide text-2xl font-bold tracking-[-0.01em] text-ink">
           {hasTopics ? 'What stood out?' : 'Tell us about your visit'}
         </h1>
         <p className="mt-2 text-center text-sm text-gray-600">
@@ -708,7 +708,7 @@ export function CustomerReviewPage() {
         {/* aria-busy plus a polite live region so a screen reader announces the
             wait and, later, the result — rather than going silent. */}
         <div className="text-center" role="status" aria-live="polite" aria-busy="true">
-          <h1 className="text-xl font-bold text-gray-900">Writing your review…</h1>
+          <h1 className="font-semiwide text-xl font-bold tracking-[-0.01em] text-ink">Writing your review…</h1>
           <p className="mt-2 text-sm text-gray-600">Drafting from what you told us. This takes a few seconds.</p>
           {/* Placeholder lines in the shape of the draft that is coming, so the
               screen does not jump when it arrives. */}
@@ -734,7 +734,7 @@ export function CustomerReviewPage() {
     return (
       <Screen business={brand} step={step}>
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">We couldn’t write your draft</h1>
+          <h1 className="font-semiwide text-2xl font-bold tracking-[-0.01em] text-ink">We couldn’t write your draft</h1>
           <Alert variant="error" className="mt-4 text-left">
             {aiError ?? 'The draft didn’t come through.'}{' '}
             {aiLimitReached
@@ -772,7 +772,7 @@ export function CustomerReviewPage() {
   if (step === 'review') {
     return (
       <Screen business={brand} step={step} wide>
-        <h1 className="text-center text-2xl font-bold text-gray-900">{ownDraft ? 'Your review' : 'Your draft review'}</h1>
+        <h1 className="text-center font-semiwide text-2xl font-bold tracking-[-0.01em] text-ink">{ownDraft ? 'Your review' : 'Your draft review'}</h1>
         <p className="mt-1.5 text-center text-sm text-gray-600">
           {ownDraft
             ? 'Write a few sentences about your visit, then copy and post it on Google.'
@@ -939,7 +939,7 @@ export function CustomerReviewPage() {
             <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
               <Check className="h-7 w-7 text-green-700" aria-hidden="true" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900">Feedback sent</h1>
+            <h1 className="font-semiwide text-xl font-bold tracking-[-0.01em] text-ink">Feedback sent</h1>
             <p className="mt-2 text-sm text-gray-600">Thank you. {bizInfo.business_name} will see your message.</p>
             <Button className="mt-6 w-full" onClick={() => goTo('done')}>
               Finish
@@ -947,7 +947,7 @@ export function CustomerReviewPage() {
           </div>
         ) : (
           <>
-            <h1 className="text-center text-2xl font-bold text-gray-900">Private feedback</h1>
+            <h1 className="text-center font-semiwide text-2xl font-bold tracking-[-0.01em] text-ink">Private feedback</h1>
             <p className="mt-2 text-center text-sm text-gray-600">
               This goes straight to {bizInfo.business_name} and is never posted publicly.
             </p>
@@ -995,7 +995,7 @@ export function CustomerReviewPage() {
           <div className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <Check className="h-8 w-8 text-green-700" aria-hidden="true" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Thank you</h1>
+          <h1 className="font-semiwide text-2xl font-bold tracking-[-0.01em] text-ink">Thank you</h1>
           <p className="mt-2 text-sm text-gray-600">
             {copied
               ? `Your review is on your clipboard. Paste it on Google and post it to help ${bizInfo.business_name}.`

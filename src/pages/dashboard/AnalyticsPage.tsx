@@ -112,7 +112,7 @@ export function AnalyticsPage() {
                 <div key={star} className="flex items-center gap-3">
                   <div className="flex w-10 items-center gap-1">
                     <span className="text-sm text-gray-700">{star}</span>
-                    <Star className="h-3 w-3 text-amber-500 fill-amber-400" aria-hidden="true" />
+                    <Star className="h-3 w-3 fill-star text-star" aria-hidden="true" />
                     <span className="sr-only">stars</span>
                   </div>
                   <div className="flex-1 h-3 rounded-full bg-gray-100 overflow-hidden" aria-hidden="true">

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, CheckCircle, Lock } from 'lucide-react';
+import { CheckCircle, Lock } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { AuthLayout } from './AuthLayout';
 import { Button, Input, Spinner } from '@/components/ui';
@@ -56,10 +56,10 @@ export function ResetPasswordPage() {
               <CheckCircle className="h-7 w-7 text-green-700" aria-hidden="true" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Password changed</h1>
+          <h1 className="font-semiwide text-2xl font-bold tracking-[-0.01em] text-ink">Password changed</h1>
           <p className="mt-2 text-sm text-gray-600">Use your new password next time you sign in.</p>
           <Button size="lg" className="mt-6 w-full" onClick={() => navigate('/dashboard', { replace: true })}>
-            Go to your dashboard <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            Go to your dashboard
           </Button>
         </div>
       </AuthLayout>
@@ -70,7 +70,7 @@ export function ResetPasswordPage() {
     return (
       <AuthLayout>
         <div className="w-full max-w-sm text-center">
-          <h1 className="text-2xl font-bold text-gray-900">This link has expired</h1>
+          <h1 className="font-semiwide text-2xl font-bold tracking-[-0.01em] text-ink">This link has expired</h1>
           <p className="mt-2 text-sm text-gray-600">
             Password reset links work once and only for a short time. Request a new one and use it straight away.
           </p>
@@ -88,7 +88,7 @@ export function ResetPasswordPage() {
   return (
     <AuthLayout>
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-gray-900">Set a new password</h1>
+        <h1 className="font-semiwide text-2xl font-bold tracking-[-0.01em] text-ink">Set a new password</h1>
         <p className="mt-1.5 text-sm text-gray-600">
           For <strong className="font-medium text-gray-800">{user.email}</strong>
         </p>

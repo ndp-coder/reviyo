@@ -36,7 +36,7 @@ export function ForgotPasswordPage() {
                 <CheckCircle className="h-7 w-7 text-green-700" aria-hidden="true" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 text-center">Check your email</h1>
+            <h1 className="font-semiwide text-2xl font-bold tracking-[-0.01em] text-ink text-center">Check your email</h1>
             <p className="mt-2 text-sm text-gray-600 text-center">
               If an account exists for {email}, we've sent a password reset link.
             </p>
@@ -46,7 +46,7 @@ export function ForgotPasswordPage() {
           </>
         ) : (
           <>
-            <h1 className="text-2xl font-bold text-gray-900">Reset password</h1>
+            <h1 className="font-semiwide text-2xl font-bold tracking-[-0.01em] text-ink">Reset password</h1>
             <p className="mt-1.5 text-sm text-gray-600">
               Enter your email and we'll send you a reset link.
             </p>

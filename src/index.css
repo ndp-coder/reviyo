@@ -1,14 +1,12 @@
+@import '@fontsource-variable/anek-latin/wdth.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply text-gray-900 antialiased;
-    /* System fonts: nothing to download, and every visitor sees the design as
-       tested. ("Inter" was listed here but never loaded, so only people who
-       had it installed saw it.) */
-    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
+    @apply font-sans text-gray-900 antialiased;
   }
 
   /*
@@ -46,6 +44,13 @@
 }
 
 @layer utilities {
+  /* Anek Latin's width axis. The wide cut is for display headlines only. */
+  .font-wide {
+    font-stretch: 118%;
+  }
+  .font-semiwide {
+    font-stretch: 108%;
+  }
   .animate-fade-in {
     animation: fadeIn 0.3s ease-out;
   }

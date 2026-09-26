@@ -19,8 +19,8 @@ const DEFAULT_MARKETING_LINKS: MarketingLink[] = [
   { to: '/pricing', label: 'Pricing' },
 ];
 
-const desktopLink = 'text-sm text-gray-700 hover:text-gray-900';
-const mobileLink = 'block rounded-lg px-3 py-3 text-base font-medium text-gray-800 hover:bg-gray-50';
+const desktopLink = 'text-[15px] text-ink/80 hover:text-ink';
+const mobileLink = 'block rounded-md px-3 py-3 text-base font-medium text-ink hover:bg-paper';
 
 /**
  * Top navigation for public pages. On phones the links move into a menu
@@ -57,14 +57,14 @@ export function MarketingHeader({ links = DEFAULT_MARKETING_LINKS }: { links?: M
       <NavLink
         key={link.label}
         to={link.to ?? '/'}
-        className={({ isActive }) => `${className} ${isActive ? 'font-semibold text-gray-900' : ''}`}
+        className={({ isActive }) => `${className} ${isActive ? 'font-semibold text-ink' : ''}`}
       >
         {link.label}
       </NavLink>
     );
 
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-line bg-paper">
       <nav aria-label="Main" className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link to="/" aria-label="Reviyo home" className="inline-flex">
           <BrandLogo className="h-10 w-auto sm:h-11" />
@@ -75,18 +75,18 @@ export function MarketingHeader({ links = DEFAULT_MARKETING_LINKS }: { links?: M
           {signedIn ? (
             <Link
               to="/dashboard"
-              className="inline-flex min-h-10 items-center rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700"
+              className="inline-flex min-h-10 items-center rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700"
             >
               Go to dashboard
             </Link>
           ) : (
             <>
-              <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-gray-900">
+              <Link to="/login" className="text-[15px] font-medium text-ink/80 hover:text-ink">
                 Sign in
               </Link>
               <Link
                 to="/signup"
-                className="inline-flex min-h-10 items-center rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700"
+                className="inline-flex min-h-10 items-center rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700"
               >
                 Start free trial
               </Link>
@@ -97,7 +97,7 @@ export function MarketingHeader({ links = DEFAULT_MARKETING_LINKS }: { links?: M
         <div className="flex items-center gap-1 md:hidden">
           <Link
             to={signedIn ? '/dashboard' : '/signup'}
-            className="inline-flex min-h-10 items-center whitespace-nowrap rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700"
+            className="inline-flex min-h-10 items-center whitespace-nowrap rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700"
           >
             {signedIn ? 'Dashboard' : 'Start free trial'}
           </Link>
@@ -107,7 +107,7 @@ export function MarketingHeader({ links = DEFAULT_MARKETING_LINKS }: { links?: M
             aria-expanded={open}
             aria-controls="marketing-menu"
             aria-label={open ? 'Close menu' : 'Open menu'}
-            className="flex h-11 w-11 items-center justify-center rounded-lg text-gray-800 hover:bg-gray-100"
+            className="flex h-11 w-11 items-center justify-center rounded-md text-ink hover:bg-white"
           >
             {open ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
           </button>
@@ -115,7 +115,7 @@ export function MarketingHeader({ links = DEFAULT_MARKETING_LINKS }: { links?: M
       </nav>
 
       {open && (
-        <div id="marketing-menu" className="border-t border-gray-200 bg-white px-4 pb-4 pt-2 md:hidden">
+        <div id="marketing-menu" className="border-t border-line bg-white px-4 pb-4 pt-2 md:hidden">
           <ul className="space-y-0.5">
             {links.map((link) => (
               <li key={link.label}>{renderLink(link, mobileLink)}</li>

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
-import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { branding } from '@/config/branding';
 import { legal } from '@/config/legal';
@@ -72,7 +72,7 @@ export function SignupPage() {
     return (
       <AuthLayout>
         <div className="w-full max-w-sm text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Check your email</h1>
+          <h1 className="font-semiwide text-2xl font-bold tracking-[-0.01em] text-ink">Check your email</h1>
           <p className="mt-2 text-sm text-gray-700">
             We sent a confirmation link to <strong>{confirmationSentTo}</strong>. Open it on this device — it
             takes you straight to setting up your business.
@@ -102,14 +102,14 @@ export function SignupPage() {
   return (
     <AuthLayout>
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-gray-900">Start your {legal.trialDays}-day free trial</h1>
+        <h1 className="font-semiwide text-2xl font-bold tracking-[-0.01em] text-ink">Start your {legal.trialDays}-day free trial</h1>
         <p className="mt-1.5 text-sm text-gray-600">Create your {branding.name} account with your email.</p>
 
         {/* What happens after this form, including when money is involved, so
             nothing later comes as a surprise. */}
-        <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950">
-          <p className="font-medium">What happens next</p>
-          <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-blue-900">
+        <div className="mt-6 border-l-2 border-blue-600 pl-4 text-sm">
+          <p className="font-semibold text-ink">What happens next</p>
+          <ol className="mt-1.5 list-decimal space-y-1 pl-4 leading-relaxed text-muted">
             <li>Add your business name, Google link, and review topics — about 3 minutes.</li>
             <li>Verify UPI or a card with ₹1, refunded straight away. Your {legal.trialDays}-day trial starts.</li>
             <li>Print your QR code. Nothing more is charged until the trial ends; cancel any time before.</li>
@@ -155,7 +155,7 @@ export function SignupPage() {
 
           {/* What we collect and why, stated before the account is created —
               the notice DPDPA s.5 requires to accompany consent. */}
-          <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-xs leading-relaxed text-gray-700">
+          <p className="text-xs leading-relaxed text-muted">
             We store your email to run your account, and your business details to build your
             review page. We do not sell your data and we serve no advertising. Full detail is in the{' '}
             <Link
@@ -166,7 +166,7 @@ export function SignupPage() {
               Privacy Policy
             </Link>
             .
-          </div>
+          </p>
 
           <ConsentCheckbox
             checked={acceptedTerms}
@@ -212,7 +212,7 @@ export function SignupPage() {
           )}
 
           <Button type="submit" size="lg" loading={submitting} className="w-full">
-            Create account and set up <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            Create account and set up
           </Button>
         </form>
 

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
-import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { branding } from '@/config/branding';
 import { AuthLayout } from './AuthLayout';
@@ -33,7 +33,7 @@ export function LoginPage() {
   return (
     <AuthLayout>
       <div className="w-full max-w-sm animate-slide-up">
-        <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
+        <h1 className="font-semiwide text-2xl font-bold tracking-[-0.01em] text-ink">Welcome back</h1>
         <p className="mt-1.5 text-sm text-gray-600">Sign in to your {branding.name} dashboard.</p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
@@ -66,7 +66,7 @@ export function LoginPage() {
           {error && <Alert variant="error">{error}</Alert>}
 
           <Button type="submit" size="lg" loading={submitting} className="w-full">
-            Sign in <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            Sign in
           </Button>
         </form>
 

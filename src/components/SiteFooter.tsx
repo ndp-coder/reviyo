@@ -23,29 +23,29 @@ export function SiteFooter() {
   const showCin = legal.cin && !isPlaceholder(legal.cin);
 
   return (
-    <footer className="border-t border-gray-200 bg-gray-50 py-10 px-6">
+    <footer className="border-t border-line bg-paper py-10 px-6">
       <div className="max-w-6xl mx-auto">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <BrandLogo className="h-10 w-auto" />
-            <p className="mt-3 text-sm text-gray-600 max-w-xs">{branding.tagline}</p>
+            <p className="mt-3 text-sm text-muted max-w-xs">{branding.tagline}</p>
           </div>
 
           <nav aria-label="Product">
-            <h2 className="text-sm font-semibold text-gray-900">Product</h2>
+            <h2 className="text-sm font-semibold text-ink">Product</h2>
             <ul className="mt-3 space-y-2">
               <li>
-                <Link to="/pricing" className="text-sm text-gray-600 underline underline-offset-2 hover:text-gray-900">
+                <Link to="/pricing" className="text-sm text-muted underline decoration-line underline-offset-4 hover:text-ink hover:decoration-ink">
                   Pricing
                 </Link>
               </li>
               <li>
-                <Link to={TOOL_PATH} className="text-sm text-gray-600 underline underline-offset-2 hover:text-gray-900">
+                <Link to={TOOL_PATH} className="text-sm text-muted underline decoration-line underline-offset-4 hover:text-ink hover:decoration-ink">
                   Free Google review link generator
                 </Link>
               </li>
               <li>
-                <Link to="/for" className="text-sm text-gray-600 underline underline-offset-2 hover:text-gray-900">
+                <Link to="/for" className="text-sm text-muted underline decoration-line underline-offset-4 hover:text-ink hover:decoration-ink">
                   Google reviews by industry
                 </Link>
                 <ul className="mt-2 space-y-1.5 pl-3">
@@ -53,7 +53,7 @@ export function SiteFooter() {
                     <li key={industry.slug}>
                       <Link
                         to={`/for/${industry.slug}`}
-                        className="text-xs text-gray-600 hover:text-gray-900 hover:underline underline-offset-2"
+                        className="text-xs text-muted hover:text-ink hover:underline underline-offset-2"
                       >
                         {industry.plural.replace(/^\w/, (c) => c.toUpperCase())}
                       </Link>
@@ -65,13 +65,13 @@ export function SiteFooter() {
           </nav>
 
           <nav aria-label="Legal and policies">
-            <h2 className="text-sm font-semibold text-gray-900">Policies</h2>
+            <h2 className="text-sm font-semibold text-ink">Policies</h2>
             <ul className="mt-3 space-y-2">
               {legalLinks.map((link) => (
                 <li key={link.to}>
                   <Link
                     to={link.to}
-                    className="text-sm text-gray-600 underline underline-offset-2 hover:text-gray-900"
+                    className="text-sm text-muted underline decoration-line underline-offset-4 hover:text-ink hover:decoration-ink"
                   >
                     {link.label}
                   </Link>
@@ -81,14 +81,14 @@ export function SiteFooter() {
           </nav>
 
           <div>
-            <h2 className="text-sm font-semibold text-gray-900">Business details</h2>
-            <address className="mt-3 not-italic text-sm text-gray-600 space-y-1">
+            <h2 className="text-sm font-semibold text-ink">Business details</h2>
+            <address className="mt-3 not-italic text-sm text-muted space-y-1">
               <p>{displayValue(legal.legalName)}</p>
               <p className="whitespace-pre-line">{displayValue(legal.address)}</p>
               <p>
                 <a
                   href={`mailto:${legal.supportEmail}`}
-                  className="underline underline-offset-2 hover:text-gray-900"
+                  className="underline decoration-line underline-offset-4 hover:text-ink hover:decoration-ink"
                 >
                   {displayValue(legal.supportEmail)}
                 </a>
@@ -96,7 +96,7 @@ export function SiteFooter() {
               <p>
                 <a
                   href={`tel:${legal.supportPhone.replace(/\s+/g, '')}`}
-                  className="underline underline-offset-2 hover:text-gray-900"
+                  className="underline decoration-line underline-offset-4 hover:text-ink hover:decoration-ink"
                 >
                   {displayValue(legal.supportPhone)}
                 </a>
@@ -107,14 +107,14 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-8 border-t border-gray-200 pt-6 space-y-3">
-          <p className="text-xs text-gray-600 max-w-3xl">
+        <div className="mt-8 border-t border-line pt-6 space-y-3">
+          <p className="text-xs text-muted max-w-3xl">
             {branding.name} helps customers write their own reviews from their own input. The AI
             does not invent experiences, and the customer always edits and posts the review
             themselves. {branding.name} is an independent product and is not affiliated with,
             endorsed by, or sponsored by Google. Google and Google Maps are trademarks of Google LLC.
           </p>
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-muted">
             © {new Date().getFullYear()} {displayValue(legal.legalName)}. All rights reserved.
           </p>
         </div>
