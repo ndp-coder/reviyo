@@ -339,6 +339,9 @@ export function CustomerReviewPage() {
       });
 
       if (result.error || !result.review) {
+        // The server's reason goes to the console for whoever is debugging
+        // (for example "Invalid rating" from an out-of-date deployment).
+        console.error(`Review draft failed (${result.status ?? 'no response'}): ${result.error ?? 'empty draft'}`);
         // The function's own wording ("Rate limit exceeded") is written for
         // developers; customers get what happened and what they can do.
         if (result.status === 429) {
