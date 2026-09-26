@@ -107,6 +107,11 @@ export function CustomerReviewPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  // Set once the drafting limit is hit (HTTP 429): asking again would only fail.
+  const [aiLimitReached, setAiLimitReached] = useState(false);
+  // True when the customer writes the review in their own words instead of
+  // using an AI draft — the fallback whenever drafting is unavailable.
+  const [ownDraft, setOwnDraft] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -313,12 +318,26 @@ export function CustomerReviewPage() {
       });
 
       if (result.error || !result.review) {
-        setAiError(result.error || 'Could not generate a review. Please try again.');
+        // The function's own wording ("Rate limit exceeded") is written for
+        // developers; customers get what happened and what they can do.
+        if (result.status === 429) {
+          setAiLimitReached(true);
+          setAiError(
+            isRegen
+              ? 'That’s as many new drafts as we can write for this visit.'
+              : 'Our review writer is busy right now.'
+          );
+        } else {
+          setAiError('The draft didn’t come through.');
+        }
         setStep('review');
         setAiLoading(false);
         return;
       }
 
+      // A draft came back, so drafting is available again.
+      setAiLimitReached(false);
+      setOwnDraft(false);
       setGeneratedReview(result.review);
       setEditableReview(result.review);
       setIsEditing(false);
@@ -331,11 +350,22 @@ export function CustomerReviewPage() {
       track(bizInfo.business_slug, bizInfo.session_token, isRegen ? 'review_regenerated' : 'review_generated', { style });
       setStep('review');
     } catch {
-      setAiError('Something went wrong. Please try again.');
+      setAiError('We couldn’t reach our review writer. Check your connection.');
       setStep('review');
     }
     setAiLoading(false);
   }, [bizInfo, rating, selectedTopics, topics, comment, aiLoading]);
+
+  // Fallback when no AI draft is available: the customer writes the review
+  // themselves, starting from their own comment, and can still post it.
+  const writeOwnReview = () => {
+    setOwnDraft(true);
+    setAiError(null);
+    setGeneratedReview('');
+    setEditableReview(comment.trim());
+    setIsEditing(true);
+    goTo('review');
+  };
 
   // Runs synchronously inside the tap. The Google link itself is a real <a
   // target="_blank">, so the browser opens it as part of the same tap; opening
@@ -721,21 +751,34 @@ export function CustomerReviewPage() {
   }
 
   // ===== Review step, when no draft could be written =====
-  if (step === 'review' && !generatedReview) {
+  // A missing draft must never stop the customer from posting: writing it in
+  // their own words is always offered, and is the main action once the
+  // drafting limit has been reached (retrying would only fail again).
+  if (step === 'review' && !generatedReview && !ownDraft) {
     return (
       <Screen business={brand} step={step}>
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900">We couldn’t write your draft</h1>
           <Alert variant="error" className="mt-4 text-left">
-            {aiError ?? 'The draft didn’t come through. Please try again.'}
+            {aiError ?? 'The draft didn’t come through.'}{' '}
+            {aiLimitReached
+              ? 'You can write the review in your own words instead — it only takes a minute.'
+              : 'Try again, or write the review in your own words.'}
           </Alert>
-          <div className="mt-6 flex items-center gap-3">
-            <Button variant="ghost" onClick={() => goTo('comment')}>
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
+          <div className="mt-6 space-y-3">
+            <Button className="w-full" variant={aiLimitReached ? 'primary' : 'outline'} onClick={writeOwnReview}>
+              <Edit3 className="h-4 w-4" aria-hidden="true" /> Write it myself
             </Button>
-            <Button className="flex-1" onClick={() => generateAIReview('standard')}>
-              <RefreshCw className="h-4 w-4" aria-hidden="true" /> Try again
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" onClick={() => goTo('comment')}>
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
+              </Button>
+              {!aiLimitReached && (
+                <Button className="flex-1" onClick={() => generateAIReview('standard')}>
+                  <RefreshCw className="h-4 w-4" aria-hidden="true" /> Try again
+                </Button>
+              )}
+            </div>
           </div>
           <button
             type="button"
@@ -753,20 +796,23 @@ export function CustomerReviewPage() {
   if (step === 'review') {
     return (
       <Screen business={brand} step={step} wide>
-        <h1 className="text-center text-2xl font-bold text-gray-900">Your draft review</h1>
+        <h1 className="text-center text-2xl font-bold text-gray-900">{ownDraft ? 'Your review' : 'Your draft review'}</h1>
         <p className="mt-1.5 text-center text-sm text-gray-600">
-          Read it, change anything that isn&apos;t right, then copy and post it on Google.
+          {ownDraft
+            ? 'Write a few sentences about your visit, then copy and post it on Google.'
+            : 'Read it, change anything that isn’t right, then copy and post it on Google.'}
         </p>
 
         {aiError && (
           <Alert variant="error" className="mt-4">
-            {aiError} Your previous draft is below.
+            {aiError} Your current draft is below — you can still edit it yourself.
           </Alert>
         )}
 
         {/* Transparency about machine-generated text. The customer is about to
             publish this under their own name, so they need to know an AI wrote
             the first draft and that they are responsible for its accuracy. */}
+        {!ownDraft && (
         <p className="mt-4 flex items-start gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-xs leading-relaxed text-amber-900">
           <Sparkles className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
           <span>
@@ -775,11 +821,13 @@ export function CustomerReviewPage() {
             publishing it.
           </span>
         </p>
+        )}
 
         <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
           {isEditing ? (
             <Textarea
-              label="Edit your review"
+              label={ownDraft ? 'Your review' : 'Edit your review'}
+              placeholder={ownDraft ? 'e.g. Friendly staff and the treatment was quick and painless.' : undefined}
               value={editableReview}
               onChange={(e) => setEditableReview(e.target.value)}
               rows={7}
@@ -796,6 +844,8 @@ export function CustomerReviewPage() {
         {/* Review controls. Every label says what the button will do to the
             draft, so it reads correctly out of context in a screen reader's
             element list. Editing comes first: it keeps the customer's own words. */}
+        {/* Own words: the text box stays open, and there is nothing for AI to change. */}
+        {!ownDraft && (
         <div role="group" aria-label="Change this draft" className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <Button
             variant={isEditing ? 'primary' : 'outline'}
@@ -809,20 +859,32 @@ export function CustomerReviewPage() {
             <Edit3 className="h-3.5 w-3.5" aria-hidden="true" />
             {isEditing ? 'Done editing' : 'Edit it myself'}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => generateAIReview('shorter', true)} disabled={aiLoading}>
-            Make it shorter
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => generateAIReview('detailed', true)} disabled={aiLoading}>
-            Add more detail
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => generateAIReview('standard', true)} disabled={aiLoading}>
-            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> Another version
-          </Button>
+          {/* Hidden once the drafting limit is reached: they would only fail. */}
+          {!aiLimitReached && (
+            <>
+              <Button variant="outline" size="sm" onClick={() => generateAIReview('shorter', true)} disabled={aiLoading}>
+                Make it shorter
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => generateAIReview('detailed', true)} disabled={aiLoading}>
+                Add more detail
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => generateAIReview('standard', true)} disabled={aiLoading}>
+                <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> Another version
+              </Button>
+            </>
+          )}
         </div>
+        )}
 
         {/* Copy & Open Google */}
         <div className="mt-6 space-y-3">
-          {googleReviewUrl ? (
+          {isEditing && !editableReview.trim() ? (
+            // Nothing to copy yet. (A link cannot be disabled, so this is a button.)
+            <Button size="lg" className="w-full" disabled>
+              <Copy className="h-5 w-5" aria-hidden="true" />
+              {googleReviewUrl ? 'Copy review and open Google' : 'Copy review'}
+            </Button>
+          ) : googleReviewUrl ? (
             <a
               href={googleReviewUrl}
               target="_blank"

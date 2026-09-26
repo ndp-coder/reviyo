@@ -24,7 +24,7 @@ export async function generateReview(
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     const message = errorData.error ?? `Request failed (${response.status})`;
-    return { review: '', error: message };
+    return { review: '', error: message, status: response.status };
   }
 
   const data = await response.json();

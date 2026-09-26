@@ -130,6 +130,8 @@ export interface AIReviewRequest {
 export interface AIReviewResponse {
   review: string;
   error?: string;
+  /** HTTP status of a failed request; 429 means the drafting limit was reached. */
+  status?: number;
 }
 
 export type PaymentOrderStatus = 'created' | 'attempted' | 'paid' | 'failed';
