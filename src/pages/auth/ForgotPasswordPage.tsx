@@ -28,7 +28,7 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthLayout>
-      <div className="w-full max-w-sm animate-slide-up">
+      <div className="w-full max-w-sm">
         {sent ? (
           <>
             <div className="flex justify-center mb-4" role="status" aria-live="polite">
@@ -40,7 +40,7 @@ export function ForgotPasswordPage() {
             <p className="mt-2 text-sm text-gray-600 text-center">
               If an account exists for {email}, we've sent a password reset link.
             </p>
-            <Link to="/login" className="mt-6 flex items-center justify-center gap-1.5 text-sm text-blue-700 hover:text-blue-800 font-medium underline underline-offset-2">
+            <Link to="/login" className="mt-6 flex items-center justify-center gap-1.5 text-sm text-brand-700 hover:text-brand-800 font-medium underline underline-offset-2">
               <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to sign in
             </Link>
           </>
@@ -73,7 +73,7 @@ export function ForgotPasswordPage() {
               </Button>
             </form>
 
-            <Link to="/login" className="mt-6 flex items-center justify-center gap-1.5 text-sm text-blue-700 hover:text-blue-800 font-medium underline underline-offset-2">
+            <Link to="/login" className="mt-6 flex items-center justify-center gap-1.5 text-sm text-brand-700 hover:text-brand-800 font-medium underline underline-offset-2">
               <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to sign in
             </Link>
           </>

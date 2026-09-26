@@ -24,7 +24,7 @@ export function PrivacyPolicyPage() {
         <p>
           Questions about this policy or about your data go to{' '}
           <a
-            className="text-blue-700 underline underline-offset-2"
+            className="text-brand-700 underline underline-offset-2"
             href={`mailto:${legal.privacyEmail}`}
           >
             {displayValue(legal.privacyEmail)}
@@ -171,7 +171,7 @@ export function PrivacyPolicyPage() {
           Our AI provider&rsquo;s own privacy terms apply at the moment of processing. You can read
           them at{' '}
           <a
-            className="text-blue-700 underline underline-offset-2"
+            className="text-brand-700 underline underline-offset-2"
             href={displayValue(legal.aiProviderPolicyUrl)}
             target="_blank"
             rel="noopener noreferrer"
@@ -301,7 +301,7 @@ export function PrivacyPolicyPage() {
           items={[
             <>
               <strong>Business owners:</strong> you can correct your own data at any time in{' '}
-              <Link className="text-blue-700 underline underline-offset-2" to="/dashboard/settings">
+              <Link className="text-brand-700 underline underline-offset-2" to="/dashboard/settings">
                 Settings
               </Link>
               . To download everything we hold, or to delete your account and all of its data, use
@@ -312,7 +312,7 @@ export function PrivacyPolicyPage() {
               your session again — there is nothing tying it to you. If you want a specific submission
               deleted sooner than the {legal.sessionRetentionDays}-day schedule, email{' '}
               <a
-                className="text-blue-700 underline underline-offset-2"
+                className="text-brand-700 underline underline-offset-2"
                 href={`mailto:${legal.privacyEmail}`}
               >
                 {displayValue(legal.privacyEmail)}
@@ -330,14 +330,14 @@ export function PrivacyPolicyPage() {
 
       <Clause id="grievance" heading="9. Grievance redressal">
         <p>Our grievance officer under section 13 of the DPDPA is:</p>
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
           <address className="not-italic space-y-1">
             <p className="font-semibold text-gray-900">{displayValue(legal.grievanceOfficerName)}</p>
             <p>{displayValue(legal.legalName)}</p>
             <p className="whitespace-pre-line">{displayValue(legal.address)}</p>
             <p>
               <a
-                className="text-blue-700 underline underline-offset-2"
+                className="text-brand-700 underline underline-offset-2"
                 href={`mailto:${legal.grievanceEmail}`}
               >
                 {displayValue(legal.grievanceEmail)}
@@ -364,7 +364,7 @@ export function PrivacyPolicyPage() {
           from anyone under 18, we do not track or profile anyone on the review page, and we serve no
           advertising. If you believe a child has submitted data through {N}, email{' '}
           <a
-            className="text-blue-700 underline underline-offset-2"
+            className="text-brand-700 underline underline-offset-2"
             href={`mailto:${legal.privacyEmail}`}
           >
             {displayValue(legal.privacyEmail)}
@@ -398,7 +398,7 @@ export function PrivacyPolicyPage() {
           browser storage we use is what is strictly necessary to keep a signed-in business owner
           signed in. The full detail — and why we therefore do not show you a cookie consent banner —
           is in our{' '}
-          <Link className="text-blue-700 underline underline-offset-2" to="/cookies">
+          <Link className="text-brand-700 underline underline-offset-2" to="/cookies">
             Cookie Policy
           </Link>
           .

@@ -29,7 +29,7 @@ export function ConsentCheckbox({ checked, onChange, children, error }: ConsentC
     <div>
       <label
         htmlFor={id}
-        className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition-colors ${
+        className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3.5 transition-colors ${
           error
             ? 'border-red-400 bg-red-50'
             : 'border-gray-300 bg-white hover:border-gray-400'
@@ -42,7 +42,7 @@ export function ConsentCheckbox({ checked, onChange, children, error }: ConsentC
           onChange={(e) => onChange(e.target.checked)}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
-          className="mt-0.5 h-5 w-5 flex-shrink-0 cursor-pointer rounded border-gray-400 text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+          className="mt-0.5 h-5 w-5 flex-shrink-0 cursor-pointer rounded border-gray-400 text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
         />
         <span className="text-sm leading-relaxed text-gray-700">{children}</span>
       </label>

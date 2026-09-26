@@ -141,7 +141,7 @@ export function AnalyticsPage() {
             <div key={day.date} className="flex-1 flex flex-col items-center gap-2">
               <div className="w-full flex items-end h-24">
                 <div
-                  className="w-full rounded-t-md bg-blue-600 transition-[height] duration-500"
+                  className="w-full rounded-t-md bg-brand-900 transition-[height] duration-500"
                   style={{ height: `${(day.count / maxDaily) * 100}%`, minHeight: day.count > 0 ? '8px' : '0' }}
                 />
               </div>
@@ -191,7 +191,7 @@ export function AnalyticsPage() {
             title="Only one QR code so far"
             description="Make a separate QR code for each table, desk, or staff member, or send your link on WhatsApp — this table then shows which one brings in the most reviews."
             action={
-              <Link to="/dashboard/qr" className="text-sm font-medium text-blue-700 underline underline-offset-2">
+              <Link to="/dashboard/qr" className="text-sm font-medium text-brand-700 underline underline-offset-2">
                 Create QR codes
               </Link>
             }
@@ -220,7 +220,7 @@ export function AnalyticsPage() {
                   <span className="w-28 truncate text-sm text-gray-700 sm:w-40" title={topic.label}>{topic.label}</span>
                   <div className="flex-1 h-3 rounded-full bg-gray-100 overflow-hidden" aria-hidden="true">
                     <div
-                      className="h-full rounded-full bg-blue-600 transition-[width] duration-500"
+                      className="h-full rounded-full bg-brand-900 transition-[width] duration-500"
                       style={{ width: `${(topic.count / maxCount) * 100}%` }}
                     />
                   </div>
@@ -244,7 +244,7 @@ export function AnalyticsPage() {
             description="Short, plain observations appear here once a few customers have reviewed."
           />
         ) : (
-          <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700 marker:text-blue-600">
+          <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700 marker:text-brand-600">
             {insights.map((insight) => (
               <li key={insight}>{insight}</li>
             ))}

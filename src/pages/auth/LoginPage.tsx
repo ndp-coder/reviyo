@@ -32,7 +32,7 @@ export function LoginPage() {
 
   return (
     <AuthLayout>
-      <div className="w-full max-w-sm animate-slide-up">
+      <div className="w-full max-w-sm">
         <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
         <p className="mt-1.5 text-sm text-gray-600">Sign in to your {branding.name} dashboard.</p>
 
@@ -71,11 +71,11 @@ export function LoginPage() {
         </form>
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm">
-          <Link to="/forgot-password" className="text-blue-700 hover:text-blue-800 font-medium underline underline-offset-2">
+          <Link to="/forgot-password" className="text-brand-700 hover:text-brand-800 font-medium underline underline-offset-2">
             Forgot password?
           </Link>
           <span className="text-gray-600">
-            No account? <Link to="/signup" className="text-blue-700 hover:text-blue-800 font-medium underline underline-offset-2">Sign up</Link>
+            No account? <Link to="/signup" className="text-brand-700 hover:text-brand-800 font-medium underline underline-offset-2">Sign up</Link>
           </span>
         </div>
       </div>

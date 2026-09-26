@@ -20,19 +20,19 @@ export function PlanCards({ headingLevel = 'h3' }: { headingLevel?: 'h2' | 'h3' 
           return (
             <div
               key={planId}
-              className={`flex flex-col rounded-2xl border bg-white p-6 sm:p-8 ${
-                bestValue ? 'border-blue-300 ring-1 ring-blue-200' : 'border-gray-200'
+              className={`flex flex-col rounded-xl border bg-white p-6 sm:p-8 ${
+                bestValue ? 'border-brand-900 ring-1 ring-brand-900' : 'border-gray-300'
               }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <Heading className="text-lg font-bold text-gray-900">{plan.label}</Heading>
                 {bestValue && (
-                  <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
+                  <span className="rounded-full bg-accent-100 px-2.5 py-0.5 text-xs font-semibold text-accent-800">
                     Save {formatRupees(YEARLY_SAVING)}
                   </span>
                 )}
               </div>
-              <p className="mt-3 text-4xl font-bold tabular-nums text-gray-900">{formatRupees(plan.price)}</p>
+              <p className="mt-3 font-display text-5xl font-bold tabular-nums tracking-tight text-gray-900">{formatRupees(plan.price)}</p>
               <p className="mt-1 text-sm text-gray-600">
                 for {plan.months} months · works out to {perMonth(planId)}
               </p>
@@ -47,12 +47,12 @@ export function PlanCards({ headingLevel = 'h3' }: { headingLevel?: 'h2' | 'h3' 
         })}
       </div>
 
-      <div className="mt-6 rounded-2xl border border-gray-200 bg-gray-50 p-6">
+      <div className="mt-6 rounded-xl border border-gray-300 bg-white p-6">
         <p className="text-sm font-semibold text-gray-900">Every plan includes</p>
         <ul className="mt-3 grid gap-2.5 sm:grid-cols-2">
           {PLAN_FEATURES.map((feature) => (
             <li key={feature} className="flex items-start gap-2 text-sm text-gray-700">
-              <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-700" aria-hidden="true" /> {feature}
+              <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-accent-700" aria-hidden="true" /> {feature}
             </li>
           ))}
         </ul>

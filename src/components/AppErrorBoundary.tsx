@@ -29,7 +29,7 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
       <main className="min-h-screen bg-slate-50 px-6 py-16">
         <div
           role="alert"
-          className="mx-auto flex max-w-lg flex-col items-center rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm"
+          className="mx-auto flex max-w-lg flex-col items-center rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm"
         >
           <a href="/" aria-label="Reviyo home">
             <BrandLogo className="h-12 w-auto" />
@@ -42,13 +42,13 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+              className="rounded-lg bg-brand-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
             >
               Reload page
             </button>
             <a
               href={`mailto:${legal.supportEmail}`}
-              className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+              className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
             >
               Contact support
             </a>

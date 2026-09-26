@@ -89,7 +89,7 @@ export function RefundPolicyPage() {
         <p>
           Email{' '}
           <a
-            className="text-blue-700 underline underline-offset-2"
+            className="text-brand-700 underline underline-offset-2"
             href={`mailto:${legal.supportEmail}?subject=Refund%20request`}
           >
             {displayValue(legal.supportEmail)}
@@ -173,7 +173,7 @@ export function RefundPolicyPage() {
         <p>
           Refund questions:{' '}
           <a
-            className="text-blue-700 underline underline-offset-2"
+            className="text-brand-700 underline underline-offset-2"
             href={`mailto:${legal.supportEmail}`}
           >
             {displayValue(legal.supportEmail)}
@@ -183,11 +183,11 @@ export function RefundPolicyPage() {
         <p>
           Unhappy with how we handled a refund? Escalate it to our grievance officer — the details are
           in clause 9 of the{' '}
-          <Link className="text-blue-700 underline underline-offset-2" to="/privacy">
+          <Link className="text-brand-700 underline underline-offset-2" to="/privacy">
             Privacy Policy
           </Link>{' '}
           and on our{' '}
-          <Link className="text-blue-700 underline underline-offset-2" to="/contact">
+          <Link className="text-brand-700 underline underline-offset-2" to="/contact">
             Contact page
           </Link>
           . You may also approach a consumer forum with jurisdiction where you live.

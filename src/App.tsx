@@ -39,7 +39,7 @@ const CustomerReviewPage = lazy(() => import('@/pages/customer/CustomerReviewPag
 function PageLoader() {
   return (
     <div className="min-h-screen flex items-center justify-center" role="status">
-      <Spinner className="text-blue-600" />
+      <Spinner className="text-brand-600" />
       <span className="sr-only">Loading page</span>
     </div>
   );

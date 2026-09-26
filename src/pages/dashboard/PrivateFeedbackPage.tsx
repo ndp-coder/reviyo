@@ -92,13 +92,13 @@ export function PrivateFeedbackPage() {
             onClick={() => setFilter(key)}
             className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors ${
               filter === key
-                ? 'bg-blue-700 text-white'
+                ? 'bg-brand-900 text-white'
                 : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
             }`}
           >
             {label}
             {!loading && (
-              <span className={`tabular-nums text-xs ${filter === key ? 'text-blue-100' : 'text-gray-600'}`}>{counts[key]}</span>
+              <span className={`tabular-nums text-xs ${filter === key ? 'text-brand-100' : 'text-gray-600'}`}>{counts[key]}</span>
             )}
           </button>
         ))}
@@ -129,7 +129,7 @@ export function PrivateFeedbackPage() {
                 title="No private feedback yet"
                 description="On your review page, customers can choose to message you privately instead of posting on Google. Those messages land here."
                 action={
-                  <Link to="/dashboard/qr" className="text-sm font-medium text-blue-700 underline underline-offset-2">
+                  <Link to="/dashboard/qr" className="text-sm font-medium text-brand-700 underline underline-offset-2">
                     Preview your review page
                   </Link>
                 }
@@ -144,7 +144,7 @@ export function PrivateFeedbackPage() {
           </Card>
         ) : (
           filtered.map((fb) => (
-            <Card key={fb.id} className={`p-4 sm:p-5 ${fb.status === 'new' ? 'border-blue-200' : ''}`}>
+            <Card key={fb.id} className={`p-4 sm:p-5 ${fb.status === 'new' ? 'border-brand-200' : ''}`}>
               <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
                 {fb.rating && (
                   <div className="flex items-center gap-0.5">

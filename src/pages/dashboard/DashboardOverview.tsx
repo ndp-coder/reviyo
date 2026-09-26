@@ -132,7 +132,7 @@ export function DashboardOverview() {
               <li key={step.label} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
                 <span
                   className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
-                    step.done ? 'bg-green-100 text-green-700' : 'bg-blue-50 text-blue-700'
+                    step.done ? 'bg-green-100 text-green-700' : 'bg-brand-50 text-brand-700'
                   }`}
                   aria-hidden="true"
                 >
@@ -148,7 +148,7 @@ export function DashboardOverview() {
                 {!step.done && (
                   <Link
                     to={step.to}
-                    className="inline-flex min-h-9 flex-shrink-0 items-center gap-1 rounded-lg px-2 text-sm font-medium text-blue-700 hover:bg-blue-50"
+                    className="inline-flex min-h-9 flex-shrink-0 items-center gap-1 rounded-lg px-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
                   >
                     {step.cta} <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
@@ -176,12 +176,12 @@ export function DashboardOverview() {
             <Link
               key={kpi.label}
               to={kpi.to}
-              className="rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:border-gray-300 hover:bg-gray-50 sm:p-5"
+              className="rounded-xl border border-gray-200 bg-white p-4 transition-colors hover:border-gray-300 hover:bg-gray-50 sm:p-5"
             >
               {body}
             </Link>
           ) : (
-            <Card key={kpi.label} className={`p-4 sm:p-5 ${i === 0 ? 'border-blue-200 bg-blue-50/40' : ''}`}>
+            <Card key={kpi.label} className={`p-4 sm:p-5 ${i === 0 ? 'border-brand-200 bg-brand-50/40' : ''}`}>
               {body}
             </Card>
           );
@@ -208,7 +208,7 @@ export function DashboardOverview() {
                 </div>
                 <div className="h-2.5 overflow-hidden rounded-full bg-gray-100" aria-hidden="true">
                   <div
-                    className="h-full rounded-full bg-blue-600 transition-[width] duration-500"
+                    className="h-full rounded-full bg-brand-900 transition-[width] duration-500"
                     style={{ width: `${(stage.value / maxValue) * 100}%` }}
                   />
                 </div>
@@ -228,7 +228,7 @@ export function DashboardOverview() {
           <div className="mb-4 flex items-center gap-2">
             <MessageSquare className="h-4 w-4 text-gray-600" aria-hidden="true" />
             <h2 className="text-sm font-semibold text-gray-900">Recent private feedback</h2>
-            <Link to="/dashboard/feedback" className="ml-auto inline-flex min-h-9 items-center rounded-lg px-2 text-sm font-medium text-blue-700 hover:bg-blue-50">
+            <Link to="/dashboard/feedback" className="ml-auto inline-flex min-h-9 items-center rounded-lg px-2 text-sm font-medium text-brand-700 hover:bg-brand-50">
               View all<span className="sr-only"> private feedback</span>
             </Link>
           </div>

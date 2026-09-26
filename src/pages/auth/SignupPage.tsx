@@ -82,7 +82,7 @@ export function SignupPage() {
             <button
               type="button"
               onClick={() => setConfirmationSentTo(null)}
-              className="font-medium text-blue-700 underline underline-offset-2"
+              className="font-medium text-brand-700 underline underline-offset-2"
             >
               try a different email
             </button>
@@ -90,7 +90,7 @@ export function SignupPage() {
           </p>
           <p className="mt-6 text-sm text-gray-600">
             Already confirmed?{' '}
-            <Link to="/login" className="font-medium text-blue-700 underline underline-offset-2">
+            <Link to="/login" className="font-medium text-brand-700 underline underline-offset-2">
               Sign in
             </Link>
           </p>
@@ -107,9 +107,9 @@ export function SignupPage() {
 
         {/* What happens after this form, including when money is involved, so
             nothing later comes as a surprise. */}
-        <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950">
+        <div className="mt-6 rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-950">
           <p className="font-medium">What happens next</p>
-          <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-blue-900">
+          <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-brand-900">
             <li>Add your business name, Google link, and review topics — about 3 minutes.</li>
             <li>Verify UPI or a card with ₹1, refunded straight away. Your {legal.trialDays}-day trial starts.</li>
             <li>Print your QR code. Nothing more is charged until the trial ends; cancel any time before.</li>
@@ -155,13 +155,13 @@ export function SignupPage() {
 
           {/* What we collect and why, stated before the account is created —
               the notice DPDPA s.5 requires to accompany consent. */}
-          <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-xs leading-relaxed text-gray-700">
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-xs leading-relaxed text-gray-700">
             We store your email to run your account, and your business details to build your
             review page. We do not sell your data and we serve no advertising. Full detail is in the{' '}
             <Link
               to="/privacy"
               target="_blank"
-              className="font-medium text-blue-700 underline underline-offset-2"
+              className="font-medium text-brand-700 underline underline-offset-2"
             >
               Privacy Policy
             </Link>
@@ -180,7 +180,7 @@ export function SignupPage() {
             <Link
               to="/terms"
               target="_blank"
-              className="font-medium text-blue-700 underline underline-offset-2"
+              className="font-medium text-brand-700 underline underline-offset-2"
             >
               Terms &amp; Conditions
             </Link>{' '}
@@ -188,7 +188,7 @@ export function SignupPage() {
             <Link
               to="/privacy"
               target="_blank"
-              className="font-medium text-blue-700 underline underline-offset-2"
+              className="font-medium text-brand-700 underline underline-offset-2"
             >
               Privacy Policy
             </Link>
@@ -218,7 +218,7 @@ export function SignupPage() {
 
         <p className="mt-6 text-center text-sm text-gray-600">
           Already have an account?{' '}
-          <Link to="/login" className="text-blue-700 hover:text-blue-800 font-medium underline underline-offset-2">
+          <Link to="/login" className="text-brand-700 hover:text-brand-800 font-medium underline underline-offset-2">
             Sign in
           </Link>
         </p>

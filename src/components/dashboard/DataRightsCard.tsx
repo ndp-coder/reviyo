@@ -75,7 +75,7 @@ export function DataRightsCard({ businessSlug }: { businessSlug?: string }) {
           hold about you, and you can have it erased. Both are free and take effect immediately.
         </p>
 
-        <div className="mt-5 rounded-xl border border-gray-200 p-4">
+        <div className="mt-5 rounded-lg border border-gray-200 p-4">
           <h3 className="text-sm font-medium text-gray-900">Download a copy of your data</h3>
           <p className="mt-1 text-sm text-gray-600">
             A JSON file with your account, business profile, review topics, customer review sessions,
@@ -113,7 +113,7 @@ export function DataRightsCard({ businessSlug }: { businessSlug?: string }) {
         <p className="mt-2 text-sm text-gray-700">
           <strong>It cannot be undone,</strong> and it does not by itself refund anything — if you
           want a refund too, request it{' '}
-          <Link to="/refunds" className="text-blue-700 underline underline-offset-2">
+          <Link to="/refunds" className="text-brand-700 underline underline-offset-2">
             first
           </Link>
           , while we can still find your records.
@@ -122,7 +122,7 @@ export function DataRightsCard({ businessSlug }: { businessSlug?: string }) {
           One thing is kept: records of payments you actually made — the order reference, amount, and
           date — are retained for 8 years because tax and company law requires it. Nothing else
           survives. This is set out in clause 7 of the{' '}
-          <Link to="/privacy" className="text-blue-700 underline underline-offset-2">
+          <Link to="/privacy" className="text-brand-700 underline underline-offset-2">
             Privacy Policy
           </Link>
           .
@@ -133,7 +133,7 @@ export function DataRightsCard({ businessSlug }: { businessSlug?: string }) {
             <Trash2 className="h-4 w-4" aria-hidden="true" /> Delete my account and all data
           </Button>
         ) : (
-          <div className="mt-5 rounded-xl border border-red-300 bg-red-50 p-4">
+          <div className="mt-5 rounded-lg border border-red-300 bg-red-50 p-4">
             <label
               htmlFor="delete-confirm"
               className="block text-sm font-medium text-red-900"
@@ -191,7 +191,7 @@ export function DataRightsCard({ businessSlug }: { businessSlug?: string }) {
           For anything about your personal data, email{' '}
           <a
             href={`mailto:${legal.privacyEmail}`}
-            className="text-blue-700 underline underline-offset-2"
+            className="text-brand-700 underline underline-offset-2"
           >
             {displayValue(legal.privacyEmail)}
           </a>
@@ -199,13 +199,13 @@ export function DataRightsCard({ businessSlug }: { businessSlug?: string }) {
           DPDPA is{' '}
           <a
             href={`mailto:${legal.grievanceEmail}`}
-            className="text-blue-700 underline underline-offset-2"
+            className="text-brand-700 underline underline-offset-2"
           >
             {displayValue(legal.grievanceEmail)}
           </a>
           , and you can escalate beyond that to the Data Protection Board of India. Full details are
           on our{' '}
-          <Link to="/contact" className="text-blue-700 underline underline-offset-2">
+          <Link to="/contact" className="text-brand-700 underline underline-offset-2">
             Contact page
           </Link>
           .

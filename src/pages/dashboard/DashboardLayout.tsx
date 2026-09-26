@@ -225,7 +225,7 @@ export function DashboardLayout() {
                   key={item.to}
                   aria-disabled="true"
                   title="Renew your plan to use this"
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-500 cursor-not-allowed"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-500 cursor-not-allowed"
                 >
                   <item.icon className="h-4 w-4" aria-hidden="true" />
                   {item.label}
@@ -240,9 +240,9 @@ export function DashboardLayout() {
               end={item.end}
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-blue-50 text-blue-800'
+                    ? 'bg-brand-50 text-brand-800'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`
               }
@@ -250,7 +250,7 @@ export function DashboardLayout() {
               <item.icon className="h-4 w-4" aria-hidden="true" />
               {item.label}
               {item.badge ? (
-                <span className="ml-auto rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold tabular-nums text-white">
+                <span className="ml-auto rounded-full bg-brand-900 px-2 py-0.5 text-xs font-semibold tabular-nums text-white">
                   {item.badge}
                   <span className="sr-only"> new</span>
                 </span>
@@ -264,7 +264,7 @@ export function DashboardLayout() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 w-full"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 w-full"
           >
             <LogOut className="h-4 w-4" aria-hidden="true" /> Sign out
           </button>

@@ -16,7 +16,7 @@ export function ContactPage() {
       summary={`Who operates ${N}, where we are, and how to reach a real person — including the specific route for data-protection grievances.`}
     >
       <Clause id="details" heading="1. Business details">
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-5">
           <dl className="space-y-4">
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide text-gray-600">
@@ -63,9 +63,9 @@ export function ContactPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <a
             href={`mailto:${legal.supportEmail}`}
-            className="flex items-start gap-3 rounded-xl border border-gray-200 p-4 transition-colors hover:border-blue-400 hover:bg-blue-50"
+            className="flex items-start gap-3 rounded-lg border border-gray-200 p-4 transition-colors hover:border-brand-400 hover:bg-brand-50"
           >
-            <Mail className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-700" aria-hidden="true" />
+            <Mail className="mt-0.5 h-5 w-5 flex-shrink-0 text-brand-700" aria-hidden="true" />
             <span>
               <span className="block text-sm font-semibold text-gray-900">Email us</span>
               <span className="mt-0.5 block text-sm text-gray-700">
@@ -75,9 +75,9 @@ export function ContactPage() {
           </a>
           <a
             href={`tel:${legal.supportPhone.replace(/\s+/g, '')}`}
-            className="flex items-start gap-3 rounded-xl border border-gray-200 p-4 transition-colors hover:border-blue-400 hover:bg-blue-50"
+            className="flex items-start gap-3 rounded-lg border border-gray-200 p-4 transition-colors hover:border-brand-400 hover:bg-brand-50"
           >
-            <Phone className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-700" aria-hidden="true" />
+            <Phone className="mt-0.5 h-5 w-5 flex-shrink-0 text-brand-700" aria-hidden="true" />
             <span>
               <span className="block text-sm font-semibold text-gray-900">Call us</span>
               <span className="mt-0.5 block text-sm text-gray-700">
@@ -97,21 +97,21 @@ export function ContactPage() {
 
       <Clause id="right-route" heading="3. The right route for your question">
         <div className="space-y-3">
-          <div className="flex items-start gap-3 rounded-xl border border-gray-200 p-4">
+          <div className="flex items-start gap-3 rounded-lg border border-gray-200 p-4">
             <Receipt className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-600" aria-hidden="true" />
             <div>
               <p className="text-sm font-semibold text-gray-900">Billing, refunds, cancellations</p>
               <p className="mt-1 text-sm text-gray-700">
                 Email{' '}
                 <a
-                  className="text-blue-700 underline underline-offset-2"
+                  className="text-brand-700 underline underline-offset-2"
                   href={`mailto:${legal.supportEmail}?subject=Refund%20request`}
                 >
                   {displayValue(legal.supportEmail)}
                 </a>{' '}
                 with the subject <strong>Refund request</strong>. What to include, and how long it
                 takes, is set out in the{' '}
-                <Link className="text-blue-700 underline underline-offset-2" to="/refunds">
+                <Link className="text-brand-700 underline underline-offset-2" to="/refunds">
                   Refund &amp; Cancellation Policy
                 </Link>
                 .
@@ -119,7 +119,7 @@ export function ContactPage() {
             </div>
           </div>
 
-          <div className="flex items-start gap-3 rounded-xl border border-gray-200 p-4">
+          <div className="flex items-start gap-3 rounded-lg border border-gray-200 p-4">
             <ShieldQuestion
               className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-600"
               aria-hidden="true"
@@ -131,7 +131,7 @@ export function ContactPage() {
               <p className="mt-1 text-sm text-gray-700">
                 Email{' '}
                 <a
-                  className="text-blue-700 underline underline-offset-2"
+                  className="text-brand-700 underline underline-offset-2"
                   href={`mailto:${legal.privacyEmail}`}
                 >
                   {displayValue(legal.privacyEmail)}
@@ -151,14 +151,14 @@ export function ContactPage() {
           data, a payment, or anything else — escalate it to our grievance officer, appointed under
           section 13 of the Digital Personal Data Protection Act, 2023.
         </p>
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-5">
+        <div className="rounded-lg border border-brand-200 bg-brand-50 p-5">
           <address className="not-italic space-y-1 text-sm">
             <p className="font-semibold text-gray-900">{displayValue(legal.grievanceOfficerName)}</p>
             <p className="text-gray-700">Grievance Officer, {displayValue(legal.legalName)}</p>
             <p className="whitespace-pre-line text-gray-700">{displayValue(legal.address)}</p>
             <p>
               <a
-                className="text-blue-700 underline underline-offset-2"
+                className="text-brand-700 underline underline-offset-2"
                 href={`mailto:${legal.grievanceEmail}`}
               >
                 {displayValue(legal.grievanceEmail)}

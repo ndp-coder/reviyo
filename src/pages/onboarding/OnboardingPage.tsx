@@ -269,14 +269,14 @@ export function OnboardingPage() {
   if (checkingExisting) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50" role="status">
-        <Spinner className="text-blue-600" />
+        <Spinner className="text-brand-600" />
         <span className="sr-only">Loading</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-sky-50">
+    <div className="min-h-screen bg-paper">
       {/* Header */}
       <SkipLink />
       <header className="flex items-center justify-between px-4 py-4 sm:px-6 sm:py-5">
@@ -293,7 +293,7 @@ export function OnboardingPage() {
         <div className="mx-auto max-w-xl sm:hidden" aria-hidden="true">
           <div className="h-1.5 rounded-full bg-gray-200">
             <div
-              className="h-full rounded-full bg-blue-600 transition-[width] duration-300"
+              className="h-full rounded-full bg-brand-900 transition-[width] duration-300"
               style={{ width: `${((step + 1) / TOTAL_STEPS) * 100}%` }}
             />
           </div>
@@ -308,13 +308,13 @@ export function OnboardingPage() {
                 <div
                   aria-current={isActive ? 'step' : undefined}
                   className={`flex flex-col items-center gap-1 ${
-                    isActive ? 'text-blue-800' : isDone ? 'text-green-800' : 'text-gray-600'
+                    isActive ? 'text-brand-800' : isDone ? 'text-green-800' : 'text-gray-600'
                   }`}
                 >
                   <div
                     className={`flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors ${
                       isActive
-                        ? 'border-blue-700 bg-blue-50'
+                        ? 'border-brand-700 bg-brand-50'
                         : isDone
                         ? 'border-green-700 bg-green-50'
                         : 'border-gray-400 bg-white'
@@ -367,9 +367,9 @@ export function OnboardingPage() {
                         type="button"
                         aria-pressed={selected}
                         onClick={() => setCategory(cat.value)}
-                        className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-center text-sm font-medium transition-colors ${
+                        className={`flex min-h-11 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors ${
                           selected
-                            ? 'border-blue-700 bg-blue-50 text-blue-800 ring-1 ring-blue-700'
+                            ? 'border-brand-700 bg-brand-50 text-brand-800 ring-1 ring-brand-700'
                             : 'border-gray-300 bg-white text-gray-700 hover:border-gray-500'
                         }`}
                       >
@@ -442,15 +442,15 @@ export function OnboardingPage() {
                     <img
                       src={logoUrl}
                       alt={`Logo preview for ${businessName || 'your business'}`}
-                      className="h-32 w-32 rounded-2xl border border-gray-300 object-cover"
+                      className="h-32 w-32 rounded-xl border border-gray-300 object-cover"
                     />
                     <Button variant="ghost" size="sm" onClick={() => setLogoUrl('')}>
                       <X className="h-4 w-4" aria-hidden="true" /> Remove logo
                     </Button>
                   </div>
                 ) : (
-                  <label htmlFor="onboarding-logo-upload" className="cursor-pointer rounded-2xl">
-                    <div className="flex h-32 w-32 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-400 transition-colors hover:border-blue-600 hover:bg-blue-50/50">
+                  <label htmlFor="onboarding-logo-upload" className="cursor-pointer rounded-xl">
+                    <div className="flex h-32 w-32 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-400 transition-colors hover:border-brand-600 hover:bg-brand-50/50">
                       <Upload className="h-6 w-6 text-gray-600" aria-hidden="true" />
                       <span className="text-xs text-gray-700">Choose image</span>
                     </div>
@@ -482,7 +482,7 @@ export function OnboardingPage() {
               </p>
               <ul className="mt-6 space-y-2">
                 {topics.map((topic, i) => (
-                  <li key={i} className="flex items-center gap-1 rounded-xl border border-gray-300 py-1 pl-3 pr-1">
+                  <li key={i} className="flex items-center gap-1 rounded-lg border border-gray-300 py-1 pl-3 pr-1">
                     <input
                       value={topic}
                       aria-label={`Topic ${i + 1} label`}
@@ -573,7 +573,7 @@ export function OnboardingPage() {
 
               {qrDataUrl ? (
                 <div className="mt-6 flex flex-col items-center">
-                  <div className="rounded-2xl border border-gray-200 bg-white p-4">
+                  <div className="rounded-xl border border-gray-200 bg-white p-4">
                     <img src={qrDataUrl} alt={`QR code linking to your review page at ${reviewUrl}`} className="h-48 w-48" />
                   </div>
                   <div className="mt-3 max-w-xs break-all text-xs text-gray-600">{reviewUrl}</div>
@@ -595,14 +595,14 @@ export function OnboardingPage() {
                   </span>
                 </div>
               ) : (
-                <div className="mx-auto mt-6 h-56 w-56 animate-pulse rounded-2xl bg-gray-100" aria-hidden="true" />
+                <div className="mx-auto mt-6 h-56 w-56 animate-pulse rounded-xl bg-gray-100" aria-hidden="true" />
               )}
             </Card>
           )}
         </div>
 
         {error && (
-          <div role="alert" className="mt-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <div role="alert" className="mt-4 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
             {error}
           </div>
         )}
@@ -650,7 +650,7 @@ export function OnboardingPage() {
             <button
               type="button"
               onClick={() => navigate('/dashboard/billing')}
-              className="font-medium text-blue-700 underline underline-offset-2 hover:text-blue-800"
+              className="font-medium text-brand-700 underline underline-offset-2 hover:text-brand-800"
             >
               Do it later from Billing
             </button>

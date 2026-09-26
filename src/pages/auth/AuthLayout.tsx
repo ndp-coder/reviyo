@@ -12,15 +12,17 @@ const footerLinks = [
 
 export function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-sky-50">
+    <div className="min-h-screen flex flex-col bg-paper">
       <SkipLink />
-      <header className="px-6 py-5">
+      <header className="px-5 py-5 sm:px-6">
         <Link to="/" aria-label="Reviyo home" className="inline-flex rounded-lg">
           <BrandLogo className="h-11 w-auto" />
         </Link>
       </header>
-      <main id="main-content" tabIndex={-1} className="flex-1 flex items-center justify-center px-6 pb-8">
-        {children}
+      <main id="main-content" tabIndex={-1} className="flex-1 flex items-center justify-center px-5 pb-8 sm:px-6">
+        <div className="flex w-full justify-center sm:max-w-md sm:rounded-xl sm:border sm:border-gray-200 sm:bg-white sm:px-10 sm:py-10">
+          {children}
+        </div>
       </main>
       {/* Policies must be reachable from the page where the account is created,
           not only from the marketing site. */}

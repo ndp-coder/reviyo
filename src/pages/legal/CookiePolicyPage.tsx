@@ -23,7 +23,7 @@ export function CookiePolicyPage() {
       summary={`${N} uses no advertising cookies, no analytics cookies, and no third-party trackers. This page lists every single thing we store in your browser, and explains why that means you do not get a consent banner.`}
     >
       <Clause id="summary" heading="1. The short version">
-        <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-green-900">
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-green-900">
           <p className="font-semibold">
             We store nothing in your browser except what is strictly necessary to run the page you
             asked for.
@@ -104,7 +104,7 @@ export function CookiePolicyPage() {
         <p>
           Razorpay&rsquo;s own privacy policy governs what it stores at that point:{' '}
           <a
-            className="text-blue-700 underline underline-offset-2"
+            className="text-brand-700 underline underline-offset-2"
             href="https://razorpay.com/privacy/"
             target="_blank"
             rel="noopener noreferrer"
@@ -153,7 +153,7 @@ export function CookiePolicyPage() {
           give you a clear, itemised notice and to obtain consent for the personal data we actually
           process. We do that at the point of collection: on the review page before you write
           anything, and at signup. It is set out in full in our{' '}
-          <Link className="text-blue-700 underline underline-offset-2" to="/privacy">
+          <Link className="text-brand-700 underline underline-offset-2" to="/privacy">
             Privacy Policy
           </Link>
           .
@@ -170,7 +170,7 @@ export function CookiePolicyPage() {
         </p>
 
         <SubHeading>The conclusion</SubHeading>
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-900">
+        <div className="rounded-lg border border-brand-200 bg-brand-50 p-4 text-brand-900">
           <p>
             A consent banner exists to let you refuse optional tracking. We have no optional tracking,
             so a banner would offer you a choice that does not exist. Showing one anyway — with a
@@ -204,7 +204,7 @@ export function CookiePolicyPage() {
           If any of the above turns out not to match what you observe in your browser&rsquo;s developer
           tools, we want to know. Email{' '}
           <a
-            className="text-blue-700 underline underline-offset-2"
+            className="text-brand-700 underline underline-offset-2"
             href={`mailto:${legal.privacyEmail}`}
           >
             {displayValue(legal.privacyEmail)}

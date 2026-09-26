@@ -19,15 +19,15 @@ export function TermsPage() {
         </p>
         <p>
           By creating an account or using {N}, you accept these terms and our{' '}
-          <Link className="text-blue-700 underline underline-offset-2" to="/privacy">
+          <Link className="text-brand-700 underline underline-offset-2" to="/privacy">
             Privacy Policy
           </Link>
           ,{' '}
-          <Link className="text-blue-700 underline underline-offset-2" to="/refunds">
+          <Link className="text-brand-700 underline underline-offset-2" to="/refunds">
             Refund &amp; Cancellation Policy
           </Link>
           , and{' '}
-          <Link className="text-blue-700 underline underline-offset-2" to="/cookies">
+          <Link className="text-brand-700 underline underline-offset-2" to="/cookies">
             Cookie Policy
           </Link>
           . If you do not accept them, do not use {N}.
@@ -62,7 +62,7 @@ export function TermsPage() {
           You are responsible for keeping your password secret and for everything done through your
           account. Tell us immediately at{' '}
           <a
-            className="text-blue-700 underline underline-offset-2"
+            className="text-brand-700 underline underline-offset-2"
             href={`mailto:${legal.supportEmail}`}
           >
             {displayValue(legal.supportEmail)}
@@ -93,7 +93,7 @@ export function TermsPage() {
         />
         <p>
           Refunds and cancellations are governed by our{' '}
-          <Link className="text-blue-700 underline underline-offset-2" to="/refunds">
+          <Link className="text-brand-700 underline underline-offset-2" to="/refunds">
             Refund &amp; Cancellation Policy
           </Link>
           , which forms part of these terms.
@@ -191,7 +191,7 @@ export function TermsPage() {
         />
         <p>
           How we handle all of this is set out in the{' '}
-          <Link className="text-blue-700 underline underline-offset-2" to="/privacy">
+          <Link className="text-brand-700 underline underline-offset-2" to="/privacy">
             Privacy Policy
           </Link>
           .
@@ -305,7 +305,7 @@ export function TermsPage() {
         <p>
           Before going to court, please contact us at{' '}
           <a
-            className="text-blue-700 underline underline-offset-2"
+            className="text-brand-700 underline underline-offset-2"
             href={`mailto:${legal.supportEmail}`}
           >
             {displayValue(legal.supportEmail)}

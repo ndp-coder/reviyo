@@ -2,11 +2,11 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outl
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800',
+  primary: 'bg-brand-900 text-white hover:bg-brand-800 active:bg-brand-950',
   secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200 active:bg-gray-300',
   ghost: 'text-gray-700 hover:bg-gray-100 active:bg-gray-200',
   danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800',
-  outline: 'border border-gray-300 bg-white text-gray-800 hover:bg-gray-50 active:bg-gray-100',
+  outline: 'border border-gray-300 bg-white text-gray-900 hover:border-gray-400 hover:bg-gray-50 active:bg-gray-100',
 };
 
 // Minimum heights keep buttons aligned next to each other and next to inputs,
@@ -23,5 +23,5 @@ const sizeClasses: Record<ButtonSize, string> = {
  * (downloads, navigation, external pages) so they never drift from <Button>.
  */
 export function buttonClasses({ variant = 'primary', size = 'md' }: { variant?: ButtonVariant; size?: ButtonSize } = {}) {
-  return `inline-flex items-center justify-center gap-2 rounded-xl text-center font-medium transition-colors ${variantClasses[variant]} ${sizeClasses[size]}`;
+  return `inline-flex items-center justify-center gap-2 rounded-lg text-center font-semibold transition-colors ${variantClasses[variant]} ${sizeClasses[size]}`;
 }

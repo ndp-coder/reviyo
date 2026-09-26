@@ -24,7 +24,7 @@ export function LegalPage({ title, summary, children }: LegalPageProps) {
           </Link>
           <Link
             to="/contact"
-            className="inline-flex min-h-10 items-center text-sm font-medium text-blue-700 underline underline-offset-2 hover:text-blue-800"
+            className="inline-flex min-h-10 items-center text-sm font-medium text-brand-700 underline underline-offset-2 hover:text-brand-800"
           >
             Contact us
           </Link>
@@ -91,7 +91,7 @@ export function DataTable({
   rows: ReactNode[][];
 }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200">
+    <div className="overflow-x-auto rounded-lg border border-gray-200">
       <table className="w-full text-left text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead className="bg-gray-50 border-b border-gray-200">

@@ -125,7 +125,7 @@ export function ExtraQrCodes({ business }: { business: Business }) {
       <h2 className="text-sm font-semibold text-gray-900">More QR codes</h2>
       <p className="mt-0.5 text-sm text-gray-600">
         Make one for each spot — a table, the front desk, a staff member — and{' '}
-        <Link to="/dashboard/analytics" className="font-medium text-blue-700 underline underline-offset-2">
+        <Link to="/dashboard/analytics" className="font-medium text-brand-700 underline underline-offset-2">
           Analytics
         </Link>{' '}
         shows which one brings in the most reviews. They all open the same review page.

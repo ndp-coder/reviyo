@@ -333,7 +333,7 @@ export function BillingPage() {
 
                   <div className="mt-4">
                     {confirmingCancel ? (
-                      <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                      <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                         <p className="text-sm text-red-900">
                           Cancel AutoPay? You won&apos;t be charged again. You keep access until{' '}
                           {subscription?.expires_at ? formatDate(subscription.expires_at, 'long') : 'your current period ends'}
@@ -397,7 +397,7 @@ export function BillingPage() {
             <p className="mt-0.5 text-sm text-gray-600">
               Buy or extend a fixed term without AutoPay. One-time payments don&apos;t renew. Every term includes
               everything — see{' '}
-              <Link to="/pricing" className="font-medium text-blue-700 underline underline-offset-2">what&apos;s included</Link>.
+              <Link to="/pricing" className="font-medium text-brand-700 underline underline-offset-2">what&apos;s included</Link>.
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {PLAN_ORDER.map((planId) => {
@@ -406,7 +406,7 @@ export function BillingPage() {
                 const isProcessing = processingPlan === planId;
                 const bestValue = planId === BEST_VALUE_PLAN;
                 return (
-                  <Card key={planId} className={`flex flex-col p-5 ${bestValue ? 'border-blue-300' : ''}`}>
+                  <Card key={planId} className={`flex flex-col p-5 ${bestValue ? 'border-brand-300' : ''}`}>
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-sm font-semibold text-gray-900">{plan.label}</h3>
                       {bestValue && <Badge variant="success">Save {formatRupees(YEARLY_SAVING)}</Badge>}
@@ -511,7 +511,7 @@ export function BillingPage() {
       )}
 
       {/* How payments are handled */}
-      <div className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-5">
+      <div className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-5">
         <ShieldCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-700" aria-hidden="true" />
         <div>
           <h2 className="text-sm font-semibold text-gray-900">Payments are handled by Razorpay</h2>
@@ -537,13 +537,13 @@ export function BillingPage() {
         </p>
         <p>
           Full refund within 7 days of payment, no reason needed. See the{' '}
-          <Link to="/refunds" className="font-medium text-blue-700 underline underline-offset-2">
+          <Link to="/refunds" className="font-medium text-brand-700 underline underline-offset-2">
             Refund &amp; Cancellation Policy
           </Link>{' '}
           or email{' '}
           <a
             href={'mailto:' + legal.supportEmail + '?subject=Refund%20request'}
-            className="font-medium text-blue-700 underline underline-offset-2"
+            className="font-medium text-brand-700 underline underline-offset-2"
           >
             {displayValue(legal.supportEmail)}
           </a>

@@ -19,7 +19,7 @@ const DEFAULT_MARKETING_LINKS: MarketingLink[] = [
   { to: '/pricing', label: 'Pricing' },
 ];
 
-const desktopLink = 'text-sm text-gray-700 hover:text-gray-900';
+const desktopLink = 'text-sm font-medium text-gray-700 hover:text-gray-900';
 const mobileLink = 'block rounded-lg px-3 py-3 text-base font-medium text-gray-800 hover:bg-gray-50';
 
 /**
@@ -64,7 +64,7 @@ export function MarketingHeader({ links = DEFAULT_MARKETING_LINKS }: { links?: M
     );
 
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white">
       <nav aria-label="Main" className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link to="/" aria-label="Reviyo home" className="inline-flex">
           <BrandLogo className="h-10 w-auto sm:h-11" />
@@ -75,7 +75,7 @@ export function MarketingHeader({ links = DEFAULT_MARKETING_LINKS }: { links?: M
           {signedIn ? (
             <Link
               to="/dashboard"
-              className="inline-flex min-h-10 items-center rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700"
+              className="inline-flex min-h-10 items-center rounded-lg bg-brand-900 px-4 text-sm font-semibold text-white hover:bg-brand-800"
             >
               Go to dashboard
             </Link>
@@ -86,7 +86,7 @@ export function MarketingHeader({ links = DEFAULT_MARKETING_LINKS }: { links?: M
               </Link>
               <Link
                 to="/signup"
-                className="inline-flex min-h-10 items-center rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700"
+                className="inline-flex min-h-10 items-center rounded-lg bg-brand-900 px-4 text-sm font-semibold text-white hover:bg-brand-800"
               >
                 Start free trial
               </Link>
@@ -97,7 +97,7 @@ export function MarketingHeader({ links = DEFAULT_MARKETING_LINKS }: { links?: M
         <div className="flex items-center gap-1 md:hidden">
           <Link
             to={signedIn ? '/dashboard' : '/signup'}
-            className="inline-flex min-h-10 items-center whitespace-nowrap rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700"
+            className="inline-flex min-h-10 items-center whitespace-nowrap rounded-lg bg-brand-900 px-4 text-sm font-semibold text-white hover:bg-brand-800"
           >
             {signedIn ? 'Dashboard' : 'Start free trial'}
           </Link>

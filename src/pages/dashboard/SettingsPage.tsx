@@ -350,7 +350,7 @@ export function SettingsPage() {
               onKeyDown={(event) => onTabKeyDown(event, index)}
               className={`min-h-11 flex-shrink-0 whitespace-nowrap border-b-2 px-3 text-sm font-medium transition-colors ${
                 selected
-                  ? 'border-blue-700 text-blue-800'
+                  ? 'border-brand-700 text-brand-800'
                   : 'border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-900'
               }`}
             >
@@ -399,10 +399,10 @@ export function SettingsPage() {
                 <img
                   src={logoUrl}
                   alt={`Current logo for ${name || 'your business'}`}
-                  className="h-20 w-20 flex-shrink-0 rounded-xl border border-gray-300 object-cover"
+                  className="h-20 w-20 flex-shrink-0 rounded-lg border border-gray-300 object-cover"
                 />
               ) : (
-                <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-gray-300 text-xs text-gray-600">
+                <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-xs text-gray-600">
                   No logo
                 </div>
               )}
@@ -410,7 +410,7 @@ export function SettingsPage() {
                 <div className="flex flex-wrap gap-2">
                   <label
                     htmlFor="settings-logo-upload"
-                    className="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-xl border border-gray-300 bg-white px-3 text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-700"
+                    className="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brand-700"
                   >
                     <Upload className="h-4 w-4" aria-hidden="true" /> {logoUrl ? 'Replace' : 'Upload logo'}
                     <input
@@ -462,13 +462,13 @@ export function SettingsPage() {
                 {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12" />)}
               </div>
             ) : topics.length === 0 ? (
-              <p className="mt-4 rounded-xl border border-dashed border-gray-300 px-4 py-5 text-center text-sm text-gray-600">
+              <p className="mt-4 rounded-lg border border-dashed border-gray-300 px-4 py-5 text-center text-sm text-gray-600">
                 No topics yet. Customers can still leave a review, but topics make the drafts more specific — add a few below.
               </p>
             ) : (
               <ul className="mt-4 space-y-2">
                 {topics.map((topic, i) => (
-                  <li key={topic.id} className={`rounded-xl border ${topic.active ? 'border-gray-300' : 'border-dashed border-gray-300 bg-gray-50'}`}>
+                  <li key={topic.id} className={`rounded-lg border ${topic.active ? 'border-gray-300' : 'border-dashed border-gray-300 bg-gray-50'}`}>
                     <div className="flex items-center gap-1 py-1 pl-3 pr-1">
                       <input
                         value={topic.label}
@@ -509,7 +509,7 @@ export function SettingsPage() {
                         Analytics (the link cascades), so it is confirmed, and
                         hiding — which keeps the history — is offered instead. */}
                     {confirmDeleteId === topic.id && (
-                      <div role="group" aria-label={`Confirm deleting ${topic.label}`} className="border-t border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-900 rounded-b-xl">
+                      <div role="group" aria-label={`Confirm deleting ${topic.label}`} className="border-t border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-900 rounded-b-lg">
                         <p>Delete “{topic.label}”? It is also removed from past visits in Analytics.</p>
                         <div className="mt-2 flex flex-wrap gap-2">
                           <Button size="sm" variant="danger" onClick={() => deleteTopic(topic.id)}>
@@ -556,7 +556,7 @@ export function SettingsPage() {
                       type="button"
                       onClick={() => addTopic(s)}
                       aria-label={`Add suggested topic ${s}`}
-                      className="inline-flex min-h-8 items-center gap-1 rounded-full border border-gray-300 bg-white px-2.5 text-xs text-gray-800 hover:border-blue-600 hover:bg-blue-50"
+                      className="inline-flex min-h-8 items-center gap-1 rounded-full border border-gray-300 bg-white px-2.5 text-xs text-gray-800 hover:border-brand-600 hover:bg-brand-50"
                     >
                       <Plus className="h-3 w-3" aria-hidden="true" /> {s}
                     </button>

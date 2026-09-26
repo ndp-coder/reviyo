@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { Star, ArrowRight, ArrowLeft, Check, Copy, ExternalLink, MessageSquare, Sparkles, RefreshCw, Edit3, AlertCircle, Lock } from 'lucide-react';
+import { Star, ArrowRight, ArrowLeft, Check, Copy, ExternalLink, MessageSquare, PenLine, Info, RefreshCw, Edit3, AlertCircle, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { generateReview } from '@/lib/ai-client';
 import { trackEvent } from '@/lib/analytics';
@@ -45,7 +45,7 @@ function Screen({
   const position = step ? PROGRESS[step] : undefined;
   const width = wide ? 'max-w-md' : 'max-w-sm';
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-blue-50 via-white to-sky-50">
+    <div className="flex min-h-screen flex-col bg-paper">
       {business && (
         <header className={`mx-auto w-full px-4 pt-4 sm:px-6 sm:pt-6 ${width}`}>
           <div className="flex items-center gap-2.5">
@@ -66,7 +66,7 @@ function Screen({
           {position && (
             <div className="mt-3 h-1 rounded-full bg-gray-200" aria-hidden="true">
               <div
-                className="h-full rounded-full bg-blue-600 transition-[width] duration-300"
+                className="h-full rounded-full bg-brand-900 transition-[width] duration-300"
                 style={{ width: `${(position / PROGRESS_TOTAL) * 100}%` }}
               />
             </div>
@@ -409,7 +409,7 @@ export function CustomerReviewPage() {
     return (
       <Screen>
         <div className="flex flex-col items-center gap-3" role="status">
-          <Spinner className="h-8 w-8 text-blue-600" />
+          <Spinner className="h-8 w-8 text-brand-600" />
           <p className="text-sm text-gray-600">Opening review page…</p>
         </div>
       </Screen>
@@ -466,7 +466,7 @@ export function CustomerReviewPage() {
               <img
                 src={bizInfo.business_logo_url}
                 alt={`${bizInfo.business_name} logo`}
-                className="mx-auto mb-5 h-20 w-20 rounded-2xl border border-gray-200 object-cover"
+                className="mx-auto mb-5 h-20 w-20 rounded-xl border border-gray-200 object-cover"
               />
             )}
             <h1 className="text-2xl font-bold text-gray-900">{welcomeMessage}</h1>
@@ -477,7 +477,7 @@ export function CustomerReviewPage() {
 
           <section
             aria-labelledby="privacy-notice-heading"
-            className="mt-6 rounded-2xl border border-gray-200 bg-white p-4 text-left"
+            className="mt-6 rounded-xl border border-gray-200 bg-white p-4 text-left"
           >
             <h2
               id="privacy-notice-heading"
@@ -510,14 +510,14 @@ export function CustomerReviewPage() {
               <Link
                 to="/privacy"
                 target="_blank"
-                className="font-medium text-blue-700 underline underline-offset-2"
+                className="font-medium text-brand-700 underline underline-offset-2"
               >
                 Privacy Policy<span className="sr-only"> (opens in a new tab)</span>
               </Link>{' '}
               or email{' '}
               <a
                 href={`mailto:${legal.privacyEmail}`}
-                className="font-medium text-blue-700 underline underline-offset-2"
+                className="font-medium text-brand-700 underline underline-offset-2"
               >
                 {displayValue(legal.privacyEmail)}
               </a>{' '}
@@ -643,7 +643,7 @@ export function CustomerReviewPage() {
                   onClick={() => toggleTopic(topic.id)}
                   className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium transition-colors active:scale-95 ${
                     selected
-                      ? 'bg-blue-700 text-white'
+                      ? 'bg-brand-900 text-white'
                       : 'border border-gray-400 bg-white text-gray-700 hover:border-gray-600'
                   }`}
                 >
@@ -691,7 +691,7 @@ export function CustomerReviewPage() {
             disabled={!canWrite}
             loading={busy}
           >
-            <Sparkles className="h-4 w-4" aria-hidden="true" /> Write my review
+            <PenLine className="h-4 w-4" aria-hidden="true" /> Write my review
           </Button>
         </div>
         {!canWrite && (
@@ -712,14 +712,14 @@ export function CustomerReviewPage() {
           <p className="mt-2 text-sm text-gray-600">Drafting from what you told us. This takes a few seconds.</p>
           {/* Placeholder lines in the shape of the draft that is coming, so the
               screen does not jump when it arrives. */}
-          <div className="mt-6 space-y-2.5 rounded-2xl border border-gray-200 bg-white p-5" aria-hidden="true">
+          <div className="mt-6 space-y-2.5 rounded-xl border border-gray-200 bg-white p-5" aria-hidden="true">
             <div className="h-3 w-full animate-pulse rounded bg-gray-200" />
             <div className="h-3 w-11/12 animate-pulse rounded bg-gray-200" />
             <div className="h-3 w-full animate-pulse rounded bg-gray-200" />
             <div className="h-3 w-3/5 animate-pulse rounded bg-gray-200" />
           </div>
           <p className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-600">
-            <Spinner className="h-4 w-4 text-blue-700" /> Working on it
+            <Spinner className="h-4 w-4 text-brand-700" /> Working on it
           </p>
         </div>
       </Screen>
@@ -759,7 +759,7 @@ export function CustomerReviewPage() {
           <button
             type="button"
             onClick={() => goTo('feedback')}
-            className="mt-6 min-h-11 w-full rounded-xl px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+            className="mt-6 min-h-11 w-full rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
           >
             Send private feedback to {bizInfo.business_name} instead
           </button>
@@ -789,8 +789,8 @@ export function CustomerReviewPage() {
             publish this under their own name, so they need to know an AI wrote
             the first draft and that they are responsible for its accuracy. */}
         {!ownDraft && (
-        <p className="mt-4 flex items-start gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-xs leading-relaxed text-amber-900">
-          <Sparkles className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+        <p className="mt-4 flex items-start gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-xs leading-relaxed text-amber-900">
+          <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
           <span>
             <strong>This draft was written by AI</strong> from your rating, topics, and comment.
             Please check it reflects your real experience before posting — you are the one
@@ -799,7 +799,7 @@ export function CustomerReviewPage() {
         </p>
         )}
 
-        <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
+        <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
           {isEditing ? (
             <Textarea
               label={ownDraft ? 'Your review' : 'Edit your review'}
@@ -884,7 +884,7 @@ export function CustomerReviewPage() {
           )}
 
           {clipboardFailed && (
-            <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               <p className="mb-1 font-medium">We couldn&apos;t copy it automatically.</p>
               <p className="text-xs">Press and hold the review text above to select and copy it, then open Google.</p>
               {googleReviewUrl && (
@@ -892,7 +892,7 @@ export function CustomerReviewPage() {
                   href={googleReviewUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-blue-700 underline underline-offset-2"
+                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 underline underline-offset-2"
                 >
                   <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /> Open Google Reviews
                   <span className="sr-only">(opens in a new tab)</span>
@@ -920,7 +920,7 @@ export function CustomerReviewPage() {
           <button
             type="button"
             onClick={() => goTo('feedback')}
-            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
           >
             <MessageSquare className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
             <span>Send private feedback to {bizInfo.business_name} instead</span>
@@ -1017,7 +1017,7 @@ export function CustomerReviewPage() {
               <button
                 type="button"
                 onClick={() => goTo('feedback')}
-                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
               >
                 <MessageSquare className="h-4 w-4" aria-hidden="true" /> Send private feedback to the business
               </button>

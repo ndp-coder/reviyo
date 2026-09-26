@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, CreditCard, AlertTriangle, Sparkles, Users, LogOut } from 'lucide-react';
+import { Building2, CreditCard, AlertTriangle, PenLine, Users, LogOut } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { BrandLogo } from '@/components/BrandLogo';
@@ -65,7 +65,7 @@ export function AdminPage() {
     { label: 'Businesses', value: stats.businessCount, icon: Building2 },
     { label: 'Trial or active subscriptions', value: stats.activeSubs, icon: CreditCard },
     { label: 'Expired subscriptions', value: stats.expiredSubs, icon: AlertTriangle },
-    { label: 'AI drafts written', value: stats.aiGenerations, icon: Sparkles },
+    { label: 'AI drafts written', value: stats.aiGenerations, icon: PenLine },
     { label: 'Users', value: stats.totalUsers, icon: Users },
   ];
 
@@ -109,7 +109,7 @@ export function AdminPage() {
         <div className="mt-6 grid grid-cols-2 lg:grid-cols-3 gap-4">
           {statCards.map((stat) => (
             <Card key={stat.label} className="p-4 sm:p-5">
-              <stat.icon className="h-5 w-5 text-blue-700" aria-hidden="true" />
+              <stat.icon className="h-5 w-5 text-brand-700" aria-hidden="true" />
               <p className="mt-3 text-2xl font-bold text-gray-900 tabular-nums">{stat.value}</p>
               <p className="mt-0.5 text-sm text-gray-600">{stat.label}</p>
             </Card>

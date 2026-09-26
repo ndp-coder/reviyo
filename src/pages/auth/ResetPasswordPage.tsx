@@ -40,7 +40,7 @@ export function ResetPasswordPage() {
     return (
       <AuthLayout>
         <div className="flex justify-center py-12" role="status">
-          <Spinner className="text-blue-600" />
+          <Spinner className="text-brand-600" />
           <span className="sr-only">Checking your reset link</span>
         </div>
       </AuthLayout>
@@ -76,7 +76,7 @@ export function ResetPasswordPage() {
           </p>
           <Link
             to="/forgot-password"
-            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-medium text-white hover:bg-blue-700"
+            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-lg bg-brand-900 px-5 text-sm font-medium text-white hover:bg-brand-800"
           >
             Send a new reset link
           </Link>

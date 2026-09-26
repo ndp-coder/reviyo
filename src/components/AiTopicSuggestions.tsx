@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Sparkles } from 'lucide-react';
+import { Lightbulb, Plus } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { suggestTopics } from '@/lib/ai-client';
 
@@ -50,9 +50,9 @@ export function AiTopicSuggestions({
   }
 
   return (
-    <div className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3">
+    <div className="rounded-lg border border-accent-200 bg-accent-50 px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-violet-900">
+        <p className="text-xs text-accent-900">
           Not sure what to add? Let AI suggest topics for your kind of business.
         </p>
         <Button
@@ -62,7 +62,7 @@ export function AiTopicSuggestions({
           loading={loading}
           disabled={loading || !businessName.trim() || !category.trim()}
         >
-          <Sparkles className="h-4 w-4 text-violet-700" aria-hidden="true" />
+          <Lightbulb className="h-4 w-4 text-accent-700" aria-hidden="true" />
           {suggestions.length > 0 ? 'Suggest more' : 'Suggest topics with AI'}
         </Button>
       </div>
@@ -83,7 +83,7 @@ export function AiTopicSuggestions({
                 onClick={() => onAdd([topic])}
                 disabled={!canAdd}
                 aria-label={`Add suggested topic ${topic}`}
-                className="inline-flex items-center gap-1 rounded-full border border-violet-300 bg-white px-2.5 py-1 text-xs text-violet-900 hover:bg-violet-100 disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-full border border-accent-300 bg-white px-2.5 py-1 text-xs text-accent-900 hover:bg-accent-100 disabled:opacity-50"
               >
                 <Plus className="h-3 w-3" aria-hidden="true" /> {topic}
               </button>
@@ -94,7 +94,7 @@ export function AiTopicSuggestions({
               type="button"
               onClick={() => onAdd(visible.slice(0, Math.max(0, remaining)))}
               disabled={!canAdd}
-              className="text-xs font-medium text-violet-900 underline underline-offset-2 disabled:opacity-50"
+              className="text-xs font-medium text-accent-900 underline underline-offset-2 disabled:opacity-50"
             >
               Add all
             </button>

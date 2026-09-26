@@ -53,7 +53,7 @@ export function GoogleReviewLinkHelp({
           href={currentUrl.trim()}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-800 underline underline-offset-2"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-800 underline underline-offset-2"
         >
           <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
           Test this link
@@ -61,7 +61,7 @@ export function GoogleReviewLinkHelp({
         </a>
       )}
 
-      <details open={defaultOpen} className="group rounded-xl border border-gray-300 bg-white">
+      <details open={defaultOpen} className="group rounded-lg border border-gray-300 bg-white">
         <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium text-gray-900">
           How do I find my Google review link?
         </summary>

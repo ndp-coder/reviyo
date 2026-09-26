@@ -12,13 +12,13 @@ export { Button } from './Button';
 export { Spinner } from './Spinner';
 
 // One field style for the whole app: 44px tall, a border dark enough to see on
-// white, and a blue focus ring. Errors turn the border red and are announced.
+// white, and a brand-colour focus ring. Errors turn the border red and are announced.
 const fieldBase =
-  'w-full rounded-xl border bg-white text-sm text-gray-900 placeholder:text-gray-500 outline-none transition-colors disabled:bg-gray-50 disabled:text-gray-500';
+  'w-full rounded-lg border bg-white text-sm text-gray-900 placeholder:text-gray-500 outline-none transition-colors disabled:bg-gray-50 disabled:text-gray-500';
 const fieldState = (error?: string) =>
   error
     ? 'border-red-500 focus:border-red-600 focus:ring-2 focus:ring-red-100'
-    : 'border-gray-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100';
+    : 'border-gray-400 focus:border-brand-700 focus:ring-2 focus:ring-brand-100';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -218,7 +218,7 @@ interface CardProps {
 
 /** Plain bordered surface. No shadow: borders alone keep dense dashboards calm. */
 export function Card({ children, className = '' }: CardProps) {
-  return <div className={`rounded-2xl border border-gray-200 bg-white ${className}`}>{children}</div>;
+  return <div className={`rounded-xl border border-gray-200 bg-white ${className}`}>{children}</div>;
 }
 
 interface BadgeProps {
@@ -232,7 +232,7 @@ export function Badge({ children, variant = 'default' }: BadgeProps) {
     success: 'bg-green-100 text-green-800',
     warning: 'bg-amber-100 text-amber-900',
     error: 'bg-red-100 text-red-800',
-    info: 'bg-blue-100 text-blue-800',
+    info: 'bg-brand-100 text-brand-800',
   };
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${variants[variant]}`}>
@@ -247,7 +247,7 @@ const alertStyles: Record<AlertVariant, { box: string; icon: typeof Info }> = {
   error: { box: 'border-red-300 bg-red-50 text-red-900', icon: AlertCircle },
   success: { box: 'border-green-300 bg-green-50 text-green-900', icon: CheckCircle2 },
   warning: { box: 'border-amber-300 bg-amber-50 text-amber-950', icon: TriangleAlert },
-  info: { box: 'border-blue-200 bg-blue-50 text-blue-950', icon: Info },
+  info: { box: 'border-brand-200 bg-brand-50 text-brand-950', icon: Info },
 };
 
 /**
@@ -272,7 +272,7 @@ export function Alert({
   return (
     <div
       role={variant === 'error' ? 'alert' : 'status'}
-      className={`flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm ${box} ${className}`}
+      className={`flex items-start gap-2.5 rounded-lg border px-4 py-3 text-sm ${box} ${className}`}
     >
       <Icon className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />
       <div className="min-w-0 flex-1">

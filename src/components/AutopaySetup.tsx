@@ -93,8 +93,8 @@ export function AutopaySetup({
             return (
               <label
                 key={key}
-                className={`relative flex cursor-pointer flex-col rounded-xl border p-4 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-blue-700 ${
-                  checked ? 'border-blue-700 bg-blue-50 ring-1 ring-blue-700' : 'border-gray-300 bg-white hover:border-gray-500'
+                className={`relative flex cursor-pointer flex-col rounded-lg border p-4 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand-700 ${
+                  checked ? 'border-brand-700 bg-brand-50 ring-1 ring-brand-700' : 'border-gray-300 bg-white hover:border-gray-500'
                 }`}
               >
                 <input
@@ -130,8 +130,8 @@ export function AutopaySetup({
             return (
               <label
                 key={option.value}
-                className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-blue-700 ${
-                  checked ? 'border-blue-700 bg-blue-50 ring-1 ring-blue-700' : 'border-gray-300 bg-white hover:border-gray-500'
+                className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand-700 ${
+                  checked ? 'border-brand-700 bg-brand-50 ring-1 ring-brand-700' : 'border-gray-300 bg-white hover:border-gray-500'
                 }`}
               >
                 <input
@@ -153,7 +153,7 @@ export function AutopaySetup({
         </div>
       </fieldset>
 
-      <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
         <h3 className="text-sm font-semibold text-gray-900">What happens</h3>
         <ul className="mt-3 space-y-2.5 text-sm text-gray-700">
           <li className="flex gap-2.5">
@@ -190,11 +190,11 @@ export function AutopaySetup({
       <ConsentCheckbox checked={consented} onChange={setConsented} error={consentError}>
         I authorise {branding.name} to set up AutoPay on my {methodName} and charge{' '}
         <strong>{price} {period}</strong>, starting {firstChargeText}, until I cancel. I have read the{' '}
-        <Link to="/terms" target="_blank" className="text-blue-800 underline underline-offset-2">
+        <Link to="/terms" target="_blank" className="text-brand-800 underline underline-offset-2">
           Terms<span className="sr-only"> (opens in a new tab)</span>
         </Link>{' '}
         and{' '}
-        <Link to="/refunds" target="_blank" className="text-blue-800 underline underline-offset-2">
+        <Link to="/refunds" target="_blank" className="text-brand-800 underline underline-offset-2">
           Refund Policy<span className="sr-only"> (opens in a new tab)</span>
         </Link>
         .

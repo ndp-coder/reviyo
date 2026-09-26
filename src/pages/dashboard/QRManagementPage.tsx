@@ -82,7 +82,7 @@ export function QRManagementPage() {
               className="h-56 w-56 sm:h-64 sm:w-64"
             />
           ) : (
-            <div className="h-56 w-56 animate-pulse rounded-xl bg-gray-100 sm:h-64 sm:w-64" aria-hidden="true" />
+            <div className="h-56 w-56 animate-pulse rounded-lg bg-gray-100 sm:h-64 sm:w-64" aria-hidden="true" />
           )}
           <div className="mt-6 grid w-full max-w-sm grid-cols-2 gap-2">
             {qrDataUrl ? (
@@ -130,13 +130,13 @@ export function QRManagementPage() {
               <Printer className="h-4 w-4" aria-hidden="true" /> Print card
             </Button>
           </div>
-          <div className="print-area rounded-2xl border-2 border-gray-200 bg-white p-6 text-center sm:p-8 print:mx-auto print:max-w-md print:border-gray-400 print:p-10">
+          <div className="print-area rounded-xl border-2 border-gray-200 bg-white p-6 text-center sm:p-8 print:mx-auto print:max-w-md print:border-gray-400 print:p-10">
             {business.logo_url && (
-              <img src={business.logo_url} alt="" className="mx-auto mb-3 h-16 w-16 rounded-xl object-cover print:h-20 print:w-20" />
+              <img src={business.logo_url} alt="" className="mx-auto mb-3 h-16 w-16 rounded-lg object-cover print:h-20 print:w-20" />
             )}
             <h3 className="text-lg font-bold text-gray-900 print:text-2xl">{business.name}</h3>
             <p className="mt-1 text-sm text-gray-600 print:text-base">Enjoyed your visit? Tell us about it.</p>
-            {qrDataUrl && <img src={qrDataUrl} alt="" className="mx-auto mt-4 h-40 w-40 rounded-xl print:h-64 print:w-64" />}
+            {qrDataUrl && <img src={qrDataUrl} alt="" className="mx-auto mt-4 h-40 w-40 rounded-lg print:h-64 print:w-64" />}
             <p className="mt-3 text-xs text-gray-700 print:text-sm">Scan with your phone camera to write a review</p>
           </div>
           <p className="mt-4 text-xs text-gray-600">

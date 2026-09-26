@@ -12,30 +12,35 @@ export function IndustriesPage() {
     <div className="min-h-screen bg-white flex flex-col">
       <SkipLink />
       <MarketingHeader />
-      <main id="main-content" tabIndex={-1} className="flex-1 px-6 py-16">
-        <div className="max-w-5xl mx-auto">
-          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">Get more Google reviews, whatever your business</h1>
-          <p className="mt-4 max-w-3xl text-lg text-gray-700">
-            Reviyo is built for single-location businesses across India. Pick yours to see where the QR code works best,
-            what your customers tend to mention, and answers to the questions owners like you ask.
-          </p>
-          <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <main id="main-content" tabIndex={-1} className="flex-1 px-5 pb-20 pt-12 sm:px-6 lg:pt-16">
+        <div className="mx-auto max-w-6xl">
+          <div className="max-w-3xl">
+            <p className="text-sm font-semibold text-accent-700">Industries</p>
+            <h1 className="mt-3 text-[2rem] font-bold leading-[1.1] text-balance text-gray-900 sm:text-5xl">
+              Get more Google reviews, whatever your business
+            </h1>
+            <p className="mt-6 text-lg leading-relaxed text-gray-700">
+              Reviyo is built for single-location businesses across India. Pick yours to see where the QR code works best,
+              what your customers tend to mention, and answers to the questions owners like you ask.
+            </p>
+          </div>
+          <ul className="mt-14 grid border-t border-gray-200 md:grid-cols-2 md:gap-x-12">
             {industries.map((industry) => (
-              <li key={industry.slug}>
-                <Link
-                  to={`/for/${industry.slug}`}
-                  className="group flex h-full flex-col rounded-2xl border border-gray-200 p-6 hover:border-blue-400 hover:shadow-sm"
-                >
-                  <h2 className="text-lg font-semibold text-gray-900">{capitalise(industry.plural)}</h2>
-                  <p className="mt-2 flex-1 text-sm text-gray-700">{industry.metaDescription}</p>
-                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-blue-700">
-                    See how it works <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-                  </span>
+              <li key={industry.slug} className="border-b border-gray-200">
+                <Link to={`/for/${industry.slug}`} className="group flex h-full items-start justify-between gap-6 py-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900 group-hover:text-brand-700">{capitalise(industry.plural)}</h2>
+                    <p className="mt-2 text-sm leading-relaxed text-gray-700">{industry.metaDescription}</p>
+                  </div>
+                  <ArrowRight
+                    className="mt-1.5 h-5 w-5 flex-shrink-0 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-700"
+                    aria-hidden="true"
+                  />
                 </Link>
               </li>
             ))}
           </ul>
-          <p className="mt-10 text-sm text-gray-700">
+          <p className="mt-10 max-w-3xl text-sm text-gray-700">
             Don’t see your business? Reviyo works for any local business with a Google Business Profile. During setup you
             can describe your business in your own words, and AI suggests review topics that fit.
           </p>

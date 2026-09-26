@@ -1,3 +1,6 @@
+/* Self-hosted headline font (see fontFamily.display in tailwind.config.js). */
+@import '@fontsource-variable/bricolage-grotesque/wght.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,10 +8,17 @@
 @layer base {
   body {
     @apply text-gray-900 antialiased;
-    /* System fonts: nothing to download, and every visitor sees the design as
-       tested. ("Inter" was listed here but never loaded, so only people who
-       had it installed saw it.) */
+    /* Body text uses system fonts: nothing to download before it can be read.
+       Headings use the self-hosted display face below. */
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  /* Page and section headings use the brand face; smaller headings and all
+     running text stay on the system font. */
+  h1,
+  h2 {
+    font-family: theme('fontFamily.display');
+    letter-spacing: -0.015em;
   }
 
   /*
@@ -25,7 +35,7 @@
   textarea:focus-visible,
   summary:focus-visible,
   [tabindex]:focus-visible {
-    outline: 2px solid theme('colors.blue.700');
+    outline: 2px solid theme('colors.brand.700');
     outline-offset: 2px;
     border-radius: 0.375rem;
   }
