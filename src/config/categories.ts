@@ -67,14 +67,29 @@ export const businessCategories: BusinessCategory[] = [
   },
 ];
 
+/** The preset an owner picks when none fit; they then type their own category. */
+export const OTHER_CATEGORY = 'other';
+
+/** Longest category the database accepts (create_business_with_defaults). */
+export const MAX_CATEGORY_LENGTH = 100;
+
 export function getCategoryByValue(value: string): BusinessCategory | undefined {
   return businessCategories.find((c) => c.value === value);
 }
 
+/**
+ * True for one of the preset values above. Anything else stored in
+ * businesses.category is text the owner typed after choosing "Other".
+ */
+export function isPresetCategory(value: string): boolean {
+  return value !== OTHER_CATEGORY && Boolean(getCategoryByValue(value));
+}
+
+/** Preset categories show their label; a typed-in category is shown as typed. */
 export function getCategoryLabel(value: string): string {
   return getCategoryByValue(value)?.label ?? value;
 }
 
 export function getSuggestedTopics(categoryValue: string): string[] {
-  return getCategoryByValue(categoryValue)?.suggestedTopics ?? ['Staff', 'Service Quality', 'Cleanliness', 'Pricing', 'Overall Experience'];
+  return (getCategoryByValue(categoryValue) ?? getCategoryByValue(OTHER_CATEGORY))!.suggestedTopics;
 }

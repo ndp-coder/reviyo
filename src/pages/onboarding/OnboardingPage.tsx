@@ -1,14 +1,42 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
-import { getSuggestedTopics } from '@/config/categories';
-import { Button, Input, Textarea, Card } from '@/components/ui';
-import { Star, Store, Tag, Link2, Image, QrCode, ArrowRight, ArrowLeft, Check, Plus, X, GripVertical, Upload } from 'lucide-react';
+import {
+  businessCategories,
+  getCategoryLabel,
+  getSuggestedTopics,
+  MAX_CATEGORY_LENGTH,
+  OTHER_CATEGORY,
+} from '@/config/categories';
+import { validateGoogleReviewUrl } from '@/lib/url-safety';
+import { prepareLogo } from '@/lib/image';
+import { Button, Input, Card, IconButton, Spinner } from '@/components/ui';
+import { buttonClasses } from '@/components/ui/button-styles';
+import { BrandLogo } from '@/components/BrandLogo';
+import { SkipLink } from '@/components/SkipLink';
+import { AiTopicSuggestions } from '@/components/AiTopicSuggestions';
+import { GoogleReviewLinkHelp } from '@/components/GoogleReviewLinkHelp';
+import { AutopaySetup } from '@/components/AutopaySetup';
+import { legal } from '@/config/legal';
+import { Star, Store, Link2, Image, QrCode, ArrowRight, ArrowLeft, ArrowUp, ArrowDown, Check, Copy, Plus, X, Upload, Gift, Download } from 'lucide-react';
 import QRCode from 'qrcode';
 import type { Business } from '@/lib/types';
 
-const TOTAL_STEPS = 6;
+// Name and category share the first screen: both take seconds, and splitting
+// them only added a click.
+const STEPS = [
+  { label: 'Business', icon: Store },
+  { label: 'Google link', icon: Link2 },
+  { label: 'Logo', icon: Image },
+  { label: 'Topics', icon: Star },
+  { label: 'Free trial', icon: Gift },
+  { label: 'QR code', icon: QrCode },
+] as const;
+const STEP = { business: 0, google: 1, logo: 2, topics: 3, trial: 4, qr: 5 } as const;
+const TOTAL_STEPS = STEPS.length;
+// create_business_with_defaults accepts at most 20 topics.
+const MAX_TOPICS = 20;
 
 function slugify(text: string): string {
   return text
@@ -21,15 +49,25 @@ function slugify(text: string): string {
 }
 
 export function OnboardingPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
+  // Signing in always lands here; owners who already have a business are sent
+  // on to the dashboard. Hold the page until that is known, so they don't see
+  // the first setup question flash past.
+  const [checkingExisting, setCheckingExisting] = useState(true);
+  const [step, setStep] = useState<number>(STEP.business);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [urlError, setUrlError] = useState<string | null>(null);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const headingRef = useRef<HTMLDivElement>(null);
 
   // Step data
   const [businessName, setBusinessName] = useState('');
   const [category, setCategory] = useState('');
+  // What the owner types after choosing "Other"; saved as their category.
+  const [customCategory, setCustomCategory] = useState('');
   const [googleReviewUrl, setGoogleReviewUrl] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [topics, setTopics] = useState<string[]>([]);
@@ -39,18 +77,25 @@ export function OnboardingPage() {
 
   // Check if user already has a business
   useEffect(() => {
+    let cancelled = false;
     async function checkExistingBusiness() {
       if (!user) return;
       const { data } = await supabase
         .from('businesses')
-        .select('*')
+        .select('id')
         .eq('owner_id', user.id)
         .maybeSingle();
+      if (cancelled) return;
       if (data) {
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
+        return;
       }
+      setCheckingExisting(false);
     }
     checkExistingBusiness();
+    return () => {
+      cancelled = true;
+    };
   }, [user, navigate]);
 
   // Auto-suggest topics when category changes
@@ -60,94 +105,109 @@ export function OnboardingPage() {
     }
   }, [category, topics.length]);
 
+  // Bring each new step's heading into view and focus, so keyboard and screen
+  // reader users start at the top of the new question.
+  const previousStep = useRef(step);
+  useEffect(() => {
+    if (previousStep.current === step) return;
+    previousStep.current = step;
+    window.scrollTo({ top: 0 });
+    // A step that auto-focuses its field has already put focus somewhere useful.
+    if (headingRef.current?.contains(document.activeElement)) return;
+    const heading = headingRef.current?.querySelector<HTMLElement>('h2');
+    if (heading) {
+      heading.setAttribute('tabindex', '-1');
+      heading.focus();
+    }
+  }, [step]);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = window.setTimeout(() => setCopied(false), 2000);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+
+  const effectiveCategory = category === OTHER_CATEGORY ? customCategory.trim() : category;
+
   const reviewUrl = business ? `${window.location.origin}/r/${business.slug}` : '';
 
   useEffect(() => {
     if (reviewUrl) {
-      QRCode.toDataURL(reviewUrl, { width: 400, margin: 2, color: { dark: '#1e293b', light: '#ffffff' } })
+      QRCode.toDataURL(reviewUrl, { width: 600, margin: 2, color: { dark: '#1e293b', light: '#ffffff' } })
         .then(setQrDataUrl)
         .catch(console.error);
     }
   }, [reviewUrl]);
 
-  const handleCreateBusiness = useCallback(async () => {
-    if (!user) return;
+  const handleCreateBusiness = useCallback(async (): Promise<boolean> => {
+    if (!user) return false;
     setSaving(true);
     setError(null);
 
-    let slug = slugify(businessName);
-    if (!slug) slug = `biz-${Date.now()}`;
-
-    // Ensure slug uniqueness
-    const { data: existing } = await supabase
-      .from('businesses')
-      .select('slug')
-      .eq('slug', slug)
-      .maybeSingle();
-
-    if (existing) {
-      slug = `${slug}-${Math.random().toString(36).substring(2, 6)}`;
-    }
-
-    const { data: bizData, error: bizError } = await supabase
-      .from('businesses')
-      .insert({
-        owner_id: user.id,
-        name: businessName,
-        slug,
-        category,
-        google_review_url: googleReviewUrl || null,
-        logo_url: logoUrl || null,
-        welcome_message: `How was your experience at ${businessName}?`,
-      })
-      .select()
-      .single();
+    const { data: bizData, error: bizError } = await supabase.rpc('create_business_with_defaults', {
+      p_name: businessName.trim(),
+      p_slug: slugify(businessName),
+      p_category: effectiveCategory,
+      p_google_review_url: googleReviewUrl.trim() || null,
+      p_logo_url: logoUrl || null,
+      p_welcome_message: `How was your experience at ${businessName.trim()}?`,
+      p_topics: topics.map((t) => t.trim()).filter(Boolean),
+    });
 
     if (bizError || !bizData) {
-      setError('Could not create your business. Please try again.');
+      // Database messages are not written for owners; say what to do instead.
+      console.error('create_business_with_defaults failed:', bizError?.message);
+      setError(
+        bizError?.code === '23514'
+          ? 'That Google link or logo isn’t accepted. Go back and check the link starts with https://, then try again.'
+          : 'We couldn’t create your business. Check your connection and try again — nothing you entered has been lost.'
+      );
       setSaving(false);
-      return;
+      return false;
     }
-
-    // Insert topics
-    if (topics.length > 0) {
-      const topicInserts = topics.map((label, index) => ({
-        business_id: bizData.id,
-        label,
-        display_order: index,
-        active: true,
-      }));
-      await supabase.from('review_topics').insert(topicInserts);
-    }
-
-    // Create trial subscription
-    await supabase.from('subscriptions').insert({
-      business_id: bizData.id,
-      plan: '6_months',
-      status: 'trial',
-      starts_at: new Date().toISOString(),
-      expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-    });
 
     setBusiness(bizData as Business);
     setSaving(false);
-  }, [user, businessName, category, googleReviewUrl, logoUrl, topics]);
+    return true;
+  }, [user, businessName, effectiveCategory, googleReviewUrl, logoUrl, topics]);
 
-  const nextStep = () => {
-    if (step === 4) {
-      handleCreateBusiness();
+  const nextStep = async () => {
+    if (step === STEP.google) {
+      // Same check the database enforces: only absolute http(s) Google links.
+      const urlProblem = validateGoogleReviewUrl(googleReviewUrl);
+      setUrlError(urlProblem);
+      if (urlProblem) return;
     }
+    if (step === STEP.topics) {
+      const created = await handleCreateBusiness();
+      if (!created) return;
+    }
+    setError(null);
     setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
   };
 
-  const prevStep = () => setStep((s) => Math.max(s - 1, 0));
+  const prevStep = () => {
+    setError(null);
+    setStep((s) => Math.max(s - 1, 0));
+  };
 
   const addTopic = () => {
     const trimmed = newTopic.trim();
-    if (trimmed && !topics.includes(trimmed)) {
+    if (trimmed && topics.length < MAX_TOPICS && !topics.some((t) => t.toLowerCase() === trimmed.toLowerCase())) {
       setTopics([...topics, trimmed]);
       setNewTopic('');
     }
+  };
+
+  const addSuggestedTopics = (suggested: string[]) => {
+    setTopics((current) => {
+      const next = [...current];
+      for (const topic of suggested) {
+        if (next.length >= MAX_TOPICS) break;
+        if (!next.some((t) => t.toLowerCase() === topic.toLowerCase())) next.push(topic);
+      }
+      return next;
+    });
   };
 
   const removeTopic = (index: number) => {
@@ -162,286 +222,467 @@ export function OnboardingPage() {
     setTopics(newTopics);
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      setError('Logo must be under 2MB.');
+    // Scaled down in the browser: the logo is loaded on every customer scan.
+    const result = await prepareLogo(file);
+    if ('error' in result) {
+      setLogoError(result.error);
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = () => setLogoUrl(reader.result as string);
-    reader.readAsDataURL(file);
+    setLogoError(null);
+    setLogoUrl(result.dataUrl);
+  };
+
+  const copyReviewUrl = () => {
+    navigator.clipboard
+      .writeText(reviewUrl)
+      .then(() => setCopied(true))
+      .catch(() => setCopied(false));
   };
 
   const canProceed = () => {
-    if (step === 0) return businessName.trim().length > 0;
-    if (step === 1) return category.length > 0;
-    if (step === 2) return true; // Google URL is optional
-    if (step === 3) return true; // Logo is optional
-    if (step === 4) return topics.length > 0;
+    if (step === STEP.business) {
+      if (!businessName.trim()) return false;
+      if (category === OTHER_CATEGORY) return customCategory.trim().length >= 2;
+      return category.length > 0;
+    }
+    if (step === STEP.google) return true; // Google URL is optional
+    if (step === STEP.logo) return true; // Logo is optional
+    if (step === STEP.topics) return topics.length > 0;
     return true;
   };
 
-  const stepIcons = [Store, Tag, Link2, Image, Star, QrCode];
-  const stepLabels = ['Business', 'Category', 'Google Link', 'Logo', 'Topics', 'QR Code'];
+  // Says why Continue is disabled, instead of leaving a greyed-out button.
+  const blockedReason = (() => {
+    if (step === STEP.business) {
+      if (!businessName.trim()) return 'Enter your business name to continue.';
+      if (!category) return 'Choose a business type to continue.';
+      if (category === OTHER_CATEGORY && customCategory.trim().length < 2) return 'Describe your business in a few words to continue.';
+    }
+    if (step === STEP.topics && topics.length === 0) return 'Add at least one topic to continue.';
+    return null;
+  })();
+
+  if (checkingExisting) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50" role="status">
+        <Spinner className="text-blue-600" />
+        <span className="sr-only">Loading</span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-sky-50">
       {/* Header */}
-      <header className="px-6 py-5 flex items-center justify-between">
-        <div className="inline-flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white">
-            <Star className="h-5 w-5" fill="currentColor" />
-          </div>
-          <span className="text-lg font-bold text-gray-900">ReviewFlow</span>
+      <SkipLink />
+      <header className="flex items-center justify-between px-4 py-4 sm:px-6 sm:py-5">
+        <BrandLogo className="h-10 w-auto sm:h-11" />
+        <div role="status" aria-live="polite" className="text-sm text-gray-700">
+          Step {step + 1} of {TOTAL_STEPS}
+          <span className="sr-only">: {STEPS[step].label}</span>
         </div>
-        <div className="text-sm text-gray-500">Step {step + 1} of {TOTAL_STEPS}</div>
       </header>
 
-      {/* Progress bar */}
-      <div className="px-6 mb-8">
-        <div className="flex items-center gap-2">
-          {stepLabels.map((label, i) => {
-            const Icon = stepIcons[i];
+      {/* Progress. Phones get a single bar (the step count is in the header);
+          six labelled circles don't fit below 640px. */}
+      <div className="mb-6 px-4 sm:mb-8 sm:px-6">
+        <div className="mx-auto max-w-xl sm:hidden" aria-hidden="true">
+          <div className="h-1.5 rounded-full bg-gray-200">
+            <div
+              className="h-full rounded-full bg-blue-600 transition-[width] duration-300"
+              style={{ width: `${((step + 1) / TOTAL_STEPS) * 100}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs font-medium text-gray-700">{STEPS[step].label}</p>
+        </div>
+        <ol aria-label="Setup progress" className="mx-auto hidden max-w-2xl list-none items-center gap-2 p-0 sm:flex">
+          {STEPS.map(({ label, icon: Icon }, i) => {
             const isActive = i === step;
             const isDone = i < step;
             return (
-              <div key={label} className="flex items-center flex-1 last:flex-none">
-                <div className={`flex flex-col items-center gap-1 ${isActive ? 'text-blue-600' : isDone ? 'text-green-600' : 'text-gray-300'}`}>
-                  <div className={`flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all ${
-                    isActive ? 'border-blue-600 bg-blue-50' : isDone ? 'border-green-600 bg-green-50' : 'border-gray-200 bg-white'
-                  }`}>
-                    {isDone ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+              <li key={label} className="flex flex-1 items-center last:flex-none">
+                <div
+                  aria-current={isActive ? 'step' : undefined}
+                  className={`flex flex-col items-center gap-1 ${
+                    isActive ? 'text-blue-800' : isDone ? 'text-green-800' : 'text-gray-600'
+                  }`}
+                >
+                  <div
+                    className={`flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors ${
+                      isActive
+                        ? 'border-blue-700 bg-blue-50'
+                        : isDone
+                        ? 'border-green-700 bg-green-50'
+                        : 'border-gray-400 bg-white'
+                    }`}
+                  >
+                    {isDone ? <Check className="h-4 w-4" aria-hidden="true" /> : <Icon className="h-4 w-4" aria-hidden="true" />}
                   </div>
-                  <span className="text-[10px] font-medium hidden sm:block">{label}</span>
+                  <span className="whitespace-nowrap text-xs font-medium">{label}</span>
+                  <span className="sr-only">{isDone ? 'completed' : isActive ? 'current step' : 'not started'}</span>
                 </div>
-                {i < stepLabels.length - 1 && (
-                  <div className={`h-0.5 flex-1 mx-2 rounded-full transition-all ${i < step ? 'bg-green-500' : 'bg-gray-200'}`} />
+                {i < STEPS.length - 1 && (
+                  <div
+                    aria-hidden="true"
+                    className={`mx-2 mb-5 h-0.5 flex-1 rounded-full ${i < step ? 'bg-green-600' : 'bg-gray-300'}`}
+                  />
                 )}
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ol>
       </div>
 
       {/* Step content */}
-      <div className="max-w-xl mx-auto px-6 pb-12">
-        <div className="animate-fade-in" key={step}>
-          {step === 0 && (
-            <Card className="p-8">
-              <h2 className="text-xl font-bold text-gray-900">What's your business name?</h2>
-              <p className="mt-1.5 text-sm text-gray-500">This is how customers will see you on the review page.</p>
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-xl px-4 pb-12 sm:px-6">
+        <div key={step} ref={headingRef}>
+          {step === STEP.business && (
+            <Card className="p-5 sm:p-8">
+              <h2 className="text-xl font-bold text-gray-900">Tell us about your business</h2>
+              <p className="mt-1.5 text-sm text-gray-600">Customers see your name on the review page. The type helps us suggest review topics.</p>
               <div className="mt-6">
                 <Input
+                  label="Business name"
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
                   placeholder="e.g. Smile Dental Clinic"
                   autoFocus
+                  autoComplete="organization"
                   onKeyDown={(e) => e.key === 'Enter' && canProceed() && nextStep()}
                 />
               </div>
+              <fieldset className="mt-6">
+                <legend className="mb-1.5 text-sm font-medium text-gray-800">Type of business</legend>
+                <div role="group" aria-label="Business category" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {businessCategories.map((cat) => {
+                    const selected = category === cat.value;
+                    return (
+                      <button
+                        key={cat.value}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => setCategory(cat.value)}
+                        className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-center text-sm font-medium transition-colors ${
+                          selected
+                            ? 'border-blue-700 bg-blue-50 text-blue-800 ring-1 ring-blue-700'
+                            : 'border-gray-300 bg-white text-gray-700 hover:border-gray-500'
+                        }`}
+                      >
+                        {selected && <Check className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />}
+                        {cat.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+              {category === OTHER_CATEGORY && (
+                <div className="mt-5 animate-fade-in">
+                  <Input
+                    label="What kind of business is it?"
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                    maxLength={MAX_CATEGORY_LENGTH}
+                    placeholder="e.g. Pet grooming, Yoga studio, Printing shop"
+                    autoFocus
+                    onKeyDown={(e) => e.key === 'Enter' && canProceed() && nextStep()}
+                    hint="A few words is enough. We use this to suggest review topics and to write better review drafts."
+                  />
+                </div>
+              )}
             </Card>
           )}
 
-          {step === 1 && (
-            <Card className="p-8">
-              <h2 className="text-xl font-bold text-gray-900">What type of business is it?</h2>
-              <p className="mt-1.5 text-sm text-gray-500">We'll suggest review topics based on your category.</p>
-              <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                {[
-                  { label: 'Dental Clinic', value: 'dental_clinic' },
-                  { label: 'Salon', value: 'salon' },
-                  { label: 'Restaurant', value: 'restaurant' },
-                  { label: 'Cafe', value: 'cafe' },
-                  { label: 'Gym', value: 'gym' },
-                  { label: 'Jewellery Store', value: 'jewellery_store' },
-                  { label: 'Diagnostic Centre', value: 'diagnostic_centre' },
-                  { label: 'Service Centre', value: 'service_centre' },
-                  { label: 'Small Hotel', value: 'small_hotel' },
-                  { label: 'Tuition Centre', value: 'tuition_centre' },
-                  { label: 'Retail Store', value: 'retail_store' },
-                  { label: 'Other', value: 'other' },
-                ].map((cat) => (
-                  <button
-                    key={cat.value}
-                    onClick={() => setCategory(cat.value)}
-                    className={`rounded-xl border px-4 py-3 text-sm font-medium transition-all ${
-                      category === cat.value
-                        ? 'border-blue-600 bg-blue-50 text-blue-700'
-                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-            </Card>
-          )}
-
-          {step === 2 && (
-            <Card className="p-8">
+          {step === STEP.google && (
+            <Card className="p-5 sm:p-8">
               <h2 className="text-xl font-bold text-gray-900">Your Google review link</h2>
-              <p className="mt-1.5 text-sm text-gray-500">
-                Paste the direct link where customers write Google reviews for your business.
-                You can find this on your Google Business Profile.
+              <p className="mt-1.5 text-sm text-gray-600">
+                Where customers land to post their review. Optional now — you can add it later in Settings.
               </p>
               <div className="mt-6">
                 <Input
+                  label="Google review link (optional)"
+                  type="url"
+                  inputMode="url"
                   value={googleReviewUrl}
-                  onChange={(e) => setGoogleReviewUrl(e.target.value)}
-                  placeholder="https://www.google.com/maps/place/..."
+                  error={urlError ?? undefined}
+                  onChange={(e) => {
+                    setGoogleReviewUrl(e.target.value);
+                    if (urlError) setUrlError(null);
+                  }}
+                  placeholder="https://g.page/r/..."
                   autoFocus
                 />
               </div>
-              <div className="mt-4 rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-xs text-amber-700">
-                Don't have your link yet? You can skip this step and add it later in Settings.
+              <div className="mt-4">
+                <GoogleReviewLinkHelp
+                  businessName={businessName}
+                  currentUrl={googleReviewUrl}
+                  onUseLink={(url) => {
+                    setGoogleReviewUrl(url);
+                    setUrlError(null);
+                  }}
+                  defaultOpen
+                />
               </div>
             </Card>
           )}
 
-          {step === 3 && (
-            <Card className="p-8">
+          {step === STEP.logo && (
+            <Card className="p-5 sm:p-8">
               <h2 className="text-xl font-bold text-gray-900">Add your logo</h2>
-              <p className="mt-1.5 text-sm text-gray-500">Customers will see this on the review page. Optional but recommended.</p>
+              <p className="mt-1.5 text-sm text-gray-600">Shown at the top of your review page. Optional, but it helps customers trust the page.</p>
               <div className="mt-6 flex flex-col items-center">
                 {logoUrl ? (
-                  <div className="relative">
-                    <img src={logoUrl} alt="Logo preview" className="h-32 w-32 rounded-2xl object-cover border border-gray-200" />
-                    <button
-                      onClick={() => setLogoUrl('')}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
+                  <div className="flex flex-col items-center gap-3">
+                    <img
+                      src={logoUrl}
+                      alt={`Logo preview for ${businessName || 'your business'}`}
+                      className="h-32 w-32 rounded-2xl border border-gray-300 object-cover"
+                    />
+                    <Button variant="ghost" size="sm" onClick={() => setLogoUrl('')}>
+                      <X className="h-4 w-4" aria-hidden="true" /> Remove logo
+                    </Button>
                   </div>
                 ) : (
-                  <label className="cursor-pointer">
-                    <div className="flex h-32 w-32 rounded-2xl border-2 border-dashed border-gray-300 flex-col items-center justify-center gap-2 hover:border-blue-500 transition-colors">
-                      <Upload className="h-6 w-6 text-gray-400" />
-                      <span className="text-xs text-gray-500">Click to upload</span>
+                  <label htmlFor="onboarding-logo-upload" className="cursor-pointer rounded-2xl">
+                    <div className="flex h-32 w-32 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-400 transition-colors hover:border-blue-600 hover:bg-blue-50/50">
+                      <Upload className="h-6 w-6 text-gray-600" aria-hidden="true" />
+                      <span className="text-xs text-gray-700">Choose image</span>
                     </div>
-                    <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                    <span className="sr-only">Upload your business logo, PNG, JPG, or WebP</span>
+                    <input
+                      id="onboarding-logo-upload"
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="sr-only"
+                      onChange={handleLogoUpload}
+                    />
                   </label>
                 )}
-                <p className="mt-3 text-xs text-gray-400">PNG or JPG, max 2MB</p>
+                <p className="mt-3 text-xs text-gray-600">PNG, JPG, or WebP. We resize it for you.</p>
+                {logoError && (
+                  <p role="alert" className="mt-2 text-sm font-medium text-red-700">
+                    {logoError}
+                  </p>
+                )}
               </div>
             </Card>
           )}
 
-          {step === 4 && (
-            <Card className="p-8">
-              <h2 className="text-xl font-bold text-gray-900">Customize review topics</h2>
-              <p className="mt-1.5 text-sm text-gray-500">
-                These tags help customers mention what matters to them. We've suggested some based on your category.
+          {step === STEP.topics && (
+            <Card className="p-5 sm:p-8">
+              <h2 className="text-xl font-bold text-gray-900">Choose review topics</h2>
+              <p className="mt-1.5 text-sm text-gray-600">
+                Customers tap these to say what they liked. We&apos;ve suggested some for your business type — edit, reorder, or remove any.
               </p>
-              <div className="mt-6 space-y-2">
+              <ul className="mt-6 space-y-2">
                 {topics.map((topic, i) => (
-                  <div key={i} className="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2.5 animate-fade-in">
-                    <GripVertical className="h-4 w-4 text-gray-300" />
+                  <li key={i} className="flex items-center gap-1 rounded-xl border border-gray-300 py-1 pl-3 pr-1">
                     <input
                       value={topic}
+                      aria-label={`Topic ${i + 1} label`}
                       onChange={(e) => {
                         const newTopics = [...topics];
                         newTopics[i] = e.target.value;
                         setTopics(newTopics);
                       }}
-                      className="flex-1 bg-transparent text-sm outline-none"
+                      className="min-w-0 flex-1 bg-transparent py-1.5 text-sm outline-none"
                     />
-                    <button onClick={() => moveTopic(i, -1)} className="text-gray-400 hover:text-gray-600 p-0.5" disabled={i === 0}>
-                      <ArrowLeft className="h-3.5 w-3.5" />
-                    </button>
-                    <button onClick={() => moveTopic(i, 1)} className="text-gray-400 hover:text-gray-600 p-0.5" disabled={i === topics.length - 1}>
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
-                    <button onClick={() => removeTopic(i)} className="text-gray-400 hover:text-red-500 p-0.5">
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
+                    <IconButton
+                      onClick={() => moveTopic(i, -1)}
+                      disabled={i === 0}
+                      aria-label={`Move ${topic || `topic ${i + 1}`} up`}
+                    >
+                      <ArrowUp className="h-4 w-4" aria-hidden="true" />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => moveTopic(i, 1)}
+                      disabled={i === topics.length - 1}
+                      aria-label={`Move ${topic || `topic ${i + 1}`} down`}
+                    >
+                      <ArrowDown className="h-4 w-4" aria-hidden="true" />
+                    </IconButton>
+                    <IconButton tone="danger" onClick={() => removeTopic(i)} aria-label={`Remove ${topic || `topic ${i + 1}`}`}>
+                      <X className="h-4 w-4" aria-hidden="true" />
+                    </IconButton>
+                  </li>
                 ))}
-              </div>
+              </ul>
               <div className="mt-3 flex gap-2">
                 <Input
                   value={newTopic}
+                  aria-label="New topic"
                   onChange={(e) => setNewTopic(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTopic())}
-                  placeholder="Add a new topic..."
+                  placeholder="Add a topic"
                   className="flex-1"
                 />
-                <Button variant="outline" onClick={addTopic}>
-                  <Plus className="h-4 w-4" /> Add
+                <Button variant="outline" onClick={addTopic} disabled={topics.length >= MAX_TOPICS || !newTopic.trim()}>
+                  <Plus className="h-4 w-4" aria-hidden="true" /> Add
                 </Button>
+              </div>
+              <p className="mt-1.5 text-xs text-gray-600">
+                {topics.length} of {MAX_TOPICS} topics
+              </p>
+              <div className="mt-4">
+                <AiTopicSuggestions
+                  businessName={businessName}
+                  category={getCategoryLabel(effectiveCategory)}
+                  existingTopics={topics}
+                  onAdd={addSuggestedTopics}
+                  remaining={MAX_TOPICS - topics.length}
+                />
               </div>
             </Card>
           )}
 
-          {step === 5 && business && (
-            <Card className="p-8 text-center">
-              <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-green-100 mb-4">
-                <Check className="h-7 w-7 text-green-600" />
+          {step === STEP.trial && business && (
+            <Card className="p-5 sm:p-8">
+              <h2 className="text-xl font-bold text-gray-900">Start your {legal.trialDays}-day free trial</h2>
+              <p className="mt-1.5 text-sm text-gray-600">
+                Your business is saved. Set up AutoPay with a ₹1 verification payment, which we refund straight
+                away. You won&apos;t be charged for the plan until your trial ends, and you can cancel any time
+                before that.
+              </p>
+              <div className="mt-6">
+                <AutopaySetup
+                  businessId={business.id}
+                  userName={profile?.full_name || businessName}
+                  userEmail={user?.email}
+                  trialAvailable
+                  onComplete={() => setStep(STEP.qr)}
+                />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Your QR code is ready!</h2>
-              <p className="mt-1.5 text-sm text-gray-500">
-                Display this QR at your counter. Customers scan it to start writing a review.
+            </Card>
+          )}
+
+          {step === STEP.qr && business && (
+            <Card className="p-5 text-center sm:p-8">
+              <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
+                <Check className="h-7 w-7 text-green-700" aria-hidden="true" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Your QR code is ready</h2>
+              <p className="mt-1.5 text-sm text-gray-600">
+                Put it where customers pay or wait. Scanning it opens your review page.
               </p>
 
-              {qrDataUrl && (
+              {qrDataUrl ? (
                 <div className="mt-6 flex flex-col items-center">
-                  <div className="rounded-2xl border border-gray-200 p-4 bg-white shadow-sm">
-                    <img src={qrDataUrl} alt="QR Code" className="w-48 h-48" />
+                  <div className="rounded-2xl border border-gray-200 bg-white p-4">
+                    <img src={qrDataUrl} alt={`QR code linking to your review page at ${reviewUrl}`} className="h-48 w-48" />
                   </div>
-                  <div className="mt-3 text-xs text-gray-400 break-all max-w-xs">{reviewUrl}</div>
-                  <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                    <a href={qrDataUrl} download={`${business.slug}-qr.png`} className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 text-white px-4 py-2.5 text-sm font-medium hover:bg-blue-700 transition-colors">
-                      <QrCode className="h-4 w-4" /> Download PNG
+                  <div className="mt-3 max-w-xs break-all text-xs text-gray-600">{reviewUrl}</div>
+                  <div className="mt-4 flex flex-wrap justify-center gap-2">
+                    <a href={qrDataUrl} download={`${business.slug}-qr.png`} className={buttonClasses()}>
+                      <Download className="h-4 w-4" aria-hidden="true" /> Download PNG
                     </a>
-                    <button
-                      onClick={() => navigator.clipboard.writeText(reviewUrl)}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white text-gray-700 px-4 py-2.5 text-sm font-medium hover:bg-gray-50 transition-colors"
-                    >
-                      <Link2 className="h-4 w-4" /> Copy URL
-                    </button>
-                    <a
-                      href={reviewUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white text-gray-700 px-4 py-2.5 text-sm font-medium hover:bg-gray-50 transition-colors"
-                    >
-                      Preview Page
+                    <Button variant="outline" onClick={copyReviewUrl}>
+                      {copied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
+                      {copied ? 'Link copied' : 'Copy link'}
+                    </Button>
+                    <a href={reviewUrl} target="_blank" rel="noopener noreferrer" className={buttonClasses({ variant: 'outline' })}>
+                      Preview page
+                      <span className="sr-only">(opens in a new tab)</span>
                     </a>
                   </div>
+                  <span className="sr-only" role="status" aria-live="polite">
+                    {copied ? 'Review page link copied' : ''}
+                  </span>
                 </div>
+              ) : (
+                <div className="mx-auto mt-6 h-56 w-56 animate-pulse rounded-2xl bg-gray-100" aria-hidden="true" />
               )}
             </Card>
           )}
         </div>
 
         {error && (
-          <div className="mt-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          <div role="alert" className="mt-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
             {error}
           </div>
         )}
 
         {/* Navigation */}
-        {step < TOTAL_STEPS - 1 && (
-          <div className="mt-6 flex items-center justify-between">
-            <Button variant="ghost" onClick={prevStep} disabled={step === 0 || saving}>
-              <ArrowLeft className="h-4 w-4" /> Back
-            </Button>
-            <Button onClick={nextStep} disabled={!canProceed() || saving} loading={saving}>
-              {step === 4 ? 'Create & Generate QR' : 'Continue'} <ArrowRight className="h-4 w-4" />
-            </Button>
+        {step < STEP.trial && (
+          <div className="mt-6">
+            <div className="flex items-center justify-between gap-3">
+              <Button variant="ghost" onClick={prevStep} disabled={step === 0 || saving}>
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
+              </Button>
+              <div className="flex items-center gap-2">
+                {/* Offered only while the optional field is empty, so it can
+                    never throw away something the owner has entered. */}
+                {((step === STEP.google && !googleReviewUrl.trim()) || (step === STEP.logo && !logoUrl)) && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setUrlError(null);
+                      setStep((s) => s + 1);
+                    }}
+                  >
+                    Skip for now
+                  </Button>
+                )}
+                <Button onClick={nextStep} disabled={!canProceed() || saving} loading={saving} aria-describedby={blockedReason ? 'onboarding-blocked' : undefined}>
+                  {step === STEP.topics ? 'Create business' : 'Continue'}{' '}
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </div>
+            </div>
+            {blockedReason && (
+              <p id="onboarding-blocked" className="mt-2 text-right text-xs text-gray-600">
+                {blockedReason}
+              </p>
+            )}
           </div>
         )}
 
-        {step === TOTAL_STEPS - 1 && business && (
+        {/* The trial step must never be a dead end. Skipping leads to Billing,
+            where the same trial setup is waiting. */}
+        {step === STEP.trial && business && (
+          <p className="mt-6 text-center text-sm text-gray-600">
+            Not ready to set up AutoPay?{' '}
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard/billing')}
+              className="font-medium text-blue-700 underline underline-offset-2 hover:text-blue-800"
+            >
+              Do it later from Billing
+            </button>
+          </p>
+        )}
+
+        {step === STEP.qr && business && (
           <div className="mt-6 flex justify-center">
             <Button size="lg" onClick={() => navigate('/dashboard')}>
-              Go to Dashboard <ArrowRight className="h-4 w-4" />
+              Go to dashboard <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         )}
-      </div>
+      </main>
+
+      <footer className="px-6 pb-10">
+        <nav aria-label="Legal and policies">
+          <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+            {[
+              { to: '/terms', label: 'Terms' },
+              { to: '/privacy', label: 'Privacy' },
+              { to: '/refunds', label: 'Refunds' },
+              { to: '/contact', label: 'Contact' },
+            ].map((link) => (
+              <li key={link.to}>
+                <Link to={link.to} className="text-xs text-gray-600 underline underline-offset-2 hover:text-gray-900">
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </footer>
     </div>
   );
 }

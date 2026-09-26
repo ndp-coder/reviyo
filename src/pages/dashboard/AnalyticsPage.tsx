@@ -1,7 +1,7 @@
 import { useOutletContext } from 'react-router-dom';
-import { Star, TrendingUp, BarChart3 } from 'lucide-react';
+import { Star, TrendingUp, BarChart3, Lightbulb } from 'lucide-react';
 import { useDashboardStats } from '@/lib/use-dashboard-stats';
-import { Card, Skeleton, EmptyState } from '@/components/ui';
+import { Alert, Button, Card, Skeleton, EmptyState, PageHeader } from '@/components/ui';
 import type { Business } from '@/lib/types';
 
 export function AnalyticsPage() {
@@ -10,12 +10,13 @@ export function AnalyticsPage() {
 
   if (stats.loading) {
     return (
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
-        <div className="mt-6 grid gap-4">
-          <Skeleton className="h-48" />
-          <Skeleton className="h-48" />
+      <div role="status" aria-label="Loading analytics">
+        <PageHeader title="Analytics" description="What customers rate you and what they mention." />
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <Skeleton className="h-56" />
+          <Skeleton className="h-56" />
         </div>
+        <Skeleton className="mt-4 h-64" />
       </div>
     );
   }
@@ -23,18 +24,20 @@ export function AnalyticsPage() {
   if (stats.error) {
     return (
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
-        <Card className="mt-6 p-6 text-center">
-          <p className="text-sm text-red-600">{stats.error}</p>
-        </Card>
+        <PageHeader title="Analytics" />
+        <Alert
+          variant="error"
+          className="mt-6"
+          action={<Button size="sm" variant="outline" onClick={stats.reload}>Try again</Button>}
+        >
+          {stats.error}
+        </Alert>
       </div>
     );
   }
 
   // Rating distribution
   const totalRatings = stats.ratingDistribution.reduce((a, b) => a + b, 0);
-  const maxRating = Math.max(...stats.ratingDistribution, 1);
-
   // Events over last 7 days
   const last7Days = [...Array(7)].map((_, i) => {
     const date = new Date();
@@ -47,15 +50,19 @@ export function AnalyticsPage() {
     dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(date);
     dayEnd.setHours(23, 59, 59, 999);
+    // QR scans only: mixing every event type into one bar said "something
+    // happened" without saying what.
     const count = stats.events.filter((e) => {
+      if (e.event_type !== 'qr_page_view') return false;
       const eventDate = new Date(e.created_at);
       return eventDate >= dayStart && eventDate <= dayEnd;
     }).length;
     return { date: date.toLocaleDateString('en', { weekday: 'short' }), count };
   });
   const maxDaily = Math.max(...dailyEvents.map((d) => d.count), 1);
+  const weekScans = dailyEvents.reduce((sum, d) => sum + d.count, 0);
 
-  // AI Insights from real data
+  // Insights derived by plain arithmetic over the business's own rows.
   const insights: string[] = [];
   if (stats.topTopics.length > 0) {
     insights.push(`Customers most frequently mention "${stats.topTopics[0].label}".`);
@@ -63,7 +70,7 @@ export function AnalyticsPage() {
   if (stats.topTopics.length > 1) {
     const second = stats.topTopics[1];
     const pct = totalRatings > 0 ? Math.round((second.count / totalRatings) * 100) : 0;
-    insights.push(`"${second.label}" appeared in ${pct}% of recent feedback.`);
+    insights.push(`"${second.label}" was picked in about ${pct}% of rated visits.`);
   }
   if (stats.avgRating > 0) {
     insights.push(`Your average customer rating is ${stats.avgRating.toFixed(1)} out of 5.`);
@@ -78,17 +85,23 @@ export function AnalyticsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
-      <p className="mt-1 text-sm text-gray-500">Understand what your customers are saying.</p>
+      <PageHeader title="Analytics" description="What customers rate you and what they mention." />
 
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
       {/* Rating distribution */}
-      <Card className="mt-6 p-6">
-        <div className="flex items-center gap-2 mb-5">
-          <Star className="h-4 w-4 text-gray-400" />
-          <h2 className="text-sm font-semibold text-gray-900">Experience Rating Distribution</h2>
+      <Card className="p-5 sm:p-6">
+        <div className="mb-5 flex items-center gap-2">
+          <Star className="h-4 w-4 text-gray-600" aria-hidden="true" />
+          <h2 className="text-sm font-semibold text-gray-900">Ratings</h2>
+          <span className="ml-auto text-xs text-gray-600">
+            {totalRatings > 0 ? `${totalRatings} in the last 90 days` : 'Last 90 days'}
+          </span>
         </div>
         {totalRatings === 0 ? (
-          <EmptyState title="No ratings yet" description="Ratings will appear here once customers start reviewing." />
+          <EmptyState
+            title="No ratings yet"
+            description="Each customer who scans your QR code and taps a star shows up here."
+          />
         ) : (
           <div className="space-y-2.5">
             {[5, 4, 3, 2, 1].map((star) => {
@@ -96,17 +109,18 @@ export function AnalyticsPage() {
               const pct = totalRatings > 0 ? (count / totalRatings) * 100 : 0;
               return (
                 <div key={star} className="flex items-center gap-3">
-                  <div className="flex items-center gap-1 w-16">
-                    <span className="text-sm text-gray-600">{star}</span>
-                    <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
+                  <div className="flex w-10 items-center gap-1">
+                    <span className="text-sm text-gray-700">{star}</span>
+                    <Star className="h-3 w-3 text-amber-500 fill-amber-400" aria-hidden="true" />
+                    <span className="sr-only">stars</span>
                   </div>
-                  <div className="flex-1 h-6 rounded-lg bg-gray-100 overflow-hidden">
+                  <div className="flex-1 h-3 rounded-full bg-gray-100 overflow-hidden" aria-hidden="true">
                     <div
-                      className="h-full bg-amber-400 rounded-lg transition-all duration-500"
+                      className="h-full rounded-full bg-amber-400 transition-[width] duration-500"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <span className="text-sm text-gray-500 w-8 text-right">{count}</span>
+                  <span className="w-8 text-right text-sm tabular-nums text-gray-700">{count}</span>
                 </div>
               );
             })}
@@ -114,50 +128,56 @@ export function AnalyticsPage() {
         )}
       </Card>
 
-      {/* Activity over 7 days */}
-      <Card className="mt-4 p-6">
-        <div className="flex items-center gap-2 mb-5">
-          <BarChart3 className="h-4 w-4 text-gray-400" />
-          <h2 className="text-sm font-semibold text-gray-900">Activity (Last 7 Days)</h2>
+      {/* Scans over 7 days */}
+      <Card className="p-5 sm:p-6">
+        <div className="mb-5 flex items-center gap-2">
+          <BarChart3 className="h-4 w-4 text-gray-600" aria-hidden="true" />
+          <h2 className="text-sm font-semibold text-gray-900">QR scans, last 7 days</h2>
+          <span className="ml-auto text-xs text-gray-600">{weekScans} this week</span>
         </div>
-        <div className="flex items-end justify-between gap-2 h-32">
+        <div className="flex items-end justify-between gap-1.5 sm:gap-2 h-32">
           {dailyEvents.map((day) => (
             <div key={day.date} className="flex-1 flex flex-col items-center gap-2">
               <div className="w-full flex items-end h-24">
                 <div
-                  className="w-full bg-blue-500 rounded-t-lg transition-all duration-500"
+                  className="w-full rounded-t-md bg-blue-600 transition-[height] duration-500"
                   style={{ height: `${(day.count / maxDaily) * 100}%`, minHeight: day.count > 0 ? '8px' : '0' }}
                 />
               </div>
-              <span className="text-xs text-gray-400">{day.date}</span>
-              <span className="text-xs font-medium text-gray-600">{day.count}</span>
+              <span className="text-xs text-gray-600">{day.date}</span>
+              <span className="text-xs font-medium tabular-nums text-gray-700">{day.count}</span>
             </div>
           ))}
         </div>
       </Card>
+      </div>
 
       {/* Most mentioned topics */}
-      <Card className="mt-4 p-6">
-        <div className="flex items-center gap-2 mb-5">
-          <TrendingUp className="h-4 w-4 text-gray-400" />
-          <h2 className="text-sm font-semibold text-gray-900">Most Mentioned Topics</h2>
+      <Card className="mt-4 p-5 sm:p-6">
+        <div className="mb-5 flex items-center gap-2">
+          <TrendingUp className="h-4 w-4 text-gray-600" aria-hidden="true" />
+          <h2 className="text-sm font-semibold text-gray-900">Most mentioned topics</h2>
+          <span className="ml-auto text-xs text-gray-600">Last 90 days</span>
         </div>
         {stats.topTopics.length === 0 ? (
-          <EmptyState title="No topic data yet" />
+          <EmptyState
+            title="No topics picked yet"
+            description="When customers tap topics like “Staff” or “Cleanliness” during a review, the most popular ones are ranked here."
+          />
         ) : (
           <div className="space-y-2.5">
             {stats.topTopics.map((topic) => {
               const maxCount = stats.topTopics[0]?.count ?? 1;
               return (
                 <div key={topic.label} className="flex items-center gap-3">
-                  <span className="text-sm text-gray-600 w-32 truncate">{topic.label}</span>
-                  <div className="flex-1 h-5 rounded-lg bg-gray-100 overflow-hidden">
+                  <span className="w-28 truncate text-sm text-gray-700 sm:w-40" title={topic.label}>{topic.label}</span>
+                  <div className="flex-1 h-3 rounded-full bg-gray-100 overflow-hidden" aria-hidden="true">
                     <div
-                      className="h-full bg-blue-500 rounded-lg transition-all duration-500"
+                      className="h-full rounded-full bg-blue-600 transition-[width] duration-500"
                       style={{ width: `${(topic.count / maxCount) * 100}%` }}
                     />
                   </div>
-                  <span className="text-sm text-gray-500 w-8 text-right">{topic.count}</span>
+                  <span className="w-8 text-right text-sm tabular-nums text-gray-700">{topic.count}</span>
                 </div>
               );
             })}
@@ -165,26 +185,26 @@ export function AnalyticsPage() {
         )}
       </Card>
 
-      {/* AI Insights */}
-      <Card className="mt-4 p-6 bg-gradient-to-br from-blue-50 to-sky-50 border-blue-100">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-lg">✨</span>
-          <h2 className="text-sm font-semibold text-gray-900">AI Business Insights</h2>
+      {/* Insights */}
+      <Card className="mt-4 p-5 sm:p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <Lightbulb className="h-4 w-4 text-gray-600" aria-hidden="true" />
+          <h2 className="text-sm font-semibold text-gray-900">What stands out</h2>
         </div>
         {insights.length === 0 ? (
-          <EmptyState title="No insights available yet" description="Insights appear once you have customer data." />
+          <EmptyState
+            title="Nothing to point out yet"
+            description="Short, plain observations appear here once a few customers have reviewed."
+          />
         ) : (
-          <div className="space-y-2.5">
-            {insights.map((insight, i) => (
-              <div key={i} className="flex items-start gap-2.5 rounded-xl bg-white/60 px-4 py-3">
-                <div className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
-                <p className="text-sm text-gray-700">{insight}</p>
-              </div>
+          <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700 marker:text-blue-600">
+            {insights.map((insight) => (
+              <li key={insight}>{insight}</li>
             ))}
-          </div>
+          </ul>
         )}
-        <p className="mt-4 text-xs text-gray-400">
-          Insights are generated from your actual collected data. No statistics are fabricated.
+        <p className="mt-4 text-xs text-gray-600">
+          Worked out from your own customers’ activity. Nothing here is estimated or invented.
         </p>
       </Card>
     </div>

@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Building2, CreditCard, AlertTriangle, Sparkles, Users, TrendingUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Building2, CreditCard, AlertTriangle, Sparkles, Users, LogOut } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { Card, Skeleton, Badge } from '@/components/ui';
+import { useAuth } from '@/lib/auth-context';
+import { BrandLogo } from '@/components/BrandLogo';
+import { Alert, Button, Card, Skeleton, Badge, PageHeader } from '@/components/ui';
 
 export function AdminPage() {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     businessCount: 0,
     activeSubs: 0,
@@ -11,6 +16,7 @@ export function AdminPage() {
     aiGenerations: 0,
     totalUsers: 0,
     loading: true,
+    error: null as string | null,
   });
 
   useEffect(() => {
@@ -23,6 +29,9 @@ export function AdminPage() {
           supabase.from('ai_generation_log').select('id', { count: 'exact', head: true }),
         ]);
 
+        const queryError = businessesRes.error ?? subsRes.error ?? usersRes.error ?? aiRes.error;
+        if (queryError) throw queryError;
+
         const subs = subsRes.data ?? [];
         const active = subs.filter((s: { status: string }) => s.status === 'active' || s.status === 'trial').length;
         const expired = subs.filter((s: { status: string }) => s.status === 'expired').length;
@@ -34,68 +43,62 @@ export function AdminPage() {
           aiGenerations: aiRes.count ?? 0,
           totalUsers: usersRes.count ?? 0,
           loading: false,
+          error: null,
         });
       } catch {
-        setStats((prev) => ({ ...prev, loading: false }));
+        setStats((prev) => ({ ...prev, loading: false, error: 'Could not load admin statistics.' }));
       }
     }
     loadAdminStats();
   }, []);
 
   const statCards = [
-    { label: 'Total Businesses', value: stats.businessCount, icon: Building2, color: 'text-blue-600 bg-blue-50' },
-    { label: 'Active Subscriptions', value: stats.activeSubs, icon: CreditCard, color: 'text-green-600 bg-green-50' },
-    { label: 'Expired Subscriptions', value: stats.expiredSubs, icon: AlertTriangle, color: 'text-amber-600 bg-amber-50' },
-    { label: 'AI Generations', value: stats.aiGenerations, icon: Sparkles, color: 'text-purple-600 bg-purple-50' },
-    { label: 'Total Users', value: stats.totalUsers, icon: Users, color: 'text-indigo-600 bg-indigo-50' },
+    { label: 'Businesses', value: stats.businessCount, icon: Building2 },
+    { label: 'Trial or active subscriptions', value: stats.activeSubs, icon: CreditCard },
+    { label: 'Expired subscriptions', value: stats.expiredSubs, icon: AlertTriangle },
+    { label: 'AI drafts written', value: stats.aiGenerations, icon: Sparkles },
+    { label: 'Users', value: stats.totalUsers, icon: Users },
   ];
 
+  async function handleSignOut() {
+    await signOut();
+    navigate('/');
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6 lg:p-8 max-w-6xl mx-auto">
-      <div className="flex items-center gap-2 mb-1">
-        <Badge variant="info">Admin</Badge>
-      </div>
-      <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-      <p className="mt-1 text-sm text-gray-500">System overview and usage statistics.</p>
+    <div className="min-h-screen bg-gray-50">
+      <header className="border-b border-gray-200 bg-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+          <div className="flex items-center gap-3">
+            <BrandLogo className="h-9 w-auto" />
+            <Badge variant="info">Admin</Badge>
+          </div>
+          <Button variant="ghost" size="sm" onClick={handleSignOut}>
+            <LogOut className="h-4 w-4" aria-hidden="true" /> Sign out
+          </Button>
+        </div>
+      </header>
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+      <PageHeader title="Admin dashboard" description="System overview and usage statistics." />
 
       {stats.loading ? (
         <div className="mt-6 grid grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-28" />)}
         </div>
+      ) : stats.error ? (
+        <Alert variant="error" className="mt-6">{stats.error}</Alert>
       ) : (
         <div className="mt-6 grid grid-cols-2 lg:grid-cols-3 gap-4">
           {statCards.map((stat) => (
-            <Card key={stat.label} className="p-5">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${stat.color}`}>
-                <stat.icon className="h-5 w-5" />
-              </div>
-              <p className="mt-3 text-2xl font-bold text-gray-900">{stat.value}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
+            <Card key={stat.label} className="p-4 sm:p-5">
+              <stat.icon className="h-5 w-5 text-blue-700" aria-hidden="true" />
+              <p className="mt-3 text-2xl font-bold text-gray-900 tabular-nums">{stat.value}</p>
+              <p className="mt-0.5 text-sm text-gray-600">{stat.label}</p>
             </Card>
           ))}
         </div>
       )}
-
-      <Card className="mt-6 p-6">
-        <div className="flex items-center gap-2 mb-3">
-          <TrendingUp className="h-4 w-4 text-gray-400" />
-          <h2 className="text-sm font-semibold text-gray-900">System Status</h2>
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">Database</span>
-            <Badge variant="success">Operational</Badge>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">AI Generation</span>
-            <Badge variant="success">Active</Badge>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">Payment Processing</span>
-            <Badge variant="warning">Pending Integration</Badge>
-          </div>
-        </div>
-      </Card>
+      </main>
     </div>
   );
 }

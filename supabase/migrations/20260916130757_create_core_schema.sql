@@ -1,8 +1,8 @@
 /*
-# ReviewFlow Core Database Schema
+# Reviyo Core Database Schema
 
 ## Overview
-Creates the foundational database tables for ReviewFlow, an AI-assisted Google review
+Creates the foundational database tables for Reviyo, an AI-assisted Google review
 platform for small businesses. This migration creates all core tables with proper
 constraints, indexes, and relationships.
 

@@ -131,3 +131,77 @@ export interface AIReviewResponse {
   review: string;
   error?: string;
 }
+
+export type PaymentOrderStatus = 'created' | 'attempted' | 'paid' | 'failed';
+
+export interface PaymentOrder {
+  id: string;
+  business_id: string;
+  user_id: string | null;
+  order_id: string;
+  payment_id: string | null;
+  plan: SubscriptionPlan;
+  amount: number;
+  currency: string;
+  status: PaymentOrderStatus;
+  receipt: string | null;
+  /** 'autopay' for charges made by AutoPay, 'one_time' for checkout purchases. */
+  kind?: 'one_time' | 'autopay';
+  charge_after?: string | null;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RazorpayOrderResponse {
+  order_id: string;
+  amount: number;
+  currency: string;
+  key_id: string;
+  plan: SubscriptionPlan;
+  business_name?: string;
+}
+
+export interface RazorpayCheckoutSuccessResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
+
+export type AutopayMethod = 'upi' | 'card';
+
+export type AutopayMandateStatus =
+  | 'created'
+  | 'authorized'
+  | 'active'
+  | 'paused'
+  | 'rejected'
+  | 'cancelled'
+  | 'failed';
+
+export interface AutopayMandate {
+  id: string;
+  business_id: string;
+  plan: SubscriptionPlan;
+  amount: number;
+  method: AutopayMethod;
+  status: AutopayMandateStatus;
+  failed_attempts: number;
+  auth_refund_id: string | null;
+  cancelled_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AutopaySetupOrder {
+  order_id: string;
+  amount: number;
+  currency: string;
+  key_id: string;
+  customer_id: string;
+  method: AutopayMethod;
+  plan: SubscriptionPlan;
+  plan_amount: number;
+  business_name?: string;
+}

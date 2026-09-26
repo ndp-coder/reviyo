@@ -1,0 +1,4 @@
+# Netlify and Cloudflare Pages. Prerendered public pages are real files and are
+# served as-is; every other path (dashboard, sign-in, /r/:slug, unknown URLs)
+# gets the app shell, which is marked noindex.
+/*    /app.html    200

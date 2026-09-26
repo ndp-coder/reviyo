@@ -4,7 +4,7 @@ import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { branding } from '@/config/branding';
 import { AuthLayout } from './AuthLayout';
-import { Button } from '@/components/ui';
+import { Alert, Button, Input } from '@/components/ui';
 
 export function LoginPage() {
   const { signIn, user, loading } = useAuth();
@@ -18,6 +18,7 @@ export function LoginPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (submitting) return;
     setError(null);
     setSubmitting(true);
     const { error } = await signIn(email, password);
@@ -33,55 +34,48 @@ export function LoginPage() {
     <AuthLayout>
       <div className="w-full max-w-sm animate-slide-up">
         <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-        <p className="mt-1.5 text-sm text-gray-500">Sign in to your {branding.name} dashboard.</p>
+        <p className="mt-1.5 text-sm text-gray-600">Sign in to your {branding.name} dashboard.</p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 pl-10 pr-4 py-2.5 text-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                placeholder="you@example.com"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 pl-10 pr-4 py-2.5 text-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                placeholder="Your password"
-              />
-            </div>
-          </div>
+          <Input
+            id="login-email"
+            label="Email"
+            icon={Mail}
+            name="email"
+            type="email"
+            inputMode="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+          />
+          <Input
+            id="login-password"
+            label="Password"
+            icon={Lock}
+            name="password"
+            type="password"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            revealable
+          />
 
-          {error && (
-            <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
+          {error && <Alert variant="error">{error}</Alert>}
 
           <Button type="submit" size="lg" loading={submitting} className="w-full">
-            Sign in <ArrowRight className="h-4 w-4" />
+            Sign in <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Button>
         </form>
 
-        <div className="mt-6 flex items-center justify-between text-sm">
-          <Link to="/forgot-password" className="text-blue-600 hover:text-blue-700 font-medium">
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm">
+          <Link to="/forgot-password" className="text-blue-700 hover:text-blue-800 font-medium underline underline-offset-2">
             Forgot password?
           </Link>
-          <span className="text-gray-500">
-            No account? <Link to="/signup" className="text-blue-600 hover:text-blue-700 font-medium">Sign up</Link>
+          <span className="text-gray-600">
+            No account? <Link to="/signup" className="text-blue-700 hover:text-blue-800 font-medium underline underline-offset-2">Sign up</Link>
           </span>
         </div>
       </div>

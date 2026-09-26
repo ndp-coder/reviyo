@@ -1,13 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
+export const supabasePublicKey = (
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+)?.trim();
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Check your .env file.');
+if (!supabaseUrl || !supabasePublicKey) {
+  throw new Error(
+    'Missing Supabase configuration. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to .env.local.'
+  );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+try {
+  const parsedUrl = new URL(supabaseUrl);
+  if (!['http:', 'https:'].includes(parsedUrl.protocol)) throw new Error();
+} catch {
+  throw new Error('VITE_SUPABASE_URL must be a valid http(s) URL.');
+}
+
+export const supabase = createClient(supabaseUrl, supabasePublicKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,

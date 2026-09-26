@@ -1,2 +1,29 @@
 [functions.generate-review]
 verify_jwt = false
+
+[functions.razorpay-webhook]
+verify_jwt = false
+
+# Account erasure must only ever run for a signed-in caller. The gateway checks
+# the JWT, and the function checks it again and resolves the user id from the
+# token rather than from the request body.
+[functions.delete-account]
+verify_jwt = true
+
+# Owners only: the function also resolves the user from the token itself.
+[functions.suggest-topics]
+verify_jwt = true
+
+# AutoPay. The scheduler is called by pg_cron with its own shared secret
+# (AUTOPAY_CRON_SECRET), not a user JWT.
+[functions.create-autopay-mandate]
+verify_jwt = true
+
+[functions.verify-autopay-mandate]
+verify_jwt = true
+
+[functions.cancel-autopay]
+verify_jwt = true
+
+[functions.autopay-scheduler]
+verify_jwt = false

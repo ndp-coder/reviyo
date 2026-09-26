@@ -1,39 +1,66 @@
+import { lazy, Suspense, type ReactNode } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
+import { LoadingSpinner } from '@/components/ui';
+import { RouteMeta } from '@/components/RouteMeta';
+import { TOOL_PATH } from '@/config/seo';
+
+// Public marketing and policy pages are prerendered to static HTML for search
+// engines and link previews (scripts/prerender.mjs). They are imported eagerly:
+// the static renderer cannot wait for a lazy page and would output only the
+// loading spinner. Everything else is for signed-in owners or customers
+// scanning a QR code, and loads on demand.
 import { LandingPage } from '@/pages/LandingPage';
 import { PricingPage } from '@/pages/PricingPage';
-import { LoginPage } from '@/pages/auth/LoginPage';
-import { SignupPage } from '@/pages/auth/SignupPage';
-import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
-import { OnboardingPage } from '@/pages/onboarding/OnboardingPage';
-import { DashboardLayout } from '@/pages/dashboard/DashboardLayout';
-import { DashboardOverview } from '@/pages/dashboard/DashboardOverview';
-import { AnalyticsPage } from '@/pages/dashboard/AnalyticsPage';
-import { PrivateFeedbackPage } from '@/pages/dashboard/PrivateFeedbackPage';
-import { QRManagementPage } from '@/pages/dashboard/QRManagementPage';
-import { SettingsPage } from '@/pages/dashboard/SettingsPage';
-import { BillingPage } from '@/pages/dashboard/BillingPage';
-import { AdminPage } from '@/pages/admin/AdminPage';
-import { CustomerReviewPage } from '@/pages/customer/CustomerReviewPage';
-import { LoadingSpinner } from '@/components/ui';
+import { PrivacyPolicyPage } from '@/pages/legal/PrivacyPolicyPage';
+import { TermsPage } from '@/pages/legal/TermsPage';
+import { CookiePolicyPage } from '@/pages/legal/CookiePolicyPage';
+import { RefundPolicyPage } from '@/pages/legal/RefundPolicyPage';
+import { ContactPage } from '@/pages/legal/ContactPage';
+import { IndustriesPage } from '@/pages/marketing/IndustriesPage';
+import { IndustryPage } from '@/pages/marketing/IndustryPage';
+import { ReviewLinkGeneratorPage } from '@/pages/marketing/ReviewLinkGeneratorPage';
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+const LoginPage = lazy(() => import('@/pages/auth/LoginPage').then((module) => ({ default: module.LoginPage })));
+const SignupPage = lazy(() => import('@/pages/auth/SignupPage').then((module) => ({ default: module.SignupPage })));
+const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage').then((module) => ({ default: module.ForgotPasswordPage })));
+const OnboardingPage = lazy(() => import('@/pages/onboarding/OnboardingPage').then((module) => ({ default: module.OnboardingPage })));
+const DashboardLayout = lazy(() => import('@/pages/dashboard/DashboardLayout').then((module) => ({ default: module.DashboardLayout })));
+const DashboardOverview = lazy(() => import('@/pages/dashboard/DashboardOverview').then((module) => ({ default: module.DashboardOverview })));
+const AnalyticsPage = lazy(() => import('@/pages/dashboard/AnalyticsPage').then((module) => ({ default: module.AnalyticsPage })));
+const PrivateFeedbackPage = lazy(() => import('@/pages/dashboard/PrivateFeedbackPage').then((module) => ({ default: module.PrivateFeedbackPage })));
+const QRManagementPage = lazy(() => import('@/pages/dashboard/QRManagementPage').then((module) => ({ default: module.QRManagementPage })));
+const SettingsPage = lazy(() => import('@/pages/dashboard/SettingsPage').then((module) => ({ default: module.SettingsPage })));
+const BillingPage = lazy(() => import('@/pages/dashboard/BillingPage').then((module) => ({ default: module.BillingPage })));
+const AdminPage = lazy(() => import('@/pages/admin/AdminPage').then((module) => ({ default: module.AdminPage })));
+const CustomerReviewPage = lazy(() => import('@/pages/customer/CustomerReviewPage').then((module) => ({ default: module.CustomerReviewPage })));
+
+function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center" role="status">
+      <LoadingSpinner className="text-blue-600" />
+      <span className="sr-only">Loading page</span>
+    </div>
+  );
+}
+
+function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><LoadingSpinner className="text-blue-600" /></div>;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
-function AdminRoute({ children }: { children: React.ReactNode }) {
+function AdminRoute({ children }: { children: ReactNode }) {
   const { user, profile, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><LoadingSpinner className="text-blue-600" /></div>;
+  if (loading) return <PageLoader />;
   if (!user || profile?.role !== 'admin') return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
-function OnboardingRoute({ children }: { children: React.ReactNode }) {
+function OnboardingRoute({ children }: { children: ReactNode }) {
   const { user, profile, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><LoadingSpinner className="text-blue-600" /></div>;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
   if (profile?.role === 'admin') return <Navigate to="/admin" replace />;
   return <>{children}</>;
@@ -41,10 +68,25 @@ function OnboardingRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <Routes>
+    <>
+    <RouteMeta />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
       {/* Public marketing routes */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/for" element={<IndustriesPage />} />
+      <Route path="/for/:slug" element={<IndustryPage />} />
+      <Route path={TOOL_PATH} element={<ReviewLinkGeneratorPage />} />
+
+      {/* Legal & policy routes. These must stay publicly reachable without auth:
+          Razorpay merchant terms and the Consumer Protection (E-Commerce) Rules,
+          2020 both require them to be accessible to anyone. */}
+      <Route path="/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/cookies" element={<CookiePolicyPage />} />
+      <Route path="/refunds" element={<RefundPolicyPage />} />
+      <Route path="/contact" element={<ContactPage />} />
 
       {/* Auth routes */}
       <Route path="/login" element={<LoginPage />} />
@@ -78,7 +120,9 @@ function App() {
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </Suspense>
+    </>
   );
 }
 

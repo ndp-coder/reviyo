@@ -7,6 +7,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.pnpm-store
 dist
 dist-ssr
 *.local
@@ -21,3 +22,7 @@ dist-ssr
 *.sln
 *.sw?
 .env
+*.pem
+*.key
+supabase/functions/.env
+supabase/.temp/

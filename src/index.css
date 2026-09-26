@@ -5,7 +5,39 @@
 @layer base {
   body {
     @apply text-gray-900 antialiased;
-    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    /* System fonts: nothing to download, and every visitor sees the design as
+       tested. ("Inter" was listed here but never loaded, so only people who
+       had it installed saw it.) */
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  /*
+   * Visible keyboard focus on every interactive element (WCAG 2.2 SC 2.4.7 and
+   * SC 2.4.11). Several components set `outline-none` to swap in a Tailwind
+   * ring; this rule makes sure that anything which does *not* define its own
+   * focus style still gets a clearly visible one. :focus-visible means mouse
+   * users do not see rings on click, only keyboard users.
+   */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  summary:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid theme('colors.blue.700');
+    outline-offset: 2px;
+    border-radius: 0.375rem;
+  }
+
+  /*
+   * Programmatic focus targets (the skip link's destination, for instance) get
+   * focus without a visible ring, which would otherwise look like a stray box
+   * around the whole page.
+   */
+  main:focus,
+  main:focus-visible {
+    outline: none;
   }
 }
 
@@ -18,6 +50,14 @@
   }
   .animate-scale-in {
     animation: scaleIn 0.2s ease-out;
+  }
+  /* Sideways-scrolling strips (tabs on phones) scroll by swipe; the native
+     scrollbar only adds clutter there. */
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
 }
 
@@ -38,4 +78,46 @@
 
 html {
   scroll-behavior: smooth;
+}
+
+/*
+ * Respect the operating-system "reduce motion" setting (WCAG 2.2 SC 2.3.3).
+ * Motion can trigger nausea, dizziness, and migraine in people with vestibular
+ * disorders. Animations are not removed outright — they are collapsed to a
+ * near-instant step, so anything that relies on an animation or transition
+ * completing still fires its events.
+ */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * "Print card" on the QR page prints only the counter card. Everything else is
+ * hidden rather than removed, so the card keeps its layout.
+ */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+  }
 }

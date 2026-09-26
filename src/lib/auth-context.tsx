@@ -8,7 +8,12 @@ interface AuthContextValue {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    fullName: string,
+    termsConsentVersion: string
+  ) => Promise<{ error: string | null; needsConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
@@ -66,11 +71,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  async function signUp(email: string, password: string, fullName: string) {
+  async function signUp(
+    email: string,
+    password: string,
+    fullName: string,
+    termsConsentVersion: string
+  ) {
+    // The consent version travels in the signup metadata and is written onto
+    // the profile row by the handle_new_user() trigger, so the account carries
+    // evidence of which Terms and Privacy Policy it accepted (DPDPA s.6(1)).
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: {
+        data: {
+          full_name: fullName,
+          terms_consent_version: termsConsentVersion,
+        },
+      },
     });
 
     if (error) {
@@ -78,7 +96,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (!data.session) {
-      return { error: 'Please check your email to confirm your account.' };
+      // The project requires email confirmation. This is the expected next
+      // step, not a failure, so the page shows instructions instead of an error.
+      return { error: null, needsConfirmation: true };
     }
 
     return { error: null };

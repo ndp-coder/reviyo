@@ -1,13 +1,9 @@
 // AI Review Generation Edge Function
-// Provider-agnostic: swap AI providers by changing only the provider module below.
+// Provider-agnostic: select OpenAI or Gemini with Supabase Edge Function secrets.
 // The function receives structured input and returns a natural review based on
 // the customer's genuine input. It NEVER invents experiences or facts.
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
-};
+import { getCorsHeaders, isAllowedBrowserOrigin } from "../_shared/cors.ts";
 
 interface ReviewRequest {
   sessionToken: string;
@@ -20,102 +16,109 @@ interface ReviewRequest {
 }
 
 // ============================================
-// PROVIDER INTERFACE — swap this to change AI providers
+// PROVIDERS
 // ============================================
-// To use OpenAI: set OPENAI_API_KEY secret, uncomment the openaiGenerate function
-// To use Gemini: set GEMINI_API_KEY secret, uncomment the geminiGenerate function
-// To use another provider: implement the same interface
+// Configure AI_PROVIDER, AI_MODEL, and the selected provider's API key.
 
-interface AIProvider {
-  generate(prompt: string): Promise<string>;
+function getSupabaseSecretKey(): string {
+  const secretKeys = Deno.env.get("SUPABASE_SECRET_KEYS");
+  if (secretKeys) {
+    const parsed = JSON.parse(secretKeys) as Record<string, string>;
+    const key = parsed.default ?? Object.values(parsed)[0];
+    if (key) return key;
+  }
+
+  const legacyKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (legacyKey) return legacyKey;
+
+  throw new Error("Supabase server key is not available");
 }
 
-// --- Template-based fallback (no API key required) ---
-// This produces a natural review from the customer's input without calling any
-// external AI API. It's used when no provider API key is configured.
-function templateGenerate(request: ReviewRequest): string {
-  const { businessName, rating, selectedTopics, customerComment, requestedStyle } = request;
+interface SupabaseRpcClient {
+  rpc(
+    name: string,
+    params: Record<string, unknown>,
+  ): PromiseLike<{ data: unknown; error: { message: string } | null }>;
+}
 
-  const ratingWord =
-    rating === 5 ? "excellent" :
-    rating === 4 ? "good" :
-    rating === 3 ? "okay" :
-    rating === 2 ? "disappointing" :
-    "poor";
+class ProviderRequestError extends Error {
+  readonly retryable: boolean;
 
-  let review = `I had ${ratingWord === "excellent" ? "an" : "a"} ${ratingWord} experience at ${businessName}`;
-
-  if (selectedTopics.length > 0) {
-    const topicStr = selectedTopics.length === 1
-      ? selectedTopics[0]
-      : selectedTopics.slice(0, -1).join(", ") + " and " + selectedTopics[selectedTopics.length - 1];
-    review += `. The ${topicStr} stood out to me`;
+  constructor(provider: string, status: number, details: string) {
+    super(`${provider} request failed (${status}): ${details}`);
+    this.name = "ProviderRequestError";
+    this.retryable = status === 429 || status >= 500;
   }
+}
 
-  if (customerComment && customerComment.trim()) {
-    review += `. ${customerComment.trim()}`;
-  } else {
-    review += ".";
+async function openaiGenerate(prompt: string): Promise<string> {
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  const model = Deno.env.get("AI_MODEL");
+  if (!apiKey || !model) throw new Error("OpenAI provider is not configured");
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: prompt },
+      ],
+      max_tokens: 300,
+      temperature: 0.7,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new ProviderRequestError("OpenAI", response.status, errorText);
   }
-
-  if (requestedStyle === "detailed" && selectedTopics.length > 0) {
-    const details = selectedTopics.map(t => `The ${t.toLowerCase()} was ${ratingWord}`).join(". ");
-    review += ` ${details}.`;
-  }
-
-  if (requestedStyle === "shorter") {
-    // Keep it concise — just the first sentence or two
-    const sentences = review.split(". ");
-    review = sentences.slice(0, 2).join(". ") + ".";
-  }
-
+  const data = await response.json();
+  const review = data.choices?.[0]?.message?.content?.trim();
+  if (!review) throw new Error("OpenAI returned an empty response");
   return review;
 }
 
-// --- OpenAI provider (uncomment when OPENAI_API_KEY is set) ---
-// async function openaiGenerate(prompt: string): Promise<string> {
-//   const apiKey = Deno.env.get("OPENAI_API_KEY");
-//   if (!apiKey) throw new Error("OpenAI API key not configured");
-//   const response = await fetch("https://api.openai.com/v1/chat/completions", {
-//     method: "POST",
-//     headers: {
-//       "Content-Type": "application/json",
-//       "Authorization": `Bearer ${apiKey}`,
-//     },
-//     body: JSON.stringify({
-//       model: "gpt-4o-mini",
-//       messages: [
-//         { role: "system", content: SYSTEM_PROMPT },
-//         { role: "user", content: prompt },
-//       ],
-//       max_tokens: 300,
-//       temperature: 0.7,
-//     }),
-//   });
-//   if (!response.ok) throw new Error(`OpenAI request failed (${response.status})`);
-//   const data = await response.json();
-//   return data.choices?.[0]?.message?.content?.trim() ?? "";
-// }
+async function geminiGenerate(prompt: string): Promise<string> {
+  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  const model = Deno.env.get("AI_MODEL") || "gemini-3.8-flash";
+  if (!apiKey) throw new Error("Gemini API key (GEMINI_API_KEY) is not configured");
 
-// --- Gemini provider (uncomment when GEMINI_API_KEY is set) ---
-// async function geminiGenerate(prompt: string): Promise<string> {
-//   const apiKey = Deno.env.get("GEMINI_API_KEY");
-//   if (!apiKey) throw new Error("Gemini API key not configured");
-//   const response = await fetch(
-//     `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-//     {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify({
-//         contents: [{ parts: [{ text: SYSTEM_PROMPT + "\n\n" + prompt }] }],
-//         generationConfig: { maxOutputTokens: 300, temperature: 0.7 },
-//       }),
-//     }
-//   );
-//   if (!response.ok) throw new Error(`Gemini request failed (${response.status})`);
-//   const data = await response.json();
-//   return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "";
-// }
+  const cleanModel = model.replace(/^models\//, "");
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cleanModel)}:generateContent`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 300, temperature: 0.7 },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new ProviderRequestError("Gemini", response.status, errorText);
+  }
+  const data = await response.json();
+  const candidate = data.candidates?.[0];
+  const review = candidate?.content?.parts?.[0]?.text?.trim();
+  if (!review) {
+    const finishReason = candidate?.finishReason || "UNKNOWN";
+    throw new Error(`Gemini returned an empty response (finishReason: ${finishReason})`);
+  }
+  return review;
+}
 
 // ============================================
 // SYSTEM PROMPT — enforces product principles
@@ -161,13 +164,13 @@ Write only the review text, no preamble or explanation.`;
 // ============================================
 // RATE LIMITING
 // ============================================
-async function checkRateLimit(supabase: any, sessionToken: string): Promise<boolean> {
-  const { data } = await supabase.rpc("check_ai_rate_limit", { p_session_token: sessionToken });
+async function claimGenerationQuota(supabase: SupabaseRpcClient, sessionToken: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("claim_ai_generation", { p_session_token: sessionToken });
+  if (error) {
+    console.error("claim_ai_generation failed:", error);
+    throw new Error("Could not check AI generation quota");
+  }
   return data === true;
-}
-
-async function logGeneration(supabase: any, sessionToken: string): Promise<void> {
-  await supabase.rpc("log_ai_generation", { p_session_token: sessionToken });
 }
 
 // ============================================
@@ -189,6 +192,14 @@ function validateInput(body: ReviewRequest): string | null {
 // MAIN HANDLER
 // ============================================
 Deno.serve(async (req: Request) => {
+  const corsHeaders = getCorsHeaders(req);
+  if (!isAllowedBrowserOrigin(req)) {
+    return new Response(JSON.stringify({ error: "Origin not allowed" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", "Vary": "Origin" },
+    });
+  }
+
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
@@ -205,14 +216,79 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Create Supabase client with service role for DB operations
+    // Create a server-side Supabase client for rate-limit operations.
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseKey = getSupabaseSecretKey();
     const { createClient } = await import("npm:@supabase/supabase-js@2.57.4");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Check rate limit
-    const allowed = await checkRateLimit(supabase, body.sessionToken);
+    // Resolve business, rating, and topics from the session instead of trusting
+    // client-supplied business details.
+    const { data: session, error: sessionError } = await supabase
+      .from("review_sessions")
+      .select("id, business_id, rating")
+      .eq("session_token", body.sessionToken)
+      .maybeSingle();
+
+    if (sessionError || !session || session.rating === null) {
+      return new Response(
+        JSON.stringify({ error: "Review session is invalid or incomplete." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // AI drafting is a paid feature: refuse once the business's trial or plan has ended.
+    const { data: hasSubscription, error: subscriptionError } = await supabase.rpc(
+      "business_has_active_subscription",
+      { p_business_id: session.business_id }
+    );
+    if (subscriptionError) {
+      throw new Error("Could not check subscription status");
+    }
+    if (hasSubscription !== true) {
+      return new Response(
+        JSON.stringify({ error: "Review drafting is not available for this business right now." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const [businessResult, topicsResult] = await Promise.all([
+      supabase
+        .from("businesses")
+        .select("name, category")
+        .eq("id", session.business_id)
+        .single(),
+      supabase
+        .from("review_session_topics")
+        .select("review_topics(label)")
+        .eq("review_session_id", session.id),
+    ]);
+
+    if (businessResult.error || !businessResult.data || topicsResult.error) {
+      throw new Error("Could not resolve review session context");
+    }
+
+    const trustedRequest: ReviewRequest = {
+      ...body,
+      businessName: businessResult.data.name,
+      businessCategory: businessResult.data.category,
+      rating: session.rating,
+      selectedTopics: (topicsResult.data ?? [])
+        .map((row: { review_topics: { label: string } | null }) => row.review_topics?.label)
+        .filter((label: string | undefined): label is string => Boolean(label)),
+    };
+
+    const provider = Deno.env.get("AI_PROVIDER")?.toLowerCase();
+    if (provider !== "openai" && provider !== "gemini") {
+      return new Response(
+        JSON.stringify({ error: "AI review generation is not configured." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Claim quota atomically before spending provider tokens. Parallel requests
+    // across different sessions cannot pass the business-wide limit together.
+    const allowed = await claimGenerationQuota(supabase, body.sessionToken);
     if (!allowed) {
       return new Response(
         JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
@@ -221,31 +297,15 @@ Deno.serve(async (req: Request) => {
     }
 
     // Build prompt
-    const prompt = buildPrompt(body);
+    const prompt = buildPrompt(trustedRequest);
 
-    // Select provider — uses template fallback if no API key is set
-    // To enable a real AI provider, uncomment its function above and set the
-    // corresponding environment variable (OPENAI_API_KEY or GEMINI_API_KEY).
     let review: string;
 
-    const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    const geminiKey = Deno.env.get("GEMINI_API_KEY");
-
-    if (openaiKey) {
-      // Uncomment when openaiGenerate is implemented
-      // review = await retryWithBackoff(() => openaiGenerate(prompt));
-      review = templateGenerate(body); // Fallback until provider is uncommented
-    } else if (geminiKey) {
-      // Uncomment when geminiGenerate is implemented
-      // review = await retryWithBackoff(() => geminiGenerate(prompt));
-      review = templateGenerate(body); // Fallback until provider is uncommented
+    if (provider === "openai") {
+      review = await retryWithBackoff(() => openaiGenerate(prompt));
     } else {
-      // Template-based fallback — no external API call needed
-      review = templateGenerate(body);
+      review = await retryWithBackoff(() => geminiGenerate(prompt));
     }
-
-    // Log the generation for rate limiting
-    await logGeneration(supabase, body.sessionToken);
 
     return new Response(
       JSON.stringify({ review }),
@@ -253,9 +313,13 @@ Deno.serve(async (req: Request) => {
     );
   } catch (err) {
     console.error("generate-review error:", err);
+    const providerFailed = err instanceof ProviderRequestError;
+    const errorMessage = providerFailed
+      ? "AI provider request failed. Check its API key, model access, billing, and quota."
+      : "Could not generate review. Please try again.";
     return new Response(
-      JSON.stringify({ error: "Could not generate review. Please try again." }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: errorMessage }),
+      { status: providerFailed ? 502 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
@@ -268,6 +332,9 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, maxRetries = 2): Promis
       return await fn();
     } catch (err) {
       lastError = err as Error;
+      if (err instanceof ProviderRequestError && !err.retryable) {
+        throw err;
+      }
       if (i < maxRetries) {
         await new Promise((resolve) => setTimeout(resolve, 1000 * Math.pow(2, i)));
       }

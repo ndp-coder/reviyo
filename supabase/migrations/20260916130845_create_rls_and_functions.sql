@@ -1,5 +1,5 @@
 /*
-# ReviewFlow RLS Policies and Security Functions
+# Reviyo RLS Policies and Security Functions
 
 ## Overview
 Enables Row Level Security on all tables and creates policies that enforce:
