@@ -130,9 +130,12 @@ export function PrivacyPolicyPage() {
         />
         <p>
           <strong>
-            We do not collect your IP address, device fingerprint, advertising identifier, or precise
+            We do not store your IP address, device fingerprint, advertising identifier, or precise
             location, and we do not build a profile of you.
           </strong>{' '}
+          Like any website, our hosting providers receive your IP address in order to deliver the
+          page, and may keep it for a short time in their security logs; we never copy it into our
+          database or use it to identify you.
           We do not use tracking pixels, advertising tags, or third-party analytics on the review
           page.
         </p>
@@ -395,8 +398,8 @@ export function PrivacyPolicyPage() {
       <Clause id="cookies" heading="12. Cookies and local storage">
         <p>
           {N} uses no advertising cookies, no analytics cookies, and no third-party tracking. The only
-          browser storage we use is what is strictly necessary to keep a signed-in business owner
-          signed in. The full detail — and why we therefore do not show you a cookie consent banner —
+          browser storage we use is for signed-in business owners: their sign-in session, and text
+          they typed into two dashboard tools, kept on their own device. The full detail — and why we therefore do not show you a cookie consent banner —
           is in our{' '}
           <Link className="text-brand-700 underline underline-offset-2" to="/cookies">
             Cookie Policy

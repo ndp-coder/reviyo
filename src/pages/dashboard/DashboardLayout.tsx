@@ -287,13 +287,13 @@ export function DashboardLayout() {
             <Alert variant="error" className="mb-6">
               {subscription ? (
                 <>
-                  Your {subscription.status === 'trial' ? 'free trial' : 'plan'} has ended. Your QR code, AI review
-                  drafting, and dashboard are paused until you{' '}
+                  Your {subscription.status === 'trial' ? 'free trial' : 'plan'} has ended. Your QR code now sends
+                  customers straight to Google; AI review drafting and your dashboard are paused until you{' '}
                   <Link to="/dashboard/billing" className="font-medium underline underline-offset-2">renew</Link>.
                 </>
               ) : (
                 <>
-                  Start your free trial to switch on your QR code, AI review drafting, and dashboard.{' '}
+                  Start your free trial to switch on AI review drafting and your dashboard.{' '}
                   <Link to="/dashboard/billing" className="font-medium underline underline-offset-2">Set it up</Link>.
                 </>
               )}

@@ -337,7 +337,7 @@ export function BillingPage() {
                         <p className="text-sm text-red-900">
                           Cancel AutoPay? You won&apos;t be charged again. You keep access until{' '}
                           {subscription?.expires_at ? formatDate(subscription.expires_at, 'long') : 'your current period ends'}
-                          , then your QR code, AI drafting, and dashboard pause.
+                          , then AI drafting and your dashboard pause. Your QR code keeps sending customers to Google.
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           <Button variant="danger" size="sm" onClick={handleCancelAutopay} loading={cancelling}>
@@ -372,7 +372,7 @@ export function BillingPage() {
                   )}
                   <p className="mt-1 text-sm text-gray-600">
                     {subscription
-                      ? 'Renew automatically so your QR code and dashboard never pause.'
+                      ? 'Renew automatically so AI drafting and your dashboard never pause.'
                       : 'Set up AutoPay with a ₹1 verification payment, refunded straight away. Nothing more is charged until your trial ends.'}
                   </p>
                   <div className="mt-5">

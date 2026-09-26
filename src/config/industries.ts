@@ -37,7 +37,7 @@ export const industries: Industry[] = [
     metaTitle: 'Get More Google Reviews for Your Dental Clinic | Reviyo',
     metaDescription:
       'A QR code at your reception helps patients write genuine Google reviews in under a minute, with AI help to put their visit into words. 14-day free trial.',
-    headline: 'More Google reviews for your dental clinic, from patients who were happy to write one',
+    headline: 'More Google reviews for your dental clinic, in your patients’ own words',
     intro:
       'Most patients leave your chair relieved and grateful, then forget to review you by the time they reach the car. Reviyo puts a QR code at reception so they can rate the visit, tap what stood out, and get help turning it into a review in their own words before they leave.',
     placement: [
@@ -69,7 +69,7 @@ export const industries: Industry[] = [
     singular: 'salon',
     metaTitle: 'Google Review QR Code for Salons & Beauty Parlours | Reviyo',
     metaDescription:
-      'Help happy salon clients leave Google reviews while they’re still at the mirror. A QR code, AI-assisted writing in their own words, and a 14-day free trial.',
+      'Help salon clients leave Google reviews while they’re still at the mirror. A QR code, AI-assisted writing in their own words, and a 14-day free trial.',
     headline: 'Turn “I love my hair” at the mirror into a Google review',
     intro:
       'The best moment to ask for a salon review is when the client sees the result. Reviyo gives them a QR code to scan right there, then helps them describe the stylist, the service, and the experience in their own words.',
@@ -149,7 +149,7 @@ export const industries: Industry[] = [
     faqs: [
       {
         q: 'Won’t customers confuse it with the payment QR?',
-        a: 'Keep them apart and label yours clearly, for example “Enjoyed your visit? Review us on Google”. The review page shows your café’s name and logo as soon as it opens.',
+        a: 'Keep them apart and label yours clearly, for example “How was your visit? Review us on Google”. The review page shows your café’s name and logo as soon as it opens.',
       },
       {
         q: 'How long does it take a customer?',
@@ -201,10 +201,10 @@ export const industries: Industry[] = [
     singular: 'jewellery store',
     metaTitle: 'Google Reviews for Jewellery Stores | Build Trust Online | Reviyo',
     metaDescription:
-      'Jewellery buyers choose on trust. Help happy customers write genuine Google reviews about your designs, purity, and service. 14-day free trial.',
+      'Jewellery buyers choose on trust. Help your customers write genuine Google reviews about your designs, purity, and service. 14-day free trial.',
     headline: 'Jewellery is bought on trust. Let your customers vouch for you.',
     intro:
-      'Buying jewellery is a considered, often emotional purchase, and trust decides where people buy. Reviyo helps satisfied customers put their experience into words, about the designs, the staff’s guidance, and how they were treated, as a Google review.',
+      'Buying jewellery is a considered, often emotional purchase, and trust decides where people buy. Reviyo helps customers put their experience into words, about the designs, the staff’s guidance, and how they were treated, as a Google review.',
     placement: [
       'At the billing desk, next to the certificate or invoice',
       'Inside the jewellery box or pouch',
@@ -367,9 +367,9 @@ export const industries: Industry[] = [
     metaTitle: 'Get More Google Reviews for Your Retail Store | QR Code | Reviyo',
     metaDescription:
       'A QR code at the billing counter helps shoppers review your store on Google: variety, pricing, and helpful staff. AI-assisted, in their own words. Free trial.',
-    headline: 'Turn satisfied shoppers into Google reviews at the billing counter',
+    headline: 'Turn shoppers at your billing counter into Google reviewers',
     intro:
-      'Local shoppers often check Google before deciding which store to visit. Reviyo puts a QR code at your billing counter so happy customers can rate their visit and write a genuine review about variety, pricing, and service.',
+      'Local shoppers often check Google before deciding which store to visit. Reviyo puts a QR code at your billing counter so every customer can rate their visit and write a genuine review about variety, pricing, and service.',
     placement: [
       'At the billing counter next to the payment QR',
       'Printed on the bill or carry bag',

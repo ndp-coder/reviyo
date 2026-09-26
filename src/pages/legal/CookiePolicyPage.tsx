@@ -58,7 +58,8 @@ export function CookiePolicyPage() {
 
       <Clause id="account" heading="3. If you have a Reviyo account">
         <p>
-          Signing in stores your session so you are not asked for your password on every page. Here is
+          Signing in stores your session so you are not asked for your password on every page, and two
+          tools on the QR code page remember what you typed into them, on your own device. Here is
           everything that involves:
         </p>
         <DataTable
@@ -73,16 +74,34 @@ export function CookiePolicyPage() {
               'Holds your signed-in session and refresh token so you stay signed in. Without it, the dashboard cannot work.',
               'Until you sign out, or the session expires.',
             ],
+            [
+              <code key="k" className="text-xs">
+                reviyo:whatsapp-message:…
+              </code>,
+              'Local storage (first-party, set by us)',
+              'Remembers the WhatsApp review-request message you wrote, so it is ready next time on this device.',
+              'Until you clear site data.',
+            ],
+            [
+              <code key="k" className="text-xs">
+                reviyo:qr-codes:…
+              </code>,
+              'Local storage (first-party, set by us)',
+              'Remembers the names of the extra QR codes you made (for example “Table 4”), so you can download them again.',
+              'Until you remove the code, or clear site data.',
+            ],
           ]}
         />
         <p>
-          That is the complete list. It is set by Supabase, our authentication provider, on our own
-          origin. It is not readable by any other website, it contains no advertising identifier, and
-          it is not used to track you anywhere.
+          That is the complete list. The first item is set by Supabase, our authentication provider;
+          the other two are set by {N} and hold only text you typed. All three stay on our own origin:
+          no other website can read them, they contain no advertising identifier, and they are not
+          used to track you anywhere.
         </p>
         <p>
-          You can clear it at any time by signing out, or by clearing site data in your browser
-          settings. Doing so simply signs you out.
+          You can clear them at any time by clearing site data in your browser settings. That signs
+          you out and resets the saved message and code names on this device; QR codes you have
+          already printed keep working.
         </p>
       </Clause>
 
@@ -130,7 +149,7 @@ export function CookiePolicyPage() {
           items={[
             'The counts are recorded server-side, in our own database, against the in-memory session identifier described in clause 2.',
             'No cookie, pixel, beacon, or third-party analytics service is involved.',
-            'We do not record your IP address, user agent, device fingerprint, advertising ID, or location.',
+            'We do not record your IP address, user agent, device fingerprint, advertising ID, or location with these counts.',
             'The data cannot identify you, cannot follow you to another website, and is never shared with an advertiser.',
           ]}
         />
@@ -164,8 +183,9 @@ export function CookiePolicyPage() {
           Article 5(3) of the ePrivacy Directive requires prior consent for storing or reading
           information on a user&rsquo;s device, <em>except</em> where it is strictly necessary to
           provide a service the user explicitly requested. Every item in clause 3 and clause 4 falls
-          squarely inside that exemption — keeping you signed in when you asked to sign in, and
-          running a checkout when you clicked &ldquo;pay&rdquo;. We have no non-essential storage at
+          squarely inside that exemption — keeping you signed in when you asked to sign in,
+          remembering what you typed into a dashboard tool so that tool works, and running a
+          checkout when you clicked &ldquo;pay&rdquo;. We have no non-essential storage at
           all.
         </p>
 

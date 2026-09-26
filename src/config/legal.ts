@@ -66,9 +66,11 @@ export const legal = {
    * is recorded against each customer review session and each signup so you can
    * prove which notice a person actually agreed to (DPDPA s.6(1)).
    */
-  policyLastUpdated: '2026-09-25',
-  // .2: Terms now describe the AutoPay trial and automatic renewal.
-  consentVersion: '2026-09-25.2',
+  policyLastUpdated: '2026-09-26',
+  // .2 (25 Sep): Terms describe the AutoPay trial and automatic renewal.
+  // 26 Sep: Privacy and Cookie policies list the dashboard's browser storage and
+  // say precisely how IP addresses are (not) handled.
+  consentVersion: '2026-09-26.1',
   /** Recorded on each AutoPay mandate, with the wording shown at the checkbox. */
   autopayTermsVersion: '2026-09-25.1',
   /** Free trial length. Must match start_autopay_trial() in the database. */

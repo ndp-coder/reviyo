@@ -12,7 +12,7 @@ const longDate = (iso: string) =>
 /**
  * One line on Overview saying what happens to the owner's plan next — shown
  * only when there is something to know: during the free trial (when the first
- * charge lands, or that the QR code will stop), and when a plan without AutoPay
+ * charge lands, or what pauses when it ends), and when a plan without AutoPay
  * is about to end. No countdown pressure: just the date, the amount, and where
  * to change it.
  */
@@ -49,8 +49,8 @@ export function PlanStatus({
     }
     return (
       <Alert variant="warning" className="mt-6" action={billing}>
-        Free trial ends on {endsOn}, and AutoPay is off — your QR code and AI drafting will pause then unless you
-        choose a plan.
+        Free trial ends on {endsOn}, and AutoPay is off. After that your QR code only links to Google: AI drafting,
+        analytics, and private feedback pause until you choose a plan.
       </Alert>
     );
   }
@@ -58,7 +58,8 @@ export function PlanStatus({
   if (subscription.status === 'active' && !autopayOn && daysLeft <= 14) {
     return (
       <Alert variant="warning" className="mt-6" action={billing}>
-        Your plan ends on {endsOn}. Renew before then to keep your QR code working — nothing renews automatically.
+        Your plan ends on {endsOn}. Renew before then to keep AI drafting and your dashboard — nothing renews
+        automatically.
       </Alert>
     );
   }

@@ -318,3 +318,27 @@ test('account deletion copies financial records before touching AutoPay or the a
   const remove = fn.indexOf('auth.admin.deleteUser(userId)');
   assert.ok(preserve > 0 && cancel > preserve && remove > cancel, 'preserve, then cancel AutoPay, then delete');
 });
+
+test('a lapsed business\'s QR code sends customers to Google instead of blaming their connection', async () => {
+  const [page, migration] = await Promise.all([
+    read('src/pages/customer/CustomerReviewPage.tsx'),
+    read('supabase/migrations/20260926140000_lapsed_business_qr_fallback.sql'),
+  ]);
+  // "Business not found" is a refusal, not a network failure: never offer a
+  // pointless retry or tell the customer to check their internet.
+  assert.match(page, /isBusinessNotFound\(error\)/);
+  assert.match(page, /get_lapsed_business_review_link/);
+  assert.ok(
+    page.indexOf('isBusinessNotFound(error)') < page.indexOf('Check your internet connection'),
+    'the not-found case must be handled before the connection-error fallback',
+  );
+  assert.match(migration, /REVOKE EXECUTE ON FUNCTION get_lapsed_business_review_link\(text\) FROM PUBLIC;/);
+  assert.match(migration, /NOT business_has_active_subscription\(b\.id\)/);
+});
+
+test('the AI treats the customer\'s comment as quoted text, never as instructions', async () => {
+  const fn = await read('supabase/functions/generate-review/index.ts');
+  assert.match(fn, /never instructions to you/);
+  assert.match(fn, /replace\(\/"""\/g/);
+  assert.match(fn, /reviews that read alike get filtered out by Google/);
+});

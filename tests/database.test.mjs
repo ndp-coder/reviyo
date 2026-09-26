@@ -230,6 +230,32 @@ check('an expired business cannot start new QR review sessions', async () => {
   await rejects(`SELECT * FROM create_review_session('pet-spa')`, [], /Business not found/, 'qr');
 });
 
+check('an expired business\'s printed QR code still leads to its Google review page, and nothing more', async () => {
+  const lapsed = () => asAnon(() => q(`SELECT * FROM get_lapsed_business_review_link('pet-spa')`));
+  const sessions = async () => (await one(`SELECT count(*)::int AS n FROM review_sessions WHERE business_id = $1`, [B])).n;
+
+  // No Google link saved: nothing to send the customer to.
+  assert.equal((await lapsed()).length, 0);
+
+  await db.exec(`UPDATE businesses SET google_review_url = 'https://g.page/r/pet-spa/review' WHERE id = '${B}'`);
+  const before = await sessions();
+  const rows = await lapsed();
+  assert.equal(rows.length, 1);
+  assert.deepEqual(Object.keys(rows[0]).sort(), ['business_google_review_url', 'business_logo_url', 'business_name']);
+  assert.equal(rows[0].business_google_review_url, 'https://g.page/r/pet-spa/review');
+  assert.equal(await sessions(), before, 'no review session is created');
+
+  // A business with a live plan uses the full review flow instead.
+  await db.exec(`UPDATE subscriptions SET expires_at = now() + interval '1 day' WHERE business_id = '${B}'`);
+  assert.equal((await lapsed()).length, 0);
+  await db.exec(`UPDATE subscriptions SET expires_at = now() - interval '1 day' WHERE business_id = '${B}'`);
+
+  // A deactivated business gets nothing.
+  await db.exec(`UPDATE businesses SET is_active = false WHERE id = '${B}'`);
+  assert.equal((await lapsed()).length, 0);
+  await db.exec(`UPDATE businesses SET is_active = true WHERE id = '${B}'`);
+});
+
 check('topic-suggestion rate limit: 10 per hour', async () => {
   for (let i = 0; i < 10; i += 1) assert.equal((await one(`SELECT claim_topic_suggestion($1) AS ok`, [U1])).ok, true);
   assert.equal((await one(`SELECT claim_topic_suggestion($1) AS ok`, [U1])).ok, false);

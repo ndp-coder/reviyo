@@ -17,7 +17,19 @@ interface TopicInfo {
   label: string;
 }
 
-type Step = 'loading' | 'error' | 'welcome' | 'rating' | 'topics' | 'generating' | 'review' | 'feedback' | 'done';
+type Step = 'loading' | 'error' | 'lapsed' | 'welcome' | 'rating' | 'topics' | 'generating' | 'review' | 'feedback' | 'done';
+
+/** What the page shows for a business whose trial or plan has ended. */
+interface LapsedBusiness {
+  name: string;
+  logoUrl: string | null;
+  googleReviewUrl: string;
+}
+
+// create_review_session's refusal for an unknown, inactive, or lapsed business.
+// Anything else is a connection or server problem worth retrying.
+const isBusinessNotFound = (error: { message?: string }) => /Business not found/i.test(error.message ?? '');
+const NOT_ACTIVE = 'This review page isn’t active right now. Please check the QR code or link, or ask the staff for help.';
 
 // The three steps a customer moves through after agreeing to start: rate, say
 // what stood out (topics and an optional comment on one screen), then the
@@ -117,6 +129,7 @@ export function CustomerReviewPage() {
   // A connection failure can be retried; a page that does not exist cannot.
   const [loadRetryable, setLoadRetryable] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [lapsed, setLapsed] = useState<LapsedBusiness | null>(null);
 
   // Analytics must never slow the customer down or block a step, so events are
   // sent in the background and failures are ignored (trackEvent logs them).
@@ -156,6 +169,28 @@ export function CustomerReviewPage() {
         });
 
         if (cancelled) return;
+        if (error && isBusinessNotFound(error)) {
+          // A printed QR code must never look broken to the shop's customers.
+          // If the business's plan has ended, send them straight to its Google
+          // review page (nothing is collected); otherwise say the page is off.
+          const { data: lapsedData } = await supabase.rpc('get_lapsed_business_review_link', {
+            p_business_slug: slug,
+          });
+          if (cancelled) return;
+          const row = (lapsedData as
+            | { business_name: string; business_logo_url: string | null; business_google_review_url: string }[]
+            | null)?.[0];
+          const googleUrl = safeExternalUrl(row?.business_google_review_url);
+          if (row && googleUrl) {
+            setLapsed({ name: row.business_name, logoUrl: row.business_logo_url, googleReviewUrl: googleUrl });
+            setStep('lapsed');
+            return;
+          }
+          setErrorMsg(NOT_ACTIVE);
+          setLoadRetryable(false);
+          setStep('error');
+          return;
+        }
         if (error) {
           setErrorMsg('Check your internet connection and try again. If it keeps happening, scan the QR code again.');
           setLoadRetryable(true);
@@ -163,7 +198,7 @@ export function CustomerReviewPage() {
           return;
         }
         if (!data || data.length === 0) {
-          setErrorMsg('This review page isn’t active right now. Please check the QR code or link, or ask the staff for help.');
+          setErrorMsg(NOT_ACTIVE);
           setLoadRetryable(false);
           setStep('error');
           return;
@@ -439,6 +474,32 @@ export function CustomerReviewPage() {
               <RefreshCw className="h-4 w-4" aria-hidden="true" /> Try again
             </Button>
           )}
+        </div>
+      </Screen>
+    );
+  }
+
+  // ===== Lapsed business =====
+  // The owner's trial or plan has ended. No review session, no consent needed:
+  // nothing is collected here, and the customer writes on Google directly.
+  if (step === 'lapsed' && lapsed) {
+    return (
+      <Screen>
+        <div className="text-center">
+          {lapsed.logoUrl && (
+            <img
+              src={lapsed.logoUrl}
+              alt={`${lapsed.name} logo`}
+              className="mx-auto mb-5 h-20 w-20 rounded-xl border border-gray-200 object-cover"
+            />
+          )}
+          <h1 className="text-2xl font-bold text-gray-900">Review {lapsed.name} on Google</h1>
+          <p className="mt-2 text-sm text-gray-600">
+            This opens {lapsed.name}&rsquo;s Google review page. You write and post your review there yourself.
+          </p>
+          <a href={lapsed.googleReviewUrl} rel="noopener noreferrer" className={`${buttonClasses({ size: 'lg' })} mt-6 w-full`}>
+            Open Google reviews <ArrowRight className="h-5 w-5" aria-hidden="true" />
+          </a>
         </div>
       </Screen>
     );

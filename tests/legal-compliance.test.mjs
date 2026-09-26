@@ -291,6 +291,31 @@ test('no fabricated testimonials, review counts, or star averages', async () => 
   }
 });
 
+test('review requests never speak only to happy customers', async () => {
+  // Google forbids "selectively soliciting positive reviews". Wording such as
+  // "Enjoyed your visit?" on a counter card, or "help happy customers leave a
+  // review" in advice to owners, asks only the satisfied ones. Explaining the
+  // rule ("asking only happy customers breaks...") is fine.
+  const files = [
+    'src/pages/dashboard/QRManagementPage.tsx',
+    'src/components/dashboard/WhatsAppRequest.tsx',
+    'src/components/ProductPreview.tsx',
+    'src/pages/LandingPage.tsx',
+    'src/config/industries.ts',
+    'src/config/faq.ts',
+    'src/config/seo.ts',
+  ];
+  for (const file of files) {
+    const source = await read(file);
+    assert.doesNotMatch(source, /Enjoyed your visit|Loved (it|your visit)|Happy with (us|your visit)/i, `${file}: positive-only prompt`);
+    assert.doesNotMatch(
+      source,
+      /(?<!only )\b(happy|satisfied|delighted) (customers|clients|patients|shoppers|diners|guests|students|members)\b/i,
+      `${file}: speaks only to satisfied customers`,
+    );
+  }
+});
+
 test('the rules against incentivised and gated reviews are stated in the Terms', async () => {
   const terms = await read('src/pages/legal/TermsPage.tsx');
 
@@ -329,6 +354,29 @@ test('every image carries an alt attribute', async () => {
         /\balt=/,
         `${file} has an <img> with no alt attribute:\n${match[0].slice(0, 200)}`
       );
+    }
+  }
+});
+
+test('every browser storage key the app sets is listed in the Cookie Policy', async () => {
+  // The Cookie Policy promises its table is "the complete list".
+  const files = [];
+  async function walk(dir) {
+    for (const entry of await list(dir)) {
+      if (/\.tsx?$/.test(entry)) files.push(`${dir}/${entry}`);
+      else if (!entry.includes('.')) await walk(`${dir}/${entry}`);
+    }
+  }
+  await walk('src');
+
+  const policy = await read('src/pages/legal/CookiePolicyPage.tsx');
+  for (const file of files) {
+    const source = await read(file);
+    if (!/(localStorage|sessionStorage)\.setItem/.test(source)) continue;
+    const prefixes = [...source.matchAll(/`(reviyo:[a-z-]+:)\$\{/g)].map((m) => m[1]);
+    assert.ok(prefixes.length > 0, `${file} writes browser storage under a key the policy test cannot see`);
+    for (const prefix of prefixes) {
+      assert.ok(policy.includes(prefix), `${file} stores "${prefix}…" but the Cookie Policy does not list it`);
     }
   }
 });

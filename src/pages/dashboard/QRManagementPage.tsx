@@ -135,7 +135,7 @@ export function QRManagementPage() {
               <img src={business.logo_url} alt="" className="mx-auto mb-3 h-16 w-16 rounded-lg object-cover print:h-20 print:w-20" />
             )}
             <h3 className="text-lg font-bold text-gray-900 print:text-2xl">{business.name}</h3>
-            <p className="mt-1 text-sm text-gray-600 print:text-base">Enjoyed your visit? Tell us about it.</p>
+            <p className="mt-1 text-sm text-gray-600 print:text-base">How was your visit? Tell us about it.</p>
             {qrDataUrl && <img src={qrDataUrl} alt="" className="mx-auto mt-4 h-40 w-40 rounded-lg print:h-64 print:w-64" />}
             <p className="mt-3 text-xs text-gray-700 print:text-sm">Scan with your phone camera to write a review</p>
           </div>
