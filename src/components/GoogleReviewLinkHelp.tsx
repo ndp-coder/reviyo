@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ExternalLink, Search, MapPin, CheckCircle2 } from 'lucide-react';
-import { Button, Input } from '@/components/ui';
-import { isGooglePlaceId, reviewUrlFromPlaceId, validateGoogleReviewUrl } from '@/lib/url-safety';
+import { Alert, Button, Input } from '@/components/ui';
+import { directReviewUrl, isDirectReviewLink, isGooglePlaceId, reviewUrlFromPlaceId, validateGoogleReviewUrl } from '@/lib/url-safety';
 
 const PLACE_ID_FINDER_URL =
   'https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder';
@@ -34,6 +34,9 @@ export function GoogleReviewLinkHelp({
   const trimmedName = businessName.trim();
   const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(trimmedName || 'my business')}`;
   const canTest = currentUrl.trim() !== '' && validateGoogleReviewUrl(currentUrl) === null;
+  // A valid Google link can still open the business's listing instead of the
+  // review box, which costs customers several taps and loses many of them.
+  const opensListing = canTest && !isDirectReviewLink(currentUrl);
 
   function applyPlaceId() {
     const value = placeId.trim();
@@ -48,9 +51,16 @@ export function GoogleReviewLinkHelp({
 
   return (
     <div className="space-y-3">
+      {opensListing && (
+        <Alert variant="warning" title="This link opens your Google listing, not the review box">
+          Customers would have to find &ldquo;Write a review&rdquo; themselves, and many give up there. Use the
+          link from <strong>Ask for reviews</strong> on your Business Profile (it ends in <code>/review</code>), or
+          build one from your Place ID below.
+        </Alert>
+      )}
       {canTest && (
         <a
-          href={currentUrl.trim()}
+          href={directReviewUrl(currentUrl)}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-800 underline underline-offset-2"

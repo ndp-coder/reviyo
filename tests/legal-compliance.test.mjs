@@ -475,7 +475,8 @@ test('owner-supplied URLs are scheme-checked in the browser and in the database'
   assert.match(safety, /SAFE_PROTOCOLS = new Set\(\['http:', 'https:'\]\)/);
 
   // The public review page must never render an unchecked owner URL.
-  assert.match(page, /safeExternalUrl/);
+  assert.match(page, /customerReviewUrl\(/);
+  assert.match(safety, /export function customerReviewUrl[\s\S]{0,200}safeExternalUrl\(value\)/);
   assert.doesNotMatch(
     page,
     /href=\{bizInfo\.business_google_review_url\}/,

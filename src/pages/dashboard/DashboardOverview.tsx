@@ -1,5 +1,6 @@
 import { Link, useOutletContext } from 'react-router-dom';
 import { Star, QrCode, ArrowRight, Check, Link2, MessageSquare } from 'lucide-react';
+import { isDirectReviewLink } from '@/lib/url-safety';
 import { useDashboardStats } from '@/lib/use-dashboard-stats';
 import { Alert, Button, Card, Skeleton, Badge, PageHeader, Spinner } from '@/components/ui';
 import { PlanStatus } from '@/components/dashboard/PlanStatus';
@@ -51,15 +52,25 @@ export function DashboardOverview() {
 
   // Setup the owner still has to do, shown until it is done. A missing Google
   // link is the biggest leak in the funnel, so it comes first.
+  const reviewLink = business?.google_review_url ?? '';
   const setupSteps = [
-    {
-      done: Boolean(business?.google_review_url),
-      label: 'Add your Google review link',
-      detail: 'So customers land straight on your review form.',
-      to: '/dashboard/settings?tab=google',
-      cta: 'Add link',
-      icon: Link2,
-    },
+    reviewLink && !isDirectReviewLink(reviewLink)
+      ? {
+          done: false,
+          label: 'Switch to a direct review link',
+          detail: 'Your link opens your Google listing, so customers have to find “Write a review” themselves.',
+          to: '/dashboard/settings?tab=google',
+          cta: 'Fix link',
+          icon: Link2,
+        }
+      : {
+          done: Boolean(reviewLink),
+          label: 'Add your Google review link',
+          detail: 'So customers land straight on your review form.',
+          to: '/dashboard/settings?tab=google',
+          cta: 'Add link',
+          icon: Link2,
+        },
     {
       done: stats.totalScans > 0,
       label: 'Print your QR code and put it up',

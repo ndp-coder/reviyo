@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { generateReview } from '@/lib/ai-client';
 import { trackEvent } from '@/lib/analytics';
 import { legal, displayValue } from '@/config/legal';
-import { safeExternalUrl } from '@/lib/url-safety';
+import { customerReviewUrl } from '@/lib/url-safety';
 import { readSource } from '@/lib/review-source';
 import type { AIReviewStyle, CreateSessionResult } from '@/lib/types';
 import { Alert, Button, Textarea, Spinner } from '@/components/ui';
@@ -178,7 +178,7 @@ export function CustomerReviewPage() {
           const row = (lapsedData as
             | { business_name: string; business_logo_url: string | null; business_google_review_url: string }[]
             | null)?.[0];
-          const googleUrl = safeExternalUrl(row?.business_google_review_url);
+          const googleUrl = customerReviewUrl(row?.business_google_review_url);
           if (row && googleUrl) {
             setLapsed({ name: row.business_name, logoUrl: row.business_logo_url, googleReviewUrl: googleUrl });
             document.title = `Review ${row.business_name} | Reviyo`;
@@ -499,8 +499,9 @@ export function CustomerReviewPage() {
   const brand = { name: bizInfo.business_name, logoUrl: bizInfo.business_logo_url };
 
   // Owner-supplied. Anything that is not an absolute http(s) URL is dropped
-  // rather than rendered — see src/lib/url-safety.ts.
-  const googleReviewUrl = safeExternalUrl(bizInfo.business_google_review_url);
+  // rather than rendered, and a g.page link is pointed at the review box
+  // itself rather than the business's profile — see src/lib/url-safety.ts.
+  const googleReviewUrl = customerReviewUrl(bizInfo.business_google_review_url);
 
   // ===== Start: what they liked, and consent =====
   // Everything on one screen: tap what you liked, add your own words if you
@@ -850,11 +851,32 @@ export function CustomerReviewPage() {
             </div>
           )}
 
-          <p className="text-center text-xs text-gray-600">
-            {googleReviewUrl
-              ? 'Google opens in a new tab. Paste your review there, choose your star rating, and tap Post. Nothing is posted for you.'
-              : `Paste it on ${bizInfo.business_name}’s Google listing to post it. Nothing is posted for you.`}
-          </p>
+          {/* Google cannot be pre-filled and no site can paste into another,
+              so the fastest honest path is one tap to copy and open Google,
+              then these three steps there. Saying them up front means the
+              customer is not left wondering where the text went. */}
+          {googleReviewUrl ? (
+            <ol className="space-y-1.5 rounded-lg bg-white px-4 py-3 text-sm text-gray-700" aria-label="What to do on Google">
+              <li className="flex gap-2.5">
+                <span className="font-semibold text-brand-900">1.</span>
+                <span>Tap the button above: your review is copied and Google opens.</span>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="font-semibold text-brand-900">2.</span>
+                <span>Tap the stars you want to give.</span>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="font-semibold text-brand-900">3.</span>
+                <span>
+                  Tap the text box, choose <strong>Paste</strong>, then <strong>Post</strong>. Nothing is posted for you.
+                </span>
+              </li>
+            </ol>
+          ) : (
+            <p className="text-center text-xs text-gray-600">
+              Paste it on {bizInfo.business_name}&rsquo;s Google listing to post it. Nothing is posted for you.
+            </p>
+          )}
           {/* Without a Google link there is no automatic hand-off, so give an
               explicit way to finish instead of leaving the customer here. */}
           {!googleReviewUrl && copied && (
@@ -947,7 +969,7 @@ export function CustomerReviewPage() {
           <h1 className="text-2xl font-bold text-gray-900">Thank you</h1>
           <p className="mt-2 text-sm text-gray-600">
             {copied
-              ? `Your review is on your clipboard. Paste it on Google and post it to help ${bizInfo.business_name}.`
+              ? `Your review is still copied. If Google closed before you posted, open it again below, tap the text box, and choose Paste.`
               : `Thanks for sharing your experience with ${bizInfo.business_name}.`}
           </p>
           <div className="mt-6 space-y-3">

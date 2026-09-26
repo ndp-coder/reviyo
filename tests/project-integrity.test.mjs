@@ -361,3 +361,44 @@ test('every navigation opens at the top of the page, and back restores the posit
   // already open also scrolls up.
   assert.match(scroll, /\[location, navigationType\]/);
 });
+
+test('customers are sent to Google\'s review box itself, not the business listing', async (t) => {
+  // The helpers are plain TypeScript with no imports; Node 22.18+ runs them
+  // directly. Older Node versions skip this check rather than fail.
+  let safety;
+  try {
+    safety = await import(new URL('../src/lib/url-safety.ts', import.meta.url));
+  } catch {
+    t.skip('this Node version cannot import TypeScript directly');
+    return;
+  }
+  const { directReviewUrl, isDirectReviewLink, customerReviewUrl } = safety;
+
+  // g.page short links open the profile; "/review" opens the review box.
+  assert.equal(directReviewUrl('https://g.page/r/CQ3xAbCd'), 'https://g.page/r/CQ3xAbCd/review');
+  assert.equal(directReviewUrl('https://g.page/r/CQ3xAbCd/review'), 'https://g.page/r/CQ3xAbCd/review');
+  assert.equal(directReviewUrl('https://maps.app.goo.gl/AbC123'), 'https://maps.app.goo.gl/AbC123');
+
+  for (const direct of [
+    'https://g.page/r/CQ3xAbCd',
+    'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4',
+    'https://www.google.com/search?q=cafe#lrd=0x3a35eff:0x9b8a4d,3,,,',
+  ]) assert.equal(isDirectReviewLink(direct), true, direct);
+  for (const listing of [
+    'https://maps.app.goo.gl/AbC123',
+    'https://www.google.com/maps/place/Kaveri+Cafe/@16.5,80.6,17z',
+    'https://www.google.com/search?q=cafe#lrd=0x3a35eff:0x9b8a4d,1,,,',
+  ]) assert.equal(isDirectReviewLink(listing), false, listing);
+
+  // Still refuses anything that is not http(s).
+  assert.equal(customerReviewUrl('javascript:alert(1)'), null);
+
+  const [page, help, overview] = await Promise.all([
+    read('src/pages/customer/CustomerReviewPage.tsx'),
+    read('src/components/GoogleReviewLinkHelp.tsx'),
+    read('src/pages/dashboard/DashboardOverview.tsx'),
+  ]);
+  assert.match(page, /customerReviewUrl\(bizInfo\.business_google_review_url\)/);
+  assert.match(help, /isDirectReviewLink\(currentUrl\)/);
+  assert.match(overview, /isDirectReviewLink\(reviewLink\)/);
+});

@@ -5,11 +5,11 @@ import { MarketingHeader } from '@/components/MarketingHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SkipLink } from '@/components/SkipLink';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
-import { Button, Input } from '@/components/ui';
+import { Alert, Button, Input } from '@/components/ui';
 import { buttonClasses } from '@/components/ui/button-styles';
 import { legal } from '@/config/legal';
 import { reviewLinkToolFaqs } from '@/config/faq';
-import { isGooglePlaceId, reviewUrlFromPlaceId, validateGoogleReviewUrl } from '@/lib/url-safety';
+import { directReviewUrl, isDirectReviewLink, isGooglePlaceId, reviewUrlFromPlaceId, validateGoogleReviewUrl } from '@/lib/url-safety';
 
 const PLACE_ID_FINDER_URL =
   'https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder';
@@ -29,7 +29,8 @@ export function ReviewLinkGeneratorPage() {
     if (isGooglePlaceId(value)) {
       url = reviewUrlFromPlaceId(value);
     } else if (value && validateGoogleReviewUrl(value) === null) {
-      url = value;
+      // A g.page link is pointed at the review box rather than the profile.
+      url = directReviewUrl(value);
     }
     if (!url) {
       setError('Paste a Google Place ID (it usually starts with “ChIJ”) or a Google review link starting with https://.');
@@ -113,6 +114,13 @@ export function ReviewLinkGeneratorPage() {
               {reviewUrl && (
                 <div className="mt-6 border-t border-gray-200 pt-6" aria-live="polite">
                   <h2 className="text-sm font-semibold text-gray-900">Your Google review link</h2>
+                {!isDirectReviewLink(reviewUrl) && (
+                  <Alert variant="warning" className="mt-2" title="This link opens your Google listing, not the review box">
+                    Customers would have to find &ldquo;Write a review&rdquo; themselves. For a link that opens the review box
+                    directly, paste your Place ID instead, or the link from <strong>Ask for reviews</strong> on your
+                    Business Profile.
+                  </Alert>
+                )}
                   <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
                     <code className="flex-1 break-all rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-800">{reviewUrl}</code>
                     <Button variant="outline" size="sm" onClick={() => void copyLink()}>

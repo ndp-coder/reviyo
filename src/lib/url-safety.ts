@@ -72,3 +72,49 @@ export function isGooglePlaceId(value: string): boolean {
 export function reviewUrlFromPlaceId(placeId: string): string {
   return `https://search.google.com/local/writereview?placeid=${encodeURIComponent(placeId.trim())}`;
 }
+
+/**
+ * Makes a Google link open the "write a review" box where that is possible.
+ * A g.page short link without "/review" (g.page/r/<code>, g.page/<name>)
+ * opens the business's profile; with "/review" appended it opens the review
+ * box itself. Anything else is returned unchanged.
+ */
+export function directReviewUrl(value: string): string {
+  const trimmed = value.trim();
+  try {
+    const url = new URL(trimmed);
+    if (url.hostname.toLowerCase() === 'g.page' && url.pathname.length > 1 && !/\/review\/?$/.test(url.pathname)) {
+      url.pathname = `${url.pathname.replace(/\/+$/, '')}/review`;
+      return url.toString();
+    }
+  } catch {
+    // Not a URL: leave it for the validator to report.
+  }
+  return trimmed;
+}
+
+/**
+ * True when a Google link opens the review box directly. Other Google links
+ * (a Maps share link such as maps.app.goo.gl, or a listing URL) open the
+ * business's page, where customers must find "Write a review" themselves, and
+ * many give up there.
+ */
+export function isDirectReviewLink(value: string): boolean {
+  try {
+    const url = new URL(directReviewUrl(value));
+    const host = url.hostname.toLowerCase();
+    if (host === 'g.page') return /\/review\/?$/.test(url.pathname);
+    if (host === 'search.google.com') return url.pathname.startsWith('/local/writereview') && Boolean(url.searchParams.get('placeid'));
+    // Google Search's own review dialog: #lrd=<id>,3 opens "Write a review".
+    if (/(^|\.)google\.[a-z.]{2,6}$/.test(host)) return /(^|[#&])lrd=[^,]+,3(,|$)/.test(url.hash.slice(1));
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/** The link to give customers: checked for safety, and opening the review box where possible. */
+export function customerReviewUrl(value: string | null | undefined): string | null {
+  const safe = safeExternalUrl(value);
+  return safe ? directReviewUrl(safe) : null;
+}
