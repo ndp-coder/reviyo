@@ -17,7 +17,7 @@ export function PricingPage() {
       <section className="bg-paper px-5 pb-16 pt-8 sm:px-6 lg:pb-24 lg:pt-12">
         <div className="max-w-4xl mx-auto">
           <Breadcrumbs />
-          <h1 className="mt-8 text-[2rem] font-extrabold leading-[1.1] text-balance text-gray-900 sm:text-5xl">
+          <h1 className="mt-8 text-[2rem] font-bold leading-[1.15] text-balance text-gray-900 sm:text-5xl">
             Every feature on both plans. Just pick a term.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-700">

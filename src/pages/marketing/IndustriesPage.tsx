@@ -17,7 +17,7 @@ export function IndustriesPage() {
         <div className="mx-auto max-w-6xl">
           <Breadcrumbs />
           <div className="mt-8 max-w-3xl">
-            <h1 className="text-[2rem] font-extrabold leading-[1.1] text-balance text-gray-900 sm:text-5xl">
+            <h1 className="text-[2rem] font-bold leading-[1.15] text-balance text-gray-900 sm:text-5xl">
               Get more Google reviews, whatever your business
             </h1>
             <p className="mt-6 text-lg leading-relaxed text-gray-700">

@@ -1,5 +1,9 @@
-/* Self-hosted site font (see fontFamily.sans in tailwind.config.js). */
-@import '@fontsource-variable/plus-jakarta-sans/wght.css';
+/* Self-hosted site font (see fontFamily.sans in tailwind.config.js): only the
+   four weights the site uses — font-normal, -medium, -semibold, and -bold. */
+@import '@fontsource/poppins/400.css';
+@import '@fontsource/poppins/500.css';
+@import '@fontsource/poppins/600.css';
+@import '@fontsource/poppins/700.css';
 
 @tailwind base;
 @tailwind components;
@@ -10,10 +14,11 @@
     @apply text-gray-900 antialiased;
   }
 
-  /* Large headings are set a little tighter, as display type usually is. */
+  /* Large headings are set a touch tighter, as display type usually is.
+     Poppins is wide and round, so only slightly. */
   h1,
   h2 {
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
   }
 
   /*

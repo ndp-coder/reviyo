@@ -32,7 +32,7 @@ export function IndustryPage() {
             <Breadcrumbs />
             <div className="mt-10 max-w-3xl">
               <p className="text-sm font-semibold text-accent-700">Google reviews for {industry.plural}</p>
-              <h1 className="mt-3 text-[2rem] font-extrabold leading-[1.1] text-balance text-gray-900 sm:text-5xl">{industry.headline}</h1>
+              <h1 className="mt-3 text-[2rem] font-bold leading-[1.15] text-balance text-gray-900 sm:text-5xl">{industry.headline}</h1>
               <p className="mt-6 text-lg leading-relaxed text-gray-700">{industry.intro}</p>
               <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
                 <Link to="/signup" className={`${buttonClasses({ size: 'lg' })} w-full sm:w-auto`}>

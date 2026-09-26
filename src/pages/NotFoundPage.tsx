@@ -29,7 +29,7 @@ export function NotFoundPage() {
         <div className="mx-auto max-w-6xl">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold text-accent-700">Error 404</p>
-            <h1 className="mt-3 text-[2rem] font-extrabold leading-[1.1] text-balance text-gray-900 sm:text-5xl">
+            <h1 className="mt-3 text-[2rem] font-bold leading-[1.15] text-balance text-gray-900 sm:text-5xl">
               We couldn&rsquo;t find that page
             </h1>
             <p className="mt-6 text-lg leading-relaxed text-gray-700">

@@ -37,11 +37,11 @@ export default {
         paper: '#f7f6f2',
       },
       fontFamily: {
-        // One family for the whole site, chosen to match the geometric logo
-        // wordmark. Self-hosted (no request to Google Fonts); it has the ₹ sign.
-        // The fallbacks show until it loads.
+        // Poppins for the whole site: a clear geometric face from the Indian
+        // Type Foundry, with a well-drawn ₹ sign. Self-hosted (no request to
+        // Google Fonts); the fallbacks show until it loads.
         sans: [
-          '"Plus Jakarta Sans Variable"',
+          'Poppins',
           'system-ui',
           '-apple-system',
           '"Segoe UI"',
