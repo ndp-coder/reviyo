@@ -8,7 +8,6 @@ import {
   type ReactNode,
 } from 'react';
 import { AlertCircle, CheckCircle2, ChevronDown, Eye, EyeOff, Info, TriangleAlert, type LucideIcon } from 'lucide-react';
-import { Spinner } from './Spinner';
 export { Button } from './Button';
 export { Spinner } from './Spinner';
 
@@ -241,9 +240,6 @@ export function Badge({ children, variant = 'default' }: BadgeProps) {
     </span>
   );
 }
-
-/** @deprecated Use Spinner. Kept so existing imports keep working. */
-export const LoadingSpinner = Spinner;
 
 type AlertVariant = 'error' | 'success' | 'warning' | 'info';
 

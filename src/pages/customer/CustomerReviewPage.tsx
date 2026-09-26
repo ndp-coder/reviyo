@@ -7,22 +7,10 @@ import { trackEvent } from '@/lib/analytics';
 import { legal, displayValue } from '@/config/legal';
 import { safeExternalUrl } from '@/lib/url-safety';
 import { readSource } from '@/lib/review-source';
-import type { AIReviewStyle } from '@/lib/types';
+import type { AIReviewStyle, CreateSessionResult } from '@/lib/types';
 import { Alert, Button, Textarea, Spinner } from '@/components/ui';
 import { buttonClasses } from '@/components/ui/button-styles';
 import { ConsentCheckbox } from '@/components/ConsentCheckbox';
-
-interface BusinessPublicInfo {
-  session_id: string;
-  session_token: string;
-  business_id: string;
-  business_name: string;
-  business_slug: string;
-  business_category: string;
-  business_logo_url: string | null;
-  business_welcome_message: string | null;
-  business_google_review_url: string | null;
-}
 
 interface TopicInfo {
   id: string;
@@ -97,7 +85,7 @@ export function CustomerReviewPage() {
   const { slug } = useParams<{ slug: string }>();
   const [step, setStep] = useState<Step>('loading');
   const [errorMsg, setErrorMsg] = useState('');
-  const [bizInfo, setBizInfo] = useState<BusinessPublicInfo | null>(null);
+  const [bizInfo, setBizInfo] = useState<CreateSessionResult | null>(null);
   const [topics, setTopics] = useState<TopicInfo[]>([]);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -180,7 +168,7 @@ export function CustomerReviewPage() {
           return;
         }
 
-        const info = data[0] as BusinessPublicInfo;
+        const info = data[0] as CreateSessionResult;
         setBizInfo(info);
 
         void trackEvent(slug, info.session_token, 'qr_page_view', source ? { source } : {});

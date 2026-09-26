@@ -102,10 +102,3 @@ export function displayValue(value: string | null): string {
   if (value === null) return '';
   return isPlaceholder(value) ? '[not yet configured]' : value;
 }
-
-/** Every placeholder still left unfilled. Used by the compliance test. */
-export function unfilledLegalFields(): string[] {
-  return Object.entries(legal)
-    .filter(([, value]) => typeof value === 'string' && isPlaceholder(value))
-    .map(([key]) => key);
-}

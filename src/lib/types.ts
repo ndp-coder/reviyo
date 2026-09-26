@@ -3,14 +3,6 @@ export type UserRole = 'user' | 'admin';
 export type SubscriptionPlan = '6_months' | '12_months';
 export type SubscriptionStatus = 'trial' | 'active' | 'expired' | 'cancelled';
 
-export type ReviewSessionStatus =
-  | 'started'
-  | 'rated'
-  | 'topics_selected'
-  | 'comment_added'
-  | 'review_generated'
-  | 'completed';
-
 export type PrivateFeedbackStatus = 'new' | 'seen' | 'resolved';
 
 export type AnalyticsEventType =
@@ -58,23 +50,6 @@ export interface ReviewTopic {
   created_at: string;
 }
 
-export interface ReviewSession {
-  id: string;
-  business_id: string;
-  session_token: string;
-  rating: number | null;
-  customer_comment: string | null;
-  generated_review: string | null;
-  status: ReviewSessionStatus;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ReviewSessionTopic {
-  review_session_id: string;
-  topic_id: string;
-}
-
 export interface PrivateFeedback {
   id: string;
   business_id: string;
@@ -106,6 +81,7 @@ export interface Subscription {
   updated_at: string;
 }
 
+/** One row from create_review_session: the new visit plus the business's public details. */
 export interface CreateSessionResult {
   session_id: string;
   session_token: string;

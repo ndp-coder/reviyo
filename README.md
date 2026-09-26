@@ -247,7 +247,7 @@ Copy-Item supabase/.env.example supabase/functions/.env
 supabase secrets set --env-file supabase/functions/.env --project-ref yagchgwgbttxfihlyddm
 ```
 
-Never use the Bolt project's credentials. Rotate any key that has previously
+Never reuse credentials from the old Bolt-generated Supabase project. Rotate any key that has previously
 appeared in source, chat, screenshots, or shell history. Use Razorpay test-mode
 keys in staging and live-mode keys only in production.
 

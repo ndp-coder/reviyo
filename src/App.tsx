@@ -1,7 +1,7 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
-import { LoadingSpinner } from '@/components/ui';
+import { Spinner } from '@/components/ui';
 import { RouteMeta } from '@/components/RouteMeta';
 import { TOOL_PATH } from '@/config/seo';
 
@@ -38,7 +38,7 @@ const CustomerReviewPage = lazy(() => import('@/pages/customer/CustomerReviewPag
 function PageLoader() {
   return (
     <div className="min-h-screen flex items-center justify-center" role="status">
-      <LoadingSpinner className="text-blue-600" />
+      <Spinner className="text-blue-600" />
       <span className="sr-only">Loading page</span>
     </div>
   );

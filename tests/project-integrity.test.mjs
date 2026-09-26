@@ -173,6 +173,15 @@ test('AI review quota is claimed atomically before calling the provider', async 
   assert.match(migration, /REVOKE EXECUTE ON FUNCTION claim_ai_generation\(uuid\) FROM PUBLIC, anon, authenticated/i);
 });
 
+test('the old client-callable AI quota functions are dropped', async () => {
+  // log_ai_generation was executable by anon, so anyone with a review-page
+  // session token could fill a business's AI quota. claim_ai_generation replaced it.
+  const migration = await read('supabase/migrations/20260926120000_drop_superseded_ai_quota_functions.sql');
+
+  assert.match(migration, /DROP FUNCTION IF EXISTS log_ai_generation\(uuid\);/);
+  assert.match(migration, /DROP FUNCTION IF EXISTS check_ai_rate_limit\(uuid\);/);
+});
+
 test('server-only database functions are revoked from anon and authenticated, not just PUBLIC', async () => {
   // Supabase grants EXECUTE to anon/authenticated directly on new public
   // functions, so REVOKE ... FROM PUBLIC alone leaves them callable over RPC.
