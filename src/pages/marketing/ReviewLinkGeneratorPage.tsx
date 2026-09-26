@@ -4,6 +4,7 @@ import { ArrowRight, Check, Copy, Download, ExternalLink } from 'lucide-react';
 import { MarketingHeader } from '@/components/MarketingHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SkipLink } from '@/components/SkipLink';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { Button, Input } from '@/components/ui';
 import { buttonClasses } from '@/components/ui/button-styles';
 import { legal } from '@/config/legal';
@@ -64,10 +65,11 @@ export function ReviewLinkGeneratorPage() {
       <MarketingHeader />
 
       <main id="main-content" tabIndex={-1} className="flex-1">
-        <section className="border-b border-gray-200 bg-paper px-5 py-12 sm:px-6 lg:py-20">
+        <section className="border-b border-gray-200 bg-paper px-5 pb-12 pt-8 sm:px-6 lg:pb-20 lg:pt-12">
           <div className="mx-auto grid max-w-6xl items-start gap-10 lg:grid-cols-[1fr_1.15fr] lg:gap-16">
-            <div className="lg:pt-4">
-              <p className="text-sm font-semibold text-accent-700">Free tool · No sign-up</p>
+            <div>
+              <Breadcrumbs />
+              <p className="mt-8 text-sm font-semibold text-accent-700">Free tool · No sign-up</p>
               <h1 className="mt-3 text-[2rem] font-extrabold leading-[1.1] text-balance text-gray-900 sm:text-5xl">
                 Free Google review link &amp; QR code generator
               </h1>
@@ -173,10 +175,21 @@ export function ReviewLinkGeneratorPage() {
                 <h2 className="text-lg font-bold text-gray-900">A link gets them to Google. Reviyo helps them write.</h2>
                 <p className="mt-2 text-sm text-gray-800">
                   Many customers open the review box and then don’t know what to say. With Reviyo, your QR code first asks
-                  for a star rating and a few topics, then AI turns their own input into a review they can edit and post.
+                  what they liked, then AI turns their own input into a review they can edit and post.
                   You also get a private feedback inbox and a simple funnel dashboard.
                 </p>
-                <Link to="/signup" className={`${buttonClasses()} mt-4`}>
+                <p className="mt-2 text-sm text-gray-800">
+                See{' '}
+                <Link to="/for" className="font-medium text-brand-700 underline underline-offset-2">
+                  how it works for clinics, salons, cafés, and more
+                </Link>
+                , or compare the{' '}
+                <Link to="/pricing" className="font-medium text-brand-700 underline underline-offset-2">
+                  plans
+                </Link>
+                .
+              </p>
+              <Link to="/signup" className={`${buttonClasses()} mt-4`}>
                   Try Reviyo free for {legal.trialDays} days <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
               </div>

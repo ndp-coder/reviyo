@@ -2,8 +2,10 @@ import { Link } from 'react-router-dom';
 import { MarketingHeader } from '@/components/MarketingHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SkipLink } from '@/components/SkipLink';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { PlanCards } from '@/components/PlanCards';
 import { legal } from '@/config/legal';
+import { TOOL_PATH } from '@/config/seo';
 
 export function PricingPage() {
   return (
@@ -12,10 +14,10 @@ export function PricingPage() {
       <MarketingHeader />
 
       <main id="main-content" tabIndex={-1} className="flex-1">
-      <section className="bg-paper px-5 pb-16 pt-12 sm:px-6 lg:pb-24 lg:pt-16">
+      <section className="bg-paper px-5 pb-16 pt-8 sm:px-6 lg:pb-24 lg:pt-12">
         <div className="max-w-4xl mx-auto">
-          <p className="text-sm font-semibold text-accent-700">Pricing</p>
-          <h1 className="mt-3 text-[2rem] font-extrabold leading-[1.1] text-balance text-gray-900 sm:text-5xl">
+          <Breadcrumbs />
+          <h1 className="mt-8 text-[2rem] font-extrabold leading-[1.1] text-balance text-gray-900 sm:text-5xl">
             Every feature on both plans. Just pick a term.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-700">
@@ -45,6 +47,17 @@ export function PricingPage() {
               and{' '}
               <Link to="/terms" className="font-medium text-brand-700 underline underline-offset-2">
                 Terms &amp; Conditions
+              </Link>
+              .
+            </p>
+            <p>
+              Not ready to sign up? Get your{' '}
+              <Link to={TOOL_PATH} className="font-medium text-brand-700 underline underline-offset-2">
+                Google review link and QR code free
+              </Link>
+              , or see{' '}
+              <Link to="/for" className="font-medium text-brand-700 underline underline-offset-2">
+                how Reviyo works for your kind of business
               </Link>
               .
             </p>

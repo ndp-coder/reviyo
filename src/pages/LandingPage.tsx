@@ -19,8 +19,8 @@ const steps = [
   },
   {
     where: 'On their phone',
-    title: 'They tap what stood out',
-    text: 'A star rating, a few topics like “service” or “pricing”, and a line of their own if they want. AI turns that into a draft.',
+    title: 'They tap what they liked',
+    text: 'A few topics like “service” or “pricing”, and a line of their own if they want. AI turns that into a draft. No star rating to give twice: they choose stars on Google.',
   },
   {
     where: 'On Google',
@@ -40,7 +40,7 @@ const features = [
   },
   {
     title: 'Help with the words, not the opinion',
-    text: 'The AI uses only the rating, topics, and comment the customer gives. It adds no experiences, staff names, or prices they didn’t mention.',
+    text: 'The AI uses only the topics and comment the customer gives. It adds no experiences, staff names, or prices they didn’t mention.',
   },
   {
     title: 'A private feedback inbox',
@@ -59,7 +59,7 @@ const features = [
 const rules = [
   {
     title: 'Everyone is asked the same way',
-    text: 'Whatever rating a customer gives, they see the same option to post on Google. We never hide it from someone who had a bad day with you.',
+    text: 'However their visit went, every customer sees the same option to post on Google. We never hide it from someone who had a bad day with you.',
   },
   {
     title: 'Nothing is offered in return',
@@ -98,7 +98,7 @@ export function LandingPage() {
                 <span className="text-gray-500">They just don’t know what to write.</span>
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-relaxed text-gray-700">
-                Reviyo puts a QR code on your counter. Customers scan it, tap a rating and what they liked, and get a
+                Reviyo puts a QR code on your counter. Customers scan it, tap what they liked, and get a
                 draft in their own words to edit and post on Google themselves.
               </p>
               <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">

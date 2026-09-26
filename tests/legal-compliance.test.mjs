@@ -329,10 +329,18 @@ test('the rules against incentivised and gated reviews are stated in the Terms',
 // Accessibility
 // ---------------------------------------------------------------------------
 
-test('the star rating control is reachable and named for screen readers', async () => {
-  const page = await read('src/pages/customer/CustomerReviewPage.tsx');
+test('customers are not asked for a star rating twice, and topic chips are accessible', async () => {
+  const [page, fn] = await Promise.all([
+    read('src/pages/customer/CustomerReviewPage.tsx'),
+    read('supabase/functions/generate-review/index.ts'),
+  ]);
 
-  assert.match(page, /aria-label=\{`Rate \$\{star\} out of 5 stars`\}/);
+  // Stars are chosen on Google, where the review is posted. Asking here too
+  // only added a step.
+  assert.doesNotMatch(page, /out of 5 stars|p_rating|submitRating/);
+  assert.doesNotMatch(fn, /request\.rating|session\.rating/);
+  // The AI is still told to keep negative comments negative.
+  assert.match(fn, /never make the review more positive than their input/);
   assert.match(page, /aria-pressed=\{selected\}/, 'topic chips must expose selected state');
 });
 

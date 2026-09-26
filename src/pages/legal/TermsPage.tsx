@@ -40,8 +40,8 @@ export function TermsPage() {
 
       <Clause id="what-it-is" heading="2. What Reviyo does — and what it does not do">
         <p>
-          {N} gives your customers a page they reach by scanning your QR code. On it they rate their
-          experience, pick topics, optionally add a comment, and an AI drafts review text from{' '}
+          {N} gives your customers a page they reach by scanning your QR code. On it they tap the
+          topics they liked, optionally add a comment, and an AI drafts review text from{' '}
           <em>their own input</em>. They can edit it, and they copy and paste it onto Google
           themselves.
         </p>
@@ -50,7 +50,7 @@ export function TermsPage() {
           items={[
             'Post, submit, or publish any review to Google or any other platform. Only the customer does that.',
             'Invent experiences, staff names, services, prices, ratings, or any other fact. The AI is instructed to use only what the customer provides.',
-            'Filter, suppress, gate, or hide negative feedback. Every customer, at every rating, gets the same flow and the same ability to post a public review.',
+            'Filter, suppress, gate, or hide negative feedback. Every customer, however their visit went, gets the same flow and the same ability to post a public review.',
             'Guarantee you will receive any particular number of reviews, any particular rating, any search ranking, or any business outcome.',
             'Operate on behalf of, in partnership with, or with the endorsement of Google. Reviyo is independent.',
           ]}
@@ -132,7 +132,7 @@ export function TermsPage() {
             <>
               <strong>Gate or filter reviews.</strong> Do not show the QR code only to happy
               customers, do not screen by rating before deciding who gets asked, and do not
-              discourage anyone from posting. {N} deliberately gives every rating the same path;
+              discourage anyone from posting. {N} deliberately gives every customer the same path;
               do not defeat that outside the product.
             </>,
             <>
@@ -183,7 +183,7 @@ export function TermsPage() {
         </p>
         <List
           items={[
-            'Handle the ratings, comments, and private feedback you receive lawfully, and use them only to understand and improve your business.',
+            'Handle the topics, comments, and private feedback you receive lawfully, and use them only to understand and improve your business.',
             'Not re-identify, resell, or publish customer feedback in a way that exposes an individual.',
             'Respond to any data-rights request or grievance a customer brings directly to you, and to cooperate with us if one comes to us instead.',
             'Display your QR code with enough context that customers understand they are being asked for feedback.',

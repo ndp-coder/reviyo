@@ -4,6 +4,7 @@ import { legal } from '@/config/legal';
 import { BrandLogo } from '@/components/BrandLogo';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SkipLink } from '@/components/SkipLink';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 interface LegalPageProps {
   title: string;
@@ -33,6 +34,7 @@ export function LegalPage({ title, summary, children }: LegalPageProps) {
 
       <main id="main-content" tabIndex={-1} className="flex-1 px-6 py-12">
         <article className="max-w-3xl mx-auto">
+          <Breadcrumbs className="mb-6" />
           <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
           <p className="mt-3 text-base text-gray-700">{summary}</p>
           <p className="mt-4 text-sm text-gray-600">

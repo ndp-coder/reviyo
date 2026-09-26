@@ -68,9 +68,11 @@ export const legal = {
    */
   policyLastUpdated: '2026-09-26',
   // .2 (25 Sep): Terms describe the AutoPay trial and automatic renewal.
-  // 26 Sep: Privacy and Cookie policies list the dashboard's browser storage and
-  // say precisely how IP addresses are (not) handled.
-  consentVersion: '2026-09-26.1',
+  // 26 Sep .1: Privacy and Cookie policies list the dashboard's browser storage
+  // and say precisely how IP addresses are (not) handled.
+  // 26 Sep .2: no star rating is collected; the review page asks what the
+  // customer liked, and the notice sits on that one screen.
+  consentVersion: '2026-09-26.2',
   /** Recorded on each AutoPay mandate, with the wording shown at the checkbox. */
   autopayTermsVersion: '2026-09-25.1',
   /** Free trial length. Must match start_autopay_trial() in the database. */

@@ -1,4 +1,4 @@
-import { Copy, Check, Star } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 
 // A real QR code for https://www.reviyo.in (25×25 modules, error correction M),
 // precomputed so the landing page does not have to ship the QR library.
@@ -12,6 +12,7 @@ const TOPICS = ['Coffee quality', 'Ambience', 'Staff friendliness'];
  * printed counter card they scanned. Built in HTML rather than a screenshot so
  * it stays sharp and matches the real screens as they change. The example
  * business and draft are invented and contain no ratings data or counts.
+ * There are no stars: customers choose their star rating on Google itself.
  */
 export function ProductPreview() {
   return (
@@ -33,19 +34,15 @@ export function ProductPreview() {
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent-700 text-[11px] font-bold text-white">K</span>
             <span className="text-[11px] font-medium text-gray-800">Kaveri Café</span>
-            <span className="ml-auto text-[10px] text-gray-600">Step 3 of 4</span>
+            <span className="ml-auto text-[10px] text-gray-600">Step 2 of 2</span>
           </div>
           <div className="mt-2 h-1 rounded-full bg-gray-200">
-            <div className="h-full w-3/4 rounded-full bg-brand-900" />
+            <div className="h-full w-full rounded-full bg-brand-900" />
           </div>
 
           <p className="mt-4 text-center text-[15px] font-bold text-gray-900">Your draft review</p>
-          <div className="mt-2 flex justify-center gap-0.5">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Star key={star} className="h-4 w-4 fill-amber-400 text-amber-500" />
-            ))}
-          </div>
-          <div className="mt-2.5 flex flex-wrap justify-center gap-1">
+          <p className="mt-2 text-center text-[10px] text-gray-600">You liked</p>
+          <div className="mt-1 flex flex-wrap justify-center gap-1">
             {TOPICS.map((topic) => (
               <span key={topic} className="inline-flex items-center gap-0.5 rounded-full bg-brand-900 px-2 py-0.5 text-[10px] font-medium text-white">
                 <Check className="h-2.5 w-2.5" /> {topic}

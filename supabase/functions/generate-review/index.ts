@@ -9,7 +9,6 @@ interface ReviewRequest {
   sessionToken: string;
   businessName: string;
   businessCategory: string;
-  rating: number;
   selectedTopics: string[];
   customerComment: string | null;
   requestedStyle: "standard" | "shorter" | "detailed";
@@ -126,13 +125,13 @@ async function geminiGenerate(prompt: string): Promise<string> {
 const SYSTEM_PROMPT = `You help customers write genuine Google reviews based on their own input.
 
 CRITICAL RULES:
-- Use ONLY the information the customer provided: their rating, selected topics, and optional comment.
+- Use ONLY the information the customer provided: the topics they liked and their optional comment.
+- The topics are things the customer liked. The comment may add praise or criticism: reflect it faithfully, including anything negative, and never make the review more positive than their input. The customer chooses their star rating on Google, so never mention a number of stars.
 - NEVER invent experiences, services, staff names, prices, or facts the customer did not mention.
 - Do NOT keyword-stuff or add SEO-style language.
 - Write in natural, conversational human language.
 - Keep the review concise and authentic.
 - Use the business name naturally when appropriate.
-- Match the tone to the rating (5 stars = positive, 1 star = critical, etc.) but stay factual.
 - Do not add disclaimers or meta-commentary about AI.
 
 SOUNDING LIKE THIS CUSTOMER, NOT A TEMPLATE:
@@ -151,7 +150,7 @@ function buildPrompt(request: ReviewRequest): string {
 
   const topicStr = request.selectedTopics.length > 0
     ? request.selectedTopics.join(", ")
-    : "none selected";
+    : "none";
 
   // Quoted so it reads as the customer's words, not as instructions. A comment
   // cannot close the quotes early.
@@ -161,8 +160,7 @@ function buildPrompt(request: ReviewRequest): string {
   return `Write a Google review for ${request.businessName} (category: ${request.businessCategory}).
 
 Customer's input:
-- Rating: ${request.rating} out of 5 stars
-- Topics mentioned: ${topicStr}
+- Topics they liked: ${topicStr}
 - Customer's comment (their own words): ${commentStr}
 
 ${styleInstruction}
@@ -189,7 +187,6 @@ function validateInput(body: ReviewRequest): string | null {
   if (!body.sessionToken) return "Missing session token";
   if (!body.businessName || body.businessName.length > 200) return "Invalid business name";
   if (!body.businessCategory || body.businessCategory.length > 100) return "Invalid business category";
-  if (!body.rating || body.rating < 1 || body.rating > 5) return "Invalid rating";
   if (!Array.isArray(body.selectedTopics)) return "Invalid topics";
   if (body.selectedTopics.length > 20) return "Too many topics selected";
   if (body.customerComment && body.customerComment.length > 2000) return "Comment too long";
@@ -231,15 +228,16 @@ Deno.serve(async (req: Request) => {
     const { createClient } = await import("npm:@supabase/supabase-js@2.57.4");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Resolve business, rating, and topics from the session instead of trusting
-    // client-supplied business details.
+    // Resolve the business and topics from the session instead of trusting
+    // client-supplied details. No draft is written for a session whose
+    // customer has not agreed to the notice (their consent is recorded first).
     const { data: session, error: sessionError } = await supabase
       .from("review_sessions")
-      .select("id, business_id, rating")
+      .select("id, business_id, consent_version")
       .eq("session_token", body.sessionToken)
       .maybeSingle();
 
-    if (sessionError || !session || session.rating === null) {
+    if (sessionError || !session || !session.consent_version) {
       return new Response(
         JSON.stringify({ error: "Review session is invalid or incomplete." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -281,7 +279,6 @@ Deno.serve(async (req: Request) => {
       ...body,
       businessName: businessResult.data.name,
       businessCategory: businessResult.data.category,
-      rating: session.rating,
       selectedTopics: (topicsResult.data ?? [])
         // A many-to-one embed is one object at runtime; without generated types
         // supabase-js declares it as an array. Accept both.

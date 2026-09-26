@@ -8,7 +8,6 @@ export type PrivateFeedbackStatus = 'new' | 'seen' | 'resolved';
 export type AnalyticsEventType =
   | 'qr_page_view'
   | 'review_started'
-  | 'rating_selected'
   | 'topics_selected'
   | 'review_generated'
   | 'review_regenerated'
@@ -97,7 +96,6 @@ export interface CreateSessionResult {
 export interface AIReviewRequest {
   businessName: string;
   businessCategory: string;
-  rating: number;
   selectedTopics: string[];
   customerComment: string | null;
   requestedStyle: AIReviewStyle;

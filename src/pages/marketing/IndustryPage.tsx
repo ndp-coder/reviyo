@@ -1,8 +1,10 @@
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { MarketingHeader } from '@/components/MarketingHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SkipLink } from '@/components/SkipLink';
+import { NotFoundPage } from '@/pages/NotFoundPage';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { getIndustry, industries, industryTopics } from '@/config/industries';
 import { TOOL_PATH } from '@/config/seo';
 import { legal } from '@/config/legal';
@@ -14,7 +16,7 @@ const capitalise = (text: string) => text.replace(/^\w/, (c) => c.toUpperCase())
 export function IndustryPage() {
   const { slug } = useParams<{ slug: string }>();
   const industry = getIndustry(slug);
-  if (!industry) return <Navigate to="/for" replace />;
+  if (!industry) return <NotFoundPage />;
 
   const topics = industryTopics(industry);
   const others = industries.filter((i) => i.slug !== industry.slug);
@@ -27,15 +29,7 @@ export function IndustryPage() {
       <main id="main-content" tabIndex={-1} className="flex-1">
         <section className="px-5 pb-16 pt-8 sm:px-6 lg:pb-20 lg:pt-12">
           <div className="mx-auto max-w-6xl">
-            <nav aria-label="Breadcrumb" className="text-sm text-gray-600">
-              <ol className="flex flex-wrap items-center gap-1.5">
-                <li><Link to="/" className="inline-block py-1.5 hover:text-gray-900 hover:underline">Home</Link></li>
-                <li aria-hidden="true">/</li>
-                <li><Link to="/for" className="inline-block py-1.5 hover:text-gray-900 hover:underline">Industries</Link></li>
-                <li aria-hidden="true">/</li>
-                <li aria-current="page" className="text-gray-900">{capitalise(industry.plural)}</li>
-              </ol>
-            </nav>
+            <Breadcrumbs />
             <div className="mt-10 max-w-3xl">
               <p className="text-sm font-semibold text-accent-700">Google reviews for {industry.plural}</p>
               <h1 className="mt-3 text-[2rem] font-extrabold leading-[1.1] text-balance text-gray-900 sm:text-5xl">{industry.headline}</h1>
@@ -91,7 +85,7 @@ export function IndustryPage() {
             <ol className="mt-10 grid gap-10 md:grid-cols-3 md:gap-8">
               {[
                 { title: 'They scan', text: 'Your customer scans the QR code with their phone camera. No app, no sign-up.' },
-                { title: 'They tap what stood out', text: 'They rate the visit and tap topics. AI drafts a review from only what they chose.' },
+                { title: 'They tap what they liked', text: 'They tap topics and add a few words if they want. AI drafts a review from only what they chose.' },
                 { title: 'They post it on Google', text: 'They edit the draft if they like, then post it on your Google Business Profile themselves.' },
               ].map((step, index) => (
                 <li key={step.title} className="border-t-2 border-brand-900 pt-5">
@@ -105,7 +99,7 @@ export function IndustryPage() {
             <div className="mt-14 border-l-4 border-accent-500 bg-accent-50 px-6 py-5">
               <h2 className="text-lg font-bold text-gray-900">Reviews that follow Google’s rules</h2>
               <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-800">
-                Every customer sees the same options whatever their rating, nothing is offered in return for a review, and
+                Every customer sees the same options however their visit went, nothing is offered in return for a review, and
                 the customer writes and posts the final review themselves. That keeps your reviews credible and your
                 Business Profile safe.
               </p>
@@ -134,7 +128,10 @@ export function IndustryPage() {
                 Start collecting genuine reviews for your {industry.singular}
               </h2>
               <p className="mt-2 text-brand-100">
-                {legal.trialDays}-day free trial. ₹1 AutoPay check, refunded. Plans from {formatRupees(PLANS['6_months'].price)} for {PLANS['6_months'].months} months.
+                {legal.trialDays}-day free trial. ₹1 AutoPay check, refunded. Plans from {formatRupees(PLANS['6_months'].price)} for {PLANS['6_months'].months} months.{' '}
+                <Link to="/pricing" className="font-semibold text-white underline underline-offset-2">
+                  See pricing
+                </Link>
               </p>
             </div>
             <Link

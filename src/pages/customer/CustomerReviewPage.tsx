@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { Star, ArrowRight, ArrowLeft, Check, Copy, ExternalLink, MessageSquare, PenLine, Info, RefreshCw, Edit3, AlertCircle, Lock } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check, Copy, ExternalLink, MessageSquare, PenLine, Info, RefreshCw, Edit3, AlertCircle, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { generateReview } from '@/lib/ai-client';
 import { trackEvent } from '@/lib/analytics';
@@ -17,7 +17,7 @@ interface TopicInfo {
   label: string;
 }
 
-type Step = 'loading' | 'error' | 'lapsed' | 'welcome' | 'rating' | 'topics' | 'generating' | 'review' | 'feedback' | 'done';
+type Step = 'loading' | 'error' | 'lapsed' | 'start' | 'generating' | 'review' | 'feedback' | 'done';
 
 /** What the page shows for a business whose trial or plan has ended. */
 interface LapsedBusiness {
@@ -31,12 +31,12 @@ interface LapsedBusiness {
 const isBusinessNotFound = (error: { message?: string }) => /Business not found/i.test(error.message ?? '');
 const NOT_ACTIVE = 'This review page isn’t active right now. Please check the QR code or link, or ask the staff for help.';
 
-// The three steps a customer moves through after agreeing to start: rate, say
-// what stood out (topics and an optional comment on one screen), then the
-// draft. Shown as "Step n of 3"; the welcome, feedback, and thank-you screens
-// sit outside the count.
-const PROGRESS: Partial<Record<Step, number>> = { rating: 1, topics: 2, generating: 3, review: 3 };
-const PROGRESS_TOTAL = 3;
+// Two steps: say what you liked (and agree), then check the draft and post it.
+// There is no star rating in Reviyo: customers choose their stars on Google,
+// where the review is posted, so asking here as well only slowed them down.
+// The feedback and thank-you screens sit outside the count.
+const PROGRESS: Partial<Record<Step, number>> = { start: 1, generating: 2, review: 2 };
+const PROGRESS_TOTAL = 2;
 
 /**
  * Shared frame for every step: the business's name and logo stay visible after
@@ -100,8 +100,6 @@ export function CustomerReviewPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [bizInfo, setBizInfo] = useState<CreateSessionResult | null>(null);
   const [topics, setTopics] = useState<TopicInfo[]>([]);
-  const [rating, setRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [comment, setComment] = useState('');
   const [generatedReview, setGeneratedReview] = useState('');
@@ -183,6 +181,7 @@ export function CustomerReviewPage() {
           const googleUrl = safeExternalUrl(row?.business_google_review_url);
           if (row && googleUrl) {
             setLapsed({ name: row.business_name, logoUrl: row.business_logo_url, googleReviewUrl: googleUrl });
+            document.title = `Review ${row.business_name} | Reviyo`;
             setStep('lapsed');
             return;
           }
@@ -206,6 +205,8 @@ export function CustomerReviewPage() {
 
         const info = data[0] as CreateSessionResult;
         setBizInfo(info);
+        // The tab names the shop the customer is reviewing, not just "Reviyo".
+        document.title = `Review ${info.business_name} | Reviyo`;
 
         void trackEvent(slug, info.session_token, 'qr_page_view', source ? { source } : {});
 
@@ -219,7 +220,7 @@ export function CustomerReviewPage() {
 
         if (cancelled) return;
         setTopics((topicData as TopicInfo[]) ?? []);
-        setStep('welcome');
+        setStep('start');
       } catch {
         if (cancelled) return;
         setErrorMsg('Check your internet connection and try again. If it keeps happening, scan the QR code again.');
@@ -257,7 +258,26 @@ export function CustomerReviewPage() {
     setStep(next);
   };
 
-  const startReview = async () => {
+  // Counted once, the first time the customer taps a topic or types, so the
+  // owner's funnel shows how many visitors began. Analytics only: nothing the
+  // customer entered is sent until they agree and tap "Write my review".
+  const startedTracked = useRef(false);
+  const markStarted = () => {
+    if (startedTracked.current || !slug || !bizInfo) return;
+    startedTracked.current = true;
+    track(slug, bizInfo.session_token, 'review_started');
+  };
+
+  const toggleTopic = (topicId: string) => {
+    markStarted();
+    setSelectedTopics((prev) =>
+      prev.includes(topicId) ? prev.filter((t) => t !== topicId) : [...prev, topicId]
+    );
+  };
+
+  // One tap does it all: records the consent, saves what the customer picked,
+  // and writes the draft.
+  const writeReview = async () => {
     if (!slug || !bizInfo || busy) return;
 
     if (!consented) {
@@ -265,56 +285,26 @@ export function CustomerReviewPage() {
       return;
     }
     setConsentError(null);
+    setStepError(null);
+    markStarted();
     setBusy(true);
 
     // Record which version of the notice this person actually agreed to, so
-    // the consent can be evidenced later (DPDPA s.6(1)).
-    const saved = await saveSession('record_review_consent', {
+    // the consent can be evidenced later (DPDPA s.6(1)). Nothing they entered
+    // is saved before this succeeds.
+    const consentSaved = await saveSession('record_review_consent', {
       p_session_token: bizInfo.session_token,
       p_consent_version: legal.consentVersion,
     });
-    setBusy(false);
-    if (!saved) {
+    if (!consentSaved) {
+      setBusy(false);
       setStepError(SAVE_FAILED);
       return;
     }
 
-    track(slug, bizInfo.session_token, 'review_started');
-    goTo('rating');
-  };
-
-  const submitRating = async (value: number) => {
-    if (!slug || !bizInfo || busy) return;
-    setRating(value);
-    setBusy(true);
-    // The AI draft is built from the saved rating, so this must succeed.
-    const saved = await saveSession('update_review_session', {
-      p_session_token: bizInfo.session_token,
-      p_rating: value,
-      p_status: 'rated',
-    });
-    setBusy(false);
-    if (!saved) {
-      setStepError(SAVE_FAILED);
-      return;
-    }
-    track(slug, bizInfo.session_token, 'rating_selected', { rating: value });
-    goTo('topics');
-  };
-
-  const toggleTopic = (topicId: string) => {
-    setSelectedTopics((prev) =>
-      prev.includes(topicId) ? prev.filter((t) => t !== topicId) : [...prev, topicId]
-    );
-  };
-
-  // Saves what the customer picked, then goes straight on to writing the draft.
-  const writeReview = async () => {
-    if (!slug || !bizInfo || busy) return;
     const topicLabels = selectedTopics
       .map((id) => topics.find((t) => t.id === id)?.label)
       .filter((label): label is string => Boolean(label));
-    setBusy(true);
     // The AI draft reads the saved topics, so they must be stored first.
     const [statusSaved, topicsSaved] = await Promise.all([
       saveSession('update_review_session', { p_session_token: bizInfo.session_token, p_status: 'topics_selected' }),
@@ -343,7 +333,6 @@ export function CustomerReviewPage() {
       const result = await generateReview(bizInfo.session_token, {
         businessName: bizInfo.business_name,
         businessCategory: bizInfo.business_category,
-        rating,
         selectedTopics: topicLabels,
         customerComment: comment.trim() || null,
         requestedStyle: style,
@@ -386,7 +375,7 @@ export function CustomerReviewPage() {
       setStep('review');
     }
     setAiLoading(false);
-  }, [bizInfo, rating, selectedTopics, topics, comment, aiLoading, track]);
+  }, [bizInfo, selectedTopics, topics, comment, aiLoading, track]);
 
   // Fallback when no AI draft is available: the customer writes the review
   // themselves, starting from their own comment, and can still post it.
@@ -427,7 +416,6 @@ export function CustomerReviewPage() {
     const sent = await saveSession('submit_private_feedback', {
       p_session_token: bizInfo.session_token,
       p_message: feedbackMessage.trim(),
-      p_rating: rating || null,
       p_consent_version: legal.consentVersion,
     });
     setBusy(false);
@@ -514,213 +502,62 @@ export function CustomerReviewPage() {
   // rather than rendered — see src/lib/url-safety.ts.
   const googleReviewUrl = safeExternalUrl(bizInfo.business_google_review_url);
 
-  // ===== Welcome step =====
-  // This screen carries the notice required by DPDPA s.5 — what is collected,
-  // what it is used for, who it goes to, and how to complain — given *before*
-  // any personal data is collected, and paired with an unticked consent box.
-  if (step === 'welcome') {
-    return (
-      <Screen>
-        <div className="animate-slide-up">
-          <div className="text-center">
-            {bizInfo.business_logo_url && (
-              <img
-                src={bizInfo.business_logo_url}
-                alt={`${bizInfo.business_name} logo`}
-                className="mx-auto mb-5 h-20 w-20 rounded-xl border border-gray-200 object-cover"
-              />
-            )}
-            <h1 className="text-2xl font-bold text-gray-900">{welcomeMessage}</h1>
-            <p className="mt-2 text-sm text-gray-600">
-              Your feedback helps {bizInfo.business_name} improve. Takes about a minute.
-            </p>
-          </div>
-
-          <section
-            aria-labelledby="privacy-notice-heading"
-            className="mt-6 rounded-xl border border-gray-200 bg-white p-4 text-left"
-          >
-            <h2
-              id="privacy-notice-heading"
-              className="flex items-center gap-2 text-sm font-semibold text-gray-900"
-            >
-              <Lock className="h-4 w-4 text-gray-600" aria-hidden="true" />
-              Before you start
-            </h2>
-            <ul className="mt-2.5 space-y-2 text-sm leading-relaxed text-gray-700">
-              <li>
-                We collect your <strong>star rating</strong>, the <strong>topics you tap</strong>, and{' '}
-                <strong>anything you type</strong> — nothing else. No name, no email, no phone number,
-                no login.
-              </li>
-              <li>
-                That input is sent to our AI provider to draft review text for you. The AI only uses
-                what you give it and never invents anything.
-              </li>
-              <li>
-                {bizInfo.business_name} can see what you submit. <strong>You</strong> decide whether
-                to post the review on Google — nothing is posted automatically.
-              </li>
-              <li>
-                We delete what you submit after {legal.sessionRetentionDays} days. We set no cookies
-                and do not track you.
-              </li>
-            </ul>
-            <p className="mt-3 text-sm text-gray-700">
-              Read the{' '}
-              <Link
-                to="/privacy"
-                target="_blank"
-                className="font-medium text-brand-700 underline underline-offset-2"
-              >
-                Privacy Policy<span className="sr-only"> (opens in a new tab)</span>
-              </Link>{' '}
-              or email{' '}
-              <a
-                href={`mailto:${legal.privacyEmail}`}
-                className="font-medium text-brand-700 underline underline-offset-2"
-              >
-                {displayValue(legal.privacyEmail)}
-              </a>{' '}
-              to have your feedback deleted.
-            </p>
-          </section>
-
-          <div className="mt-4">
-            <ConsentCheckbox
-              checked={consented}
-              onChange={(value) => {
-                setConsented(value);
-                if (value) setConsentError(null);
-              }}
-              error={consentError}
-            >
-              I agree to share my feedback with {bizInfo.business_name} and to have AI draft a review
-              from what I enter. I am 18 or older.
-            </ConsentCheckbox>
-          </div>
-
-          {stepError && <Alert variant="error" className="mt-4">{stepError}</Alert>}
-          <Button size="lg" className="mt-5 w-full" onClick={startReview} loading={busy}>
-            Share your experience <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Button>
-        </div>
-      </Screen>
-    );
-  }
-
-  // ===== Rating step =====
-  if (step === 'rating') {
-    return (
-      <Screen business={brand} step={step}>
-        <div className="text-center">
-          <h1 id="rating-heading" className="text-2xl font-bold text-gray-900">
-            How was your experience?
-          </h1>
-          <p className="mt-2 text-sm text-gray-600">Tap a star to rate from 1 to 5.</p>
-          {/* Each star is a separate button with its own label, so a screen
-              reader announces "Rate 3 out of 5 stars" rather than an unnamed
-              button, and every star is reachable with Tab alone. The gap
-              shrinks on 320px phones so five 52px targets still fit. */}
-          <div
-            role="group"
-            aria-labelledby="rating-heading"
-            aria-busy={busy || undefined}
-            className="mt-8 flex justify-center gap-0.5 min-[360px]:gap-1 sm:gap-2"
-          >
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                onClick={() => submitRating(star)}
-                disabled={busy}
-                onMouseEnter={() => setHoverRating(star)}
-                onMouseLeave={() => setHoverRating(0)}
-                onFocus={() => setHoverRating(star)}
-                onBlur={() => setHoverRating(0)}
-                aria-label={`Rate ${star} out of 5 stars`}
-                className="rounded-lg p-1 transition-transform hover:scale-110 active:scale-95 disabled:cursor-wait"
-              >
-                <Star
-                  aria-hidden="true"
-                  className={`h-11 w-11 transition-colors sm:h-12 sm:w-12 ${
-                    star <= (hoverRating || rating)
-                      ? 'fill-amber-400 text-amber-500'
-                      : 'fill-gray-200 text-gray-400'
-                  }`}
-                />
-              </button>
-            ))}
-          </div>
-          <div className="mx-auto mt-2 flex max-w-[17rem] justify-between text-xs text-gray-600" aria-hidden="true">
-            <span>Poor</span>
-            <span>Excellent</span>
-          </div>
-          {busy && (
-            <p role="status" className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-600">
-              <Spinner className="h-4 w-4" /> Saving…
-            </p>
-          )}
-          {stepError && <Alert variant="error" className="mt-4 text-left">{stepError}</Alert>}
-          <Button variant="ghost" className="mt-6" onClick={() => goTo('welcome')} disabled={busy}>
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
-          </Button>
-        </div>
-      </Screen>
-    );
-  }
-
-  // ===== Topics + comment step =====
-  // One screen for "what stood out": tap topics, add a few words if you like,
-  // and the draft is written. (These used to be two screens.)
-  if (step === 'topics') {
+  // ===== Start: what they liked, and consent =====
+  // Everything on one screen: tap what you liked, add your own words if you
+  // want, agree, and the draft is written. The notice required by DPDPA s.5 —
+  // what is collected, why, who sees it, and how to have it deleted — sits
+  // above an unticked consent box, and nothing entered is saved until the
+  // customer agrees and taps "Write my review".
+  if (step === 'start') {
     const hasTopics = topics.length > 0;
     const canWrite = !hasTopics || selectedTopics.length > 0 || comment.trim().length > 0;
     return (
       <Screen business={brand} step={step}>
-        <h1 id="topics-heading" className="text-center text-2xl font-bold text-gray-900">
-          {hasTopics ? 'What stood out?' : 'Tell us about your visit'}
-        </h1>
+        <h1 className="text-center text-2xl font-bold text-gray-900">{welcomeMessage}</h1>
         <p className="mt-2 text-center text-sm text-gray-600">
-          {hasTopics
-            ? 'Tap everything that applies, or write a few words below.'
-            : 'A few words of your own help the draft sound like you.'}
+          Tap what you liked and we&rsquo;ll draft a Google review for you to check and post. It takes about a minute.
         </p>
+
         {/* aria-pressed makes the selected state audible; without it a screen
             reader user cannot tell which chips they have already chosen. */}
         {hasTopics && (
-          <div
-            role="group"
-            aria-labelledby="topics-heading"
-            className="mt-6 flex flex-wrap justify-center gap-2"
-          >
-            {topics.map((topic) => {
-              const selected = selectedTopics.includes(topic.id);
-              return (
-                <button
-                  key={topic.id}
-                  type="button"
-                  aria-pressed={selected}
-                  onClick={() => toggleTopic(topic.id)}
-                  className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium transition-colors active:scale-95 ${
-                    selected
-                      ? 'bg-brand-900 text-white'
-                      : 'border border-gray-400 bg-white text-gray-700 hover:border-gray-600'
-                  }`}
-                >
-                  {selected && <Check className="mr-1 h-3.5 w-3.5" aria-hidden="true" />}
-                  {topic.label}
-                </button>
-              );
-            })}
-          </div>
+          <>
+            <h2 id="topics-heading" className="mt-6 text-center text-sm font-semibold text-gray-900">
+              What did you like?
+            </h2>
+            <div role="group" aria-labelledby="topics-heading" className="mt-3 flex flex-wrap justify-center gap-2">
+              {topics.map((topic) => {
+                const selected = selectedTopics.includes(topic.id);
+                return (
+                  <button
+                    key={topic.id}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => toggleTopic(topic.id)}
+                    className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium transition-colors active:scale-95 ${
+                      selected
+                        ? 'bg-brand-900 text-white'
+                        : 'border border-gray-400 bg-white text-gray-700 hover:border-gray-600'
+                    }`}
+                  >
+                    {selected && <Check className="mr-1 h-3.5 w-3.5" aria-hidden="true" />}
+                    {topic.label}
+                  </button>
+                );
+              })}
+            </div>
+          </>
         )}
+
         <div className="mt-6">
           <Textarea
-            label={hasTopics ? 'Anything else? (optional)' : 'Your comment'}
+            label={hasTopics ? 'In your own words, good or bad (optional)' : 'Tell us about your visit'}
             value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="e.g. The staff explained everything clearly"
+            onChange={(e) => {
+              markStarted();
+              setComment(e.target.value);
+            }}
+            placeholder="e.g. Great coffee, but the wait was a bit long"
             rows={3}
             maxLength={2000}
             aria-describedby="comment-privacy-hint"
@@ -740,23 +577,74 @@ export function CustomerReviewPage() {
             </span>
           </p>
         </div>
-        {stepError && <Alert variant="error" className="mt-6">{stepError}</Alert>}
-        <div className="mt-6 flex items-center gap-3">
-          <Button variant="ghost" onClick={() => goTo('rating')} disabled={busy}>
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
-          </Button>
-          <Button
-            className="flex-1"
-            onClick={writeReview}
-            // A business with no active topics must not strand the customer here.
-            disabled={!canWrite}
-            loading={busy}
+
+        <section
+          aria-labelledby="privacy-notice-heading"
+          className="mt-6 rounded-xl border border-gray-200 bg-white p-4 text-left"
+        >
+          <h2 id="privacy-notice-heading" className="text-sm font-semibold text-gray-900">
+            Your privacy
+          </h2>
+          <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-gray-700">
+            <li>
+              We save the <strong>topics you tap</strong> and <strong>anything you type</strong> —
+              nothing else. No name, phone number, or login.
+            </li>
+            <li>
+              It goes to our AI provider to draft your review, and {bizInfo.business_name} can see it.
+              Nothing is posted for you: you decide whether to post on Google.
+            </li>
+            <li>
+              It is deleted after {legal.sessionRetentionDays} days. No cookies, no tracking.
+            </li>
+          </ul>
+          <p className="mt-3 text-sm text-gray-700">
+            Read the{' '}
+            <Link
+              to="/privacy"
+              target="_blank"
+              className="font-medium text-brand-700 underline underline-offset-2"
+            >
+              Privacy Policy<span className="sr-only"> (opens in a new tab)</span>
+            </Link>{' '}
+            or email{' '}
+            <a
+              href={`mailto:${legal.privacyEmail}`}
+              className="font-medium text-brand-700 underline underline-offset-2"
+            >
+              {displayValue(legal.privacyEmail)}
+            </a>{' '}
+            to have it deleted.
+          </p>
+        </section>
+
+        <div className="mt-4">
+          <ConsentCheckbox
+            checked={consented}
+            onChange={(value) => {
+              setConsented(value);
+              if (value) setConsentError(null);
+            }}
+            error={consentError}
           >
-            <PenLine className="h-4 w-4" aria-hidden="true" /> Write my review
-          </Button>
+            I agree to share this with {bizInfo.business_name} and to have AI draft a review from
+            what I enter. I am 18 or older.
+          </ConsentCheckbox>
         </div>
+
+        {stepError && <Alert variant="error" className="mt-4">{stepError}</Alert>}
+        <Button
+          size="lg"
+          className="mt-5 w-full"
+          onClick={writeReview}
+          // A business with no active topics must not strand the customer here.
+          disabled={!canWrite}
+          loading={busy}
+        >
+          <PenLine className="h-4 w-4" aria-hidden="true" /> Write my review
+        </Button>
         {!canWrite && (
-          <p className="mt-2 text-center text-xs text-gray-600">Tap a topic or write a few words to continue.</p>
+          <p className="mt-2 text-center text-xs text-gray-600">Tap something you liked, or write a few words, to continue.</p>
         )}
       </Screen>
     );
@@ -807,7 +695,7 @@ export function CustomerReviewPage() {
               <Edit3 className="h-4 w-4" aria-hidden="true" /> Write it myself
             </Button>
             <div className="flex items-center gap-3">
-              <Button variant="ghost" onClick={() => goTo('topics')}>
+              <Button variant="ghost" onClick={() => goTo('start')}>
                 <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
               </Button>
               {!aiLimitReached && (
@@ -853,7 +741,7 @@ export function CustomerReviewPage() {
         <p className="mt-4 flex items-start gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-xs leading-relaxed text-amber-900">
           <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
           <span>
-            <strong>This draft was written by AI</strong> from your rating, topics, and comment.
+            <strong>This draft was written by AI</strong> from the topics you tapped and your comment.
             Please check it reflects your real experience before posting — you are the one
             publishing it.
           </span>
@@ -1034,8 +922,8 @@ export function CustomerReviewPage() {
             {feedbackError && <Alert variant="error" className="mt-4">{feedbackError}</Alert>}
             <div className="mt-4 flex gap-3">
               {/* Back returns to wherever the customer came from: the draft if
-                  there is one, otherwise the comment step. */}
-              <Button variant="ghost" onClick={() => goTo(generatedReview ? 'review' : 'topics')} disabled={busy}>
+                  there is one, otherwise the first screen. */}
+              <Button variant="ghost" onClick={() => goTo(generatedReview ? 'review' : 'start')} disabled={busy}>
                 <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
               </Button>
               <Button className="flex-1" onClick={submitFeedback} disabled={!feedbackMessage.trim()} loading={busy}>

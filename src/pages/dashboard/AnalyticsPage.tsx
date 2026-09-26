@@ -1,5 +1,5 @@
 import { Link, useOutletContext } from 'react-router-dom';
-import { Star, TrendingUp, BarChart3, Lightbulb, QrCode } from 'lucide-react';
+import { ThumbsUp, BarChart3, Lightbulb, QrCode } from 'lucide-react';
 import { useDashboardStats } from '@/lib/use-dashboard-stats';
 import { Alert, Button, Card, Skeleton, EmptyState, PageHeader } from '@/components/ui';
 import { sourceLabel } from '@/lib/review-source';
@@ -12,7 +12,7 @@ export function AnalyticsPage() {
   if (stats.loading) {
     return (
       <div role="status" aria-label="Loading analytics">
-        <PageHeader title="Analytics" description="What customers rate you and what they mention." />
+        <PageHeader title="Analytics" description="What customers like, and which QR codes bring in reviews." />
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           <Skeleton className="h-56" />
           <Skeleton className="h-56" />
@@ -37,8 +37,6 @@ export function AnalyticsPage() {
     );
   }
 
-  // Rating distribution
-  const totalRatings = stats.ratingDistribution.reduce((a, b) => a + b, 0);
   // Events over last 7 days
   const last7Days = [...Array(7)].map((_, i) => {
     const date = new Date();
@@ -66,15 +64,12 @@ export function AnalyticsPage() {
   // Insights derived by plain arithmetic over the business's own rows.
   const insights: string[] = [];
   if (stats.topTopics.length > 0) {
-    insights.push(`Customers most frequently mention "${stats.topTopics[0].label}".`);
+    const top = stats.topTopics[0];
+    insights.push(`Customers most often say they liked "${top.label}" (${top.count} time${top.count === 1 ? '' : 's'}).`);
   }
   if (stats.topTopics.length > 1) {
     const second = stats.topTopics[1];
-    const pct = totalRatings > 0 ? Math.round((second.count / totalRatings) * 100) : 0;
-    insights.push(`"${second.label}" was picked in about ${pct}% of rated visits.`);
-  }
-  if (stats.avgRating > 0) {
-    insights.push(`Your average customer rating is ${stats.avgRating.toFixed(1)} out of 5.`);
+    insights.push(`"${second.label}" comes next, picked ${second.count} time${second.count === 1 ? '' : 's'}.`);
   }
   if (stats.googleOpened > 0 && stats.reviewsGenerated > 0) {
     const conversionRate = Math.round((stats.googleOpened / stats.reviewsGenerated) * 100);
@@ -86,42 +81,35 @@ export function AnalyticsPage() {
 
   return (
     <div>
-      <PageHeader title="Analytics" description="What customers rate you and what they mention." />
+      <PageHeader title="Analytics" description="What customers like, and which QR codes bring in reviews." />
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
-      {/* Rating distribution */}
+      {/* What customers liked */}
       <Card className="p-5 sm:p-6">
         <div className="mb-5 flex items-center gap-2">
-          <Star className="h-4 w-4 text-gray-600" aria-hidden="true" />
-          <h2 className="text-sm font-semibold text-gray-900">Ratings</h2>
-          <span className="ml-auto text-xs text-gray-600">
-            {totalRatings > 0 ? `${totalRatings} in the last 90 days` : 'Last 90 days'}
-          </span>
+          <ThumbsUp className="h-4 w-4 text-gray-600" aria-hidden="true" />
+          <h2 className="text-sm font-semibold text-gray-900">What customers liked</h2>
+          <span className="ml-auto text-xs text-gray-600">Last 90 days</span>
         </div>
-        {totalRatings === 0 ? (
+        {stats.topTopics.length === 0 ? (
           <EmptyState
-            title="No ratings yet"
-            description="Each customer who scans your QR code and taps a star shows up here."
+            title="Nothing picked yet"
+            description="When customers tap what they liked, such as “Staff” or “Cleanliness”, the most popular ones are ranked here."
           />
         ) : (
           <div className="space-y-2.5">
-            {[5, 4, 3, 2, 1].map((star) => {
-              const count = stats.ratingDistribution[star - 1];
-              const pct = totalRatings > 0 ? (count / totalRatings) * 100 : 0;
+            {stats.topTopics.map((topic) => {
+              const maxCount = stats.topTopics[0]?.count ?? 1;
               return (
-                <div key={star} className="flex items-center gap-3">
-                  <div className="flex w-10 items-center gap-1">
-                    <span className="text-sm text-gray-700">{star}</span>
-                    <Star className="h-3 w-3 text-amber-500 fill-amber-400" aria-hidden="true" />
-                    <span className="sr-only">stars</span>
-                  </div>
+                <div key={topic.label} className="flex items-center gap-3">
+                  <span className="w-28 truncate text-sm text-gray-700 sm:w-40" title={topic.label}>{topic.label}</span>
                   <div className="flex-1 h-3 rounded-full bg-gray-100 overflow-hidden" aria-hidden="true">
                     <div
-                      className="h-full rounded-full bg-amber-400 transition-[width] duration-500"
-                      style={{ width: `${pct}%` }}
+                      className="h-full rounded-full bg-brand-900 transition-[width] duration-500"
+                      style={{ width: `${(topic.count / maxCount) * 100}%` }}
                     />
                   </div>
-                  <span className="w-8 text-right text-sm tabular-nums text-gray-700">{count}</span>
+                  <span className="w-8 text-right text-sm tabular-nums text-gray-700">{topic.count}</span>
                 </div>
               );
             })}
@@ -196,39 +184,6 @@ export function AnalyticsPage() {
               </Link>
             }
           />
-        )}
-      </Card>
-
-      {/* Most mentioned topics */}
-      <Card className="mt-4 p-5 sm:p-6">
-        <div className="mb-5 flex items-center gap-2">
-          <TrendingUp className="h-4 w-4 text-gray-600" aria-hidden="true" />
-          <h2 className="text-sm font-semibold text-gray-900">Most mentioned topics</h2>
-          <span className="ml-auto text-xs text-gray-600">Last 90 days</span>
-        </div>
-        {stats.topTopics.length === 0 ? (
-          <EmptyState
-            title="No topics picked yet"
-            description="When customers tap topics like “Staff” or “Cleanliness” during a review, the most popular ones are ranked here."
-          />
-        ) : (
-          <div className="space-y-2.5">
-            {stats.topTopics.map((topic) => {
-              const maxCount = stats.topTopics[0]?.count ?? 1;
-              return (
-                <div key={topic.label} className="flex items-center gap-3">
-                  <span className="w-28 truncate text-sm text-gray-700 sm:w-40" title={topic.label}>{topic.label}</span>
-                  <div className="flex-1 h-3 rounded-full bg-gray-100 overflow-hidden" aria-hidden="true">
-                    <div
-                      className="h-full rounded-full bg-brand-900 transition-[width] duration-500"
-                      style={{ width: `${(topic.count / maxCount) * 100}%` }}
-                    />
-                  </div>
-                  <span className="w-8 text-right text-sm tabular-nums text-gray-700">{topic.count}</span>
-                </div>
-              );
-            })}
-          </div>
         )}
       </Card>
 

@@ -102,7 +102,7 @@ export function PrivacyPolicyPage() {
               'Necessary to provide the service you requested.',
             ],
             [
-              'Your star rating and the topics you tap',
+              'The topics you tap',
               'To draft the review you asked for, and to show the business aggregate feedback.',
               'Your consent, given on the review page.',
             ],
@@ -122,7 +122,7 @@ export function PrivacyPolicyPage() {
               'Your consent, given when you send it.',
             ],
             [
-              'Counts of steps reached — page opened, review started, rating given, review generated, Google opened — and which of the business’s QR codes or shared links you used to get there',
+              'Counts of steps reached — page opened, review started, review generated, Google opened — and which of the business’s QR codes or shared links you used to get there',
               'To show the business how many people used its page and which of its QR codes or links works best. These are counts tied to a session identifier, not to you; the QR code tag names a place, such as a table or desk, never a person using the page.',
               'Necessary to provide the service to the business.',
             ],
@@ -155,8 +155,8 @@ export function PrivacyPolicyPage() {
       <Clause id="ai" heading="4. How the AI works, and what it is sent">
         <p>
           When you ask {N} to draft a review, we send the following to our AI provider,{' '}
-          {displayValue(legal.aiProviderName)}: the business&rsquo;s name and category, your star
-          rating, the topics you selected, your optional comment, and the length you asked for. That
+          {displayValue(legal.aiProviderName)}: the business&rsquo;s name and category, the topics you
+          selected, your optional comment, and the length you asked for. That
           is all. We do not send your session identifier, and we have nothing else about you to send.
         </p>
         <p>
@@ -203,7 +203,7 @@ export function PrivacyPolicyPage() {
             ],
             [
               displayValue(legal.aiProviderName),
-              'Business name and category, rating, topics, and your optional comment — at the moment you ask for a draft. For owners who ask for topic suggestions: the business name, category, and existing topics.',
+              'Business name and category, topics, and your optional comment — at the moment you ask for a draft. For owners who ask for topic suggestions: the business name, category, and existing topics.',
               'Generating the review draft you requested, and suggesting review topics to business owners.',
             ],
             [
@@ -213,7 +213,7 @@ export function PrivacyPolicyPage() {
             ],
             [
               'The business whose QR code you scanned',
-              'Your rating, selected topics, comment, drafted review, and any private feedback.',
+              'Your selected topics, comment, drafted review, and any private feedback.',
               'That is the point of the product — the business asked for feedback and you chose to give it.',
             ],
           ]}
@@ -250,7 +250,7 @@ export function PrivacyPolicyPage() {
           columns={['Data', 'Kept for', 'Then']}
           rows={[
             [
-              'Customer review sessions — rating, comment, drafted review',
+              'Customer review sessions — topics, comment, drafted review (and, for visits before this version, a star rating)',
               `${legal.sessionRetentionDays} days from the visit`,
               'Permanently deleted. The business keeps only aggregate counts.',
             ],

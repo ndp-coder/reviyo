@@ -13,7 +13,7 @@ export function BrandLogo({ variant = 'wordmark', className = '' }: BrandLogoPro
   return (
     <img
       src={src}
-      alt={`${branding.name} logo`}
+      alt={branding.name}
       width={variant === 'icon' ? 192 : 216}
       height={variant === 'icon' ? 192 : 89}
       className={`block object-contain ${className}`}

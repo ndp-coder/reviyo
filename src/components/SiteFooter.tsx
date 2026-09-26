@@ -82,24 +82,36 @@ export function SiteFooter() {
 
           <div>
             <h2 className="text-sm font-semibold text-gray-900">Business details</h2>
+            {/* Details still marked TODO_ in config/legal.ts are left out rather
+                than shown as placeholders. The release build refuses to run
+                until every one is filled in, so a live site shows them all. */}
             <address className="mt-4 space-y-1 text-sm not-italic text-gray-700">
               <p>{displayValue(legal.legalName)}</p>
-              <p className="whitespace-pre-line">{displayValue(legal.address)}</p>
+              {!isPlaceholder(legal.address) && <p className="whitespace-pre-line">{legal.address}</p>}
+              {!isPlaceholder(legal.supportEmail) && (
+                <p>
+                  <a
+                    href={`mailto:${legal.supportEmail}`}
+                    className="underline underline-offset-2 hover:text-gray-900"
+                  >
+                    {legal.supportEmail}
+                  </a>
+                </p>
+              )}
+              {!isPlaceholder(legal.supportPhone) && (
+                <p>
+                  <a
+                    href={`tel:${legal.supportPhone.replace(/\s+/g, '')}`}
+                    className="underline underline-offset-2 hover:text-gray-900"
+                  >
+                    {legal.supportPhone}
+                  </a>
+                </p>
+              )}
               <p>
-                <a
-                  href={`mailto:${legal.supportEmail}`}
-                  className="underline underline-offset-2 hover:text-gray-900"
-                >
-                  {displayValue(legal.supportEmail)}
-                </a>
-              </p>
-              <p>
-                <a
-                  href={`tel:${legal.supportPhone.replace(/\s+/g, '')}`}
-                  className="underline underline-offset-2 hover:text-gray-900"
-                >
-                  {displayValue(legal.supportPhone)}
-                </a>
+                <Link to="/contact" className="underline underline-offset-2 hover:text-gray-900">
+                  All contact details
+                </Link>
               </p>
               {showGstin && <p>GSTIN: {legal.gstin}</p>}
               {showCin && <p>CIN: {legal.cin}</p>}

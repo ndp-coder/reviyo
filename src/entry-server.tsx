@@ -8,7 +8,7 @@ import App from './App';
 import { AuthProvider } from '@/lib/auth-context';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 
-export { publicPages, getPageMeta, renderHeadTags, SITE_URL } from '@/config/seo';
+export { publicPages, getPageMeta, renderHeadTags, renderLlmsTxt, SITE_URL } from '@/config/seo';
 
 export function render(url: string): string {
   return renderToString(

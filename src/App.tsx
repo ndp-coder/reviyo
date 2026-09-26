@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { Spinner } from '@/components/ui';
 import { RouteMeta } from '@/components/RouteMeta';
+import { ScrollToTop } from '@/components/ScrollToTop';
 import { TOOL_PATH } from '@/config/seo';
 
 // Public marketing and policy pages are prerendered to static HTML for search
@@ -20,6 +21,7 @@ import { ContactPage } from '@/pages/legal/ContactPage';
 import { IndustriesPage } from '@/pages/marketing/IndustriesPage';
 import { IndustryPage } from '@/pages/marketing/IndustryPage';
 import { ReviewLinkGeneratorPage } from '@/pages/marketing/ReviewLinkGeneratorPage';
+import { NotFoundPage } from '@/pages/NotFoundPage';
 
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage').then((module) => ({ default: module.LoginPage })));
 const SignupPage = lazy(() => import('@/pages/auth/SignupPage').then((module) => ({ default: module.SignupPage })));
@@ -71,6 +73,7 @@ function App() {
   return (
     <>
     <RouteMeta />
+    <ScrollToTop />
     <Suspense fallback={<PageLoader />}>
       <Routes>
       {/* Public marketing routes */}
@@ -120,8 +123,8 @@ function App() {
         <AdminRoute><AdminPage /></AdminRoute>
       } />
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Anything else is a real "page not found", never a silent redirect. */}
+      <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>
     </>

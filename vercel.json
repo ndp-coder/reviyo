@@ -1,5 +1,9 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
-  "rewrites": [{ "source": "/((?!.*\\.).*)", "destination": "/app" }]
+  "rewrites": [
+    { "source": "/(login|signup|forgot-password|reset-password|onboarding|admin|dashboard)", "destination": "/app" },
+    { "source": "/dashboard/:path*", "destination": "/app" },
+    { "source": "/r/:slug", "destination": "/app" }
+  ]
 }

@@ -1,5 +1,6 @@
-import { legal } from '@/config/legal';
+import { legal, isPlaceholder } from '@/config/legal';
 import { branding } from '@/config/branding';
+import { PLANS, PLAN_ORDER, formatRupees } from '@/config/plans';
 import { industries, type Industry } from '@/config/industries';
 import { landingFaqs, reviewLinkToolFaqs } from '@/config/faq';
 
@@ -20,12 +21,34 @@ import { landingFaqs, reviewLinkToolFaqs } from '@/config/faq';
 export const SITE_URL = legal.siteUrl.replace(/\/$/, '');
 export const SITE_NAME = branding.name;
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/og/reviyo-og.png`;
+/** Describes public/og/reviyo-og.png for people who cannot see it. Update both together. */
+const OG_IMAGE_ALT =
+  'Reviyo logo, the words “Your customers would review you on Google. Reviyo helps them write it.”, and a counter card with a QR code';
 const LOGO_URL = `${SITE_URL}/brand/reviyo-logo.png`;
 
 type JsonLd = Record<string, unknown>;
 
+/**
+ * A business detail only once it has been filled in. Unfinished `TODO_` values
+ * from config/legal.ts are dropped (JSON.stringify omits undefined), so search
+ * engines never see placeholder text. The release build refuses to run while
+ * any remain, so a published site always has them all.
+ */
+const real = (value: string | null | undefined) => (value && !isPlaceholder(value) ? value : undefined);
+
+const cheapestPlan = PLANS[PLAN_ORDER[0]];
+const planSummary = PLAN_ORDER.map((id) => `${formatRupees(PLANS[id].price)} for ${PLANS[id].months} months`).join(' or ');
+
+/** One step in a breadcrumb trail. Home is always first and is not listed. */
+export interface Crumb {
+  name: string;
+  path: string;
+}
+
 export interface PageMeta {
   path: string;
+  /** Breadcrumbs after Home: shown on the page (<Breadcrumbs />) and sent as BreadcrumbList data. */
+  trail?: Crumb[];
   title: string;
   description: string;
   noindex?: boolean;
@@ -48,11 +71,12 @@ const organization: JsonLd = {
   name: SITE_NAME,
   url: `${SITE_URL}/`,
   logo: LOGO_URL,
-  email: legal.supportEmail,
-  telephone: legal.supportPhone,
+  email: real(legal.supportEmail),
+  telephone: real(legal.supportPhone),
   founder: { '@type': 'Person', name: legal.grievanceOfficerName },
   address: {
     '@type': 'PostalAddress',
+    streetAddress: real(legal.address),
     addressLocality: legal.jurisdictionCity,
     addressRegion: 'Andhra Pradesh',
     addressCountry: 'IN',
@@ -60,10 +84,49 @@ const organization: JsonLd = {
   contactPoint: {
     '@type': 'ContactPoint',
     contactType: 'customer support',
-    email: legal.supportEmail,
-    telephone: legal.supportPhone,
+    email: real(legal.supportEmail),
+    telephone: real(legal.supportPhone),
     areaServed: 'IN',
+    availableLanguage: ['en'],
   },
+};
+
+/**
+ * The business behind Reviyo, as a LocalBusiness: its registered address in
+ * Vijayawada, contact details, and hours. It serves customers across India
+ * online, which areaServed says, rather than claiming a shopfront.
+ */
+const localBusiness: JsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  '@id': `${SITE_URL}/#business`,
+  name: SITE_NAME,
+  legalName: legal.legalName,
+  description:
+    'Reviyo helps local businesses in India get more genuine Google reviews with a QR code and AI-assisted review writing.',
+  url: `${SITE_URL}/`,
+  logo: LOGO_URL,
+  image: DEFAULT_OG_IMAGE,
+  email: real(legal.supportEmail),
+  telephone: real(legal.supportPhone),
+  priceRange: `${formatRupees(cheapestPlan.price)}–${formatRupees(Math.max(...PLAN_ORDER.map((id) => PLANS[id].price)))}`,
+  currenciesAccepted: 'INR',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: real(legal.address),
+    addressLocality: legal.jurisdictionCity,
+    addressRegion: 'Andhra Pradesh',
+    addressCountry: 'IN',
+  },
+  areaServed: { '@type': 'Country', name: 'India' },
+  // The support hours stated in config/legal.ts (supportHours).
+  openingHoursSpecification: {
+    '@type': 'OpeningHoursSpecification',
+    dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+    opens: '10:00',
+    closes: '18:00',
+  },
+  parentOrganization: { '@id': `${SITE_URL}/#organization` },
 };
 
 const website: JsonLd = {
@@ -86,24 +149,14 @@ const softwareApplication: JsonLd = {
   description:
     'A QR code and AI-assisted review writing tool that helps local businesses in India get more genuine Google reviews from their customers.',
   publisher: { '@id': `${SITE_URL}/#organization` },
-  offers: [
-    {
-      '@type': 'Offer',
-      name: '6 months',
-      price: '1999',
-      priceCurrency: 'INR',
-      url: `${SITE_URL}/pricing`,
-      availability: 'https://schema.org/InStock',
-    },
-    {
-      '@type': 'Offer',
-      name: '12 months',
-      price: '2999',
-      priceCurrency: 'INR',
-      url: `${SITE_URL}/pricing`,
-      availability: 'https://schema.org/InStock',
-    },
-  ],
+  offers: PLAN_ORDER.map((id) => ({
+    '@type': 'Offer',
+    name: PLANS[id].label,
+    price: String(PLANS[id].price),
+    priceCurrency: 'INR',
+    url: `${SITE_URL}/pricing`,
+    availability: 'https://schema.org/InStock',
+  })),
 };
 
 function faqPage(items: { q: string; a: string }[]): JsonLd {
@@ -118,7 +171,7 @@ function faqPage(items: { q: string; a: string }[]): JsonLd {
   };
 }
 
-function breadcrumbs(trail: { name: string; path: string }[]): JsonLd {
+function breadcrumbs(trail: Crumb[]): JsonLd {
   return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -139,24 +192,24 @@ export const TOOL_PATH = '/tools/google-review-link-generator';
 
 function industryPage(industry: Industry): PageMeta {
   const path = `/for/${industry.slug}`;
+  const trail = [
+    { name: 'Industries', path: '/for' },
+    { name: industry.plural.replace(/^\w/, (c) => c.toUpperCase()), path },
+  ];
   return {
     path,
+    trail,
     title: industry.metaTitle,
     description: industry.metaDescription,
     changefreq: 'monthly',
     priority: 0.8,
-    jsonLd: [
-      breadcrumbs([
-        { name: 'Industries', path: '/for' },
-        { name: industry.plural.replace(/^\w/, (c) => c.toUpperCase()), path },
-      ]),
-      faqPage(industry.faqs),
-    ],
+    jsonLd: [breadcrumbs(trail), faqPage(industry.faqs)],
   };
 }
 
 const legalPage = (path: string, title: string, description: string): PageMeta => ({
   path,
+  trail: [{ name: title, path }],
   title: `${title} | ${SITE_NAME}`,
   description,
   changefreq: 'yearly',
@@ -169,23 +222,23 @@ export function publicPages(): PageMeta[] {
     {
       path: '/',
       title: 'Get More Google Reviews with a QR Code & AI | Reviyo',
-      description:
-        'Get more genuine Google reviews: customers scan your QR code and AI helps them write in their own words. For local businesses in India. 14-day free trial.',
+      description: `Get more genuine Google reviews: customers scan your QR code and AI helps them write in their own words. For local businesses in India. ${legal.trialDays}-day free trial.`,
       changefreq: 'weekly',
       priority: 1,
-      jsonLd: [organization, website, softwareApplication, faqPage(landingFaqs)],
+      jsonLd: [organization, localBusiness, website, softwareApplication, faqPage(landingFaqs)],
     },
     {
       path: '/pricing',
-      title: 'Pricing: Google Review QR Code & AI Tool from ₹1,999 | Reviyo',
-      description:
-        'Simple pricing for one business: ₹1,999 for 6 months or ₹2,999 for 12 months, taxes included. 14-day free trial with a ₹1 AutoPay check, refunded. Cancel anytime.',
+      title: `Pricing: Google Review QR Code & AI Tool from ${formatRupees(cheapestPlan.price)} | Reviyo`,
+      description: `Pricing for one business: ${planSummary}, taxes included. ${legal.trialDays}-day free trial with a ₹1 AutoPay check, refunded. Cancel anytime.`,
       changefreq: 'monthly',
       priority: 0.9,
+      trail: [{ name: 'Pricing', path: '/pricing' }],
       jsonLd: [softwareApplication, breadcrumbs([{ name: 'Pricing', path: '/pricing' }])],
     },
     {
       path: TOOL_PATH,
+      trail: [{ name: 'Google Review Link Generator', path: TOOL_PATH }],
       title: 'Free Google Review Link & QR Code Generator | Reviyo',
       description:
         'Create your Google review link and a printable review QR code in seconds, free. Find your Place ID, get the direct “write a review” link, and download the QR code.',
@@ -214,14 +267,16 @@ export function publicPages(): PageMeta[] {
         'See how Reviyo helps dental clinics, salons, restaurants, cafés, gyms, hotels, and other local businesses in India collect more genuine Google reviews.',
       changefreq: 'monthly',
       priority: 0.7,
+      trail: [{ name: 'Industries', path: '/for' }],
       jsonLd: [breadcrumbs([{ name: 'Industries', path: '/for' }])],
     },
     ...industries.map(industryPage),
-    legalPage('/contact', 'Contact Us', 'Contact Reviyo: support email, phone, business address, and our grievance officer.'),
+    { ...legalPage('/contact', 'Contact Us', 'Contact Reviyo: support email, phone, business address, and our grievance officer.'),
+      jsonLd: [localBusiness, breadcrumbs([{ name: 'Contact Us', path: '/contact' }])] },
     legalPage('/privacy', 'Privacy Policy', 'What personal data Reviyo collects, why, how long we keep it, and your rights under India’s DPDP Act, 2023.'),
     legalPage('/terms', 'Terms & Conditions', 'The terms for using Reviyo, including trials, AutoPay, and the rules against fake, incentivised, or gated reviews.'),
     legalPage('/refunds', 'Refund & Cancellation Policy', 'How the Reviyo free trial, AutoPay, cancellation, and refunds work, in plain language.'),
-    legalPage('/cookies', 'Cookie Policy', 'Reviyo uses only essential storage to keep you signed in. No tracking or advertising cookies.'),
+    legalPage('/cookies', 'Cookie Policy', 'Reviyo uses only essential browser storage: your sign-in, and two dashboard tools that remember what you typed. No tracking or advertising cookies.'),
   ];
 }
 
@@ -295,14 +350,56 @@ export function renderHeadTags(meta: PageMeta): string {
     `<meta property="og:image" content="${escapeAttr(image)}" />`,
     `<meta property="og:image:width" content="1200" />`,
     `<meta property="og:image:height" content="630" />`,
-    `<meta property="og:image:alt" content="Reviyo: get more genuine Google reviews" />`,
+    `<meta property="og:image:alt" content="${OG_IMAGE_ALT}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${escapeAttr(meta.title)}" />`,
     `<meta name="twitter:description" content="${escapeAttr(meta.description)}" />`,
     `<meta name="twitter:image" content="${escapeAttr(image)}" />`,
+    `<meta name="twitter:image:alt" content="${OG_IMAGE_ALT}" />`,
   );
   for (const data of meta.jsonLd ?? []) {
     tags.push(`<script type="application/ld+json" data-route-meta>${jsonLdText(data)}</script>`);
   }
   return tags.join('\n    ');
+}
+
+// ---------------------------------------------------------------------------
+// llms.txt for the prerender step
+// ---------------------------------------------------------------------------
+
+/**
+ * /llms.txt (llmstxt.org): a plain-language summary of the site for AI
+ * assistants, built from the same page list as sitemap.xml so it cannot drift.
+ */
+export function renderLlmsTxt(): string {
+  const pages = publicPages();
+  const line = (page: PageMeta) =>
+    `- [${page.title.replace(/ \| Reviyo$/, '')}](${canonicalUrl(page)}): ${page.description}`;
+  const product = pages.filter((p) => ['/', '/pricing', TOOL_PATH, '/for'].includes(p.path));
+  const trades = pages.filter((p) => p.path.startsWith('/for/'));
+  const policies = pages.filter((p) => p.changefreq === 'yearly');
+
+  return [
+    `# ${SITE_NAME}`,
+    '',
+    `> ${SITE_NAME} helps local businesses in India get more genuine Google reviews. Customers scan the business's QR code, tap what they liked, and AI drafts a review from their own input, which they check, edit, and post on Google themselves.`,
+    '',
+    `- Pricing: ${planSummary}, taxes included, for one business at one location. ${legal.trialDays}-day free trial.`,
+    `- ${SITE_NAME} never filters who is asked for a review, never offers anything in return for one, and never posts on a customer's behalf.`,
+    '- The AI uses only what the customer entered. It does not invent experiences, staff names, or prices.',
+    `- ${SITE_NAME} is an independent product, not affiliated with or endorsed by Google.`,
+    '',
+    '## Product',
+    '',
+    ...product.map(line),
+    '',
+    '## Industries',
+    '',
+    ...trades.map(line),
+    '',
+    '## Policies',
+    '',
+    ...policies.map(line),
+    '',
+  ].join('\n');
 }

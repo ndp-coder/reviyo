@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { MarketingHeader } from '@/components/MarketingHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SkipLink } from '@/components/SkipLink';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { industries } from '@/config/industries';
 
 const capitalise = (text: string) => text.replace(/^\w/, (c) => c.toUpperCase());
@@ -12,11 +13,11 @@ export function IndustriesPage() {
     <div className="min-h-screen bg-white flex flex-col">
       <SkipLink />
       <MarketingHeader />
-      <main id="main-content" tabIndex={-1} className="flex-1 px-5 pb-20 pt-12 sm:px-6 lg:pt-16">
+      <main id="main-content" tabIndex={-1} className="flex-1 px-5 pb-20 pt-8 sm:px-6 lg:pt-12">
         <div className="mx-auto max-w-6xl">
-          <div className="max-w-3xl">
-            <p className="text-sm font-semibold text-accent-700">Industries</p>
-            <h1 className="mt-3 text-[2rem] font-extrabold leading-[1.1] text-balance text-gray-900 sm:text-5xl">
+          <Breadcrumbs />
+          <div className="mt-8 max-w-3xl">
+            <h1 className="text-[2rem] font-extrabold leading-[1.1] text-balance text-gray-900 sm:text-5xl">
               Get more Google reviews, whatever your business
             </h1>
             <p className="mt-6 text-lg leading-relaxed text-gray-700">

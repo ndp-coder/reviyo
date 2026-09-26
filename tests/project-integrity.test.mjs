@@ -342,3 +342,22 @@ test('the AI treats the customer\'s comment as quoted text, never as instruction
   assert.match(fn, /replace\(\/"""\/g/);
   assert.match(fn, /reviews that read alike get filtered out by Google/);
 });
+
+test('production builds ship no source maps and keep Supabase off the first page load', async () => {
+  const [vite, auth] = await Promise.all([read('vite.config.ts'), read('src/lib/auth-context.tsx')]);
+  assert.match(vite, /sourcemap: false/);
+  // Every page mounts the auth provider; a static import would put the whole
+  // Supabase client (and its fetch polyfill) in front of every first visit.
+  assert.doesNotMatch(auth, /^import .*['"]@\/lib\/supabase['"]/m);
+  assert.doesNotMatch(auth, /^import .*['"]@\/lib\/use-dashboard-stats['"]/m);
+  assert.match(auth, /import\('@\/lib\/supabase'\)/);
+});
+
+test('every navigation opens at the top of the page, and back restores the position', async () => {
+  const [app, scroll] = await Promise.all([read('src/App.tsx'), read('src/components/ScrollToTop.tsx')]);
+  assert.match(app, /<ScrollToTop \/>/);
+  assert.match(scroll, /navigationType === 'POP'/);
+  // Depends on the whole location (new key per click), so a link to the page
+  // already open also scrolls up.
+  assert.match(scroll, /\[location, navigationType\]/);
+});

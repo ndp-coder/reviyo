@@ -85,10 +85,9 @@ export function DashboardOverview() {
       context: stats.reviewStarted > 0 ? `${formatCount(stats.reviewStarted)} started a review` : 'Visits to your review page',
     },
     {
-      label: 'Average rating',
-      value: stats.avgRating > 0 ? stats.avgRating.toFixed(1) : '—',
-      context: 'Last 90 days',
-      star: stats.avgRating > 0,
+      label: 'AI drafts written',
+      value: formatCount(stats.reviewsGenerated),
+      context: 'Drafts customers got to post',
     },
     {
       label: 'New private feedback',
@@ -167,7 +166,6 @@ export function DashboardOverview() {
               <p className="text-sm text-gray-600">{kpi.label}</p>
               <p className={`mt-1 flex items-center gap-1.5 font-bold tabular-nums text-gray-900 ${i === 0 ? 'text-3xl' : 'text-2xl'}`}>
                 {kpi.value}
-                {kpi.star && <Star className="h-5 w-5 fill-amber-400 text-amber-500" aria-hidden="true" />}
               </p>
               <p className="mt-1 text-xs text-gray-600">{kpi.context}</p>
             </>

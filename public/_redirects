@@ -1,4 +1,13 @@
 # Netlify and Cloudflare Pages. Prerendered public pages are real files and are
-# served as-is; every other path (dashboard, sign-in, /r/:slug, unknown URLs)
-# gets the app shell, which is marked noindex.
-/*    /app.html    200
+# served as-is. The app routes below (sign-in, dashboard, the customer review
+# page) get the app shell, which is marked noindex. Any other URL gets 404.html
+# with a real 404 status, which both hosts do automatically.
+/login            /app.html  200
+/signup           /app.html  200
+/forgot-password  /app.html  200
+/reset-password   /app.html  200
+/onboarding       /app.html  200
+/admin            /app.html  200
+/dashboard        /app.html  200
+/dashboard/*      /app.html  200
+/r/*              /app.html  200

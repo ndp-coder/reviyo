@@ -207,17 +207,23 @@ requirements are complete. Local development still uses `npm run dev`.
 
 `npm run build` prerenders every public page (home, pricing, industry pages,
 the free review-link tool, and the policies) to static HTML with its own
-title, description, canonical URL, social tags, and JSON-LD, and writes
-`sitemap.xml` and `robots.txt`. All page metadata lives in `src/config/seo.ts`;
-industry page copy lives in `src/config/industries.ts`. The site URL comes from
-`siteUrl` in `src/config/legal.ts`.
+title, description, canonical URL, social tags, breadcrumbs, and JSON-LD
+(Organization, LocalBusiness, FAQ, BreadcrumbList), and writes `404.html`,
+`sitemap.xml`, `robots.txt`, and `llms.txt`. All page metadata lives in
+`src/config/seo.ts`; industry page copy lives in `src/config/industries.ts`.
+Prices come from `src/config/plans.ts`, and the site URL, trial length, and
+business details from `src/config/legal.ts`. The build writes no source maps,
+and the Supabase client loads only when a page needs it.
 
 Hosting requirements:
 
 - Serve `pricing.html` at `/pricing` (Vercel with `cleanUrls`, Netlify, and
   Cloudflare Pages all do). `vercel.json` and `public/_redirects` are included.
-- Send every other path (dashboard, sign-in, `/r/:slug`) to `app.html`, the
-  `noindex` app shell. Both files above already do this.
+- Send the app routes (sign-in and sign-up, password reset, onboarding,
+  dashboard, admin, and `/r/:slug`) to `app.html`, the `noindex` app shell,
+  and every other unknown path to `404.html` with a 404 status. Both files
+  above already do this; when you add an app route, add it to both
+  (`tests/seo.test.mjs` checks).
 - Serve the site only on `https://www.reviyo.in`, and 301-redirect
   `reviyo.in` and `http://` to it, so search engines see one canonical host. Add the
 same two public `VITE_` variables to that host. Database migrations and Edge

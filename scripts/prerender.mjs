@@ -13,7 +13,7 @@ import { pathToFileURL } from 'node:url';
 
 const dist = resolve('dist');
 const ssrDir = resolve('dist-ssr');
-const { render, publicPages, getPageMeta, renderHeadTags, SITE_URL } = await import(
+const { render, publicPages, getPageMeta, renderHeadTags, renderLlmsTxt, SITE_URL } = await import(
   pathToFileURL(join(ssrDir, 'entry-server.js')).href
 );
 
@@ -54,7 +54,16 @@ for (const page of pages) {
   await writeFile(file, html);
 }
 
-// 3. sitemap.xml and robots.txt.
+// 3. The "page not found" page. Hosts serve it with a real 404 status for any
+//    URL that is neither a public page nor an app route (vercel.json and
+//    public/_redirects), so a mistyped URL is never indexed as a copy of
+//    another page. No prerendered-path marker: the browser renders it fresh
+//    for whatever URL it was served at.
+const notFound = render('/404');
+if (!notFound.includes('<h1')) throw new Error('The 404 page prerendered without an <h1>.');
+await writeFile(join(dist, '404.html'), withHead(template, getPageMeta('/404')).replace(ROOT, `<div id="root">${notFound}</div>`));
+
+// 4. sitemap.xml, robots.txt, and llms.txt.
 const today = new Date().toISOString().slice(0, 10);
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -88,5 +97,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
 `,
 );
 
+await writeFile(join(dist, 'llms.txt'), renderLlmsTxt());
+
 await rm(ssrDir, { recursive: true, force: true });
-console.log(`prerendered ${pages.length} pages, app.html, sitemap.xml, robots.txt`);
+console.log(`prerendered ${pages.length} pages, 404.html, app.html, sitemap.xml, robots.txt, llms.txt`);

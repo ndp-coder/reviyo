@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { dashboardStatsCache } from '@/lib/dashboard-stats-cache';
 import type { AnalyticsEvent, PrivateFeedback, Business } from '@/lib/types';
 
 export interface DashboardStats {
@@ -9,8 +10,7 @@ export interface DashboardStats {
   googleOpened: number;
   privateFeedbackCount: number;
   newFeedbackCount: number;
-  avgRating: number;
-  ratingDistribution: number[];
+  /** What customers tapped as liked, most first (last 90 days of sessions). */
   topTopics: { label: string; count: number }[];
   recentFeedback: (PrivateFeedback & { rating: number | null })[];
   /** Scans and Google hand-offs per QR code or link (?src), last 90 days. */
@@ -35,8 +35,6 @@ const EMPTY: DashboardStats = {
   googleOpened: 0,
   privateFeedbackCount: 0,
   newFeedbackCount: 0,
-  avgRating: 0,
-  ratingDistribution: [0, 0, 0, 0, 0],
   topTopics: [],
   recentFeedback: [],
   sources: [],
@@ -46,15 +44,7 @@ const EMPTY: DashboardStats = {
   error: null,
 };
 
-// Last result per business, kept for this browser tab. Moving between Overview
-// and Analytics shows these numbers immediately while fresh ones load, instead
-// of a skeleton every time.
-const cache = new Map<string, DashboardStats>();
-
-/** Forgets every cached business's numbers, e.g. when the owner signs out. */
-export function clearDashboardStatsCache() {
-  cache.clear();
-}
+const cache = dashboardStatsCache;
 
 async function fetchStats(business: Business): Promise<DashboardStats> {
   const eventCount = (types: string[]) =>
@@ -66,7 +56,7 @@ async function fetchStats(business: Business): Promise<DashboardStats> {
 
   // Totals are exact counts. (They used to be counted from the latest 500
   // events, which silently capped every number for busier businesses.)
-  const [scansRes, startedRes, generatedRes, googleRes, feedbackCountRes, newFeedbackRes, eventsRes, feedbackRes, sessionsRes, sourcesRes] =
+  const [scansRes, startedRes, generatedRes, googleRes, feedbackCountRes, newFeedbackRes, eventsRes, feedbackRes, sourcesRes] =
     await Promise.all([
       eventCount(['qr_page_view']),
       eventCount(['review_started']),
@@ -86,8 +76,6 @@ async function fetchStats(business: Business): Promise<DashboardStats> {
         .gte('created_at', new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString())
         .limit(10000),
       supabase.from('private_feedback').select('*').eq('business_id', business.id).order('created_at', { ascending: false }).limit(5),
-      // Only the rating is needed; sessions are purged after 90 days.
-      supabase.from('review_sessions').select('rating').eq('business_id', business.id).not('rating', 'is', null).order('created_at', { ascending: false }).limit(2000),
       // Only the event type and its ?src tag, for the per-QR-code breakdown.
       supabase
         .from('analytics_events')
@@ -100,13 +88,11 @@ async function fetchStats(business: Business): Promise<DashboardStats> {
 
   const queryError =
     scansRes.error ?? startedRes.error ?? generatedRes.error ?? googleRes.error ??
-    feedbackCountRes.error ?? newFeedbackRes.error ?? eventsRes.error ?? feedbackRes.error ?? sessionsRes.error ??
-    sourcesRes.error;
+    feedbackCountRes.error ?? newFeedbackRes.error ?? eventsRes.error ?? feedbackRes.error ?? sourcesRes.error;
   if (queryError) throw queryError;
 
   const events = (eventsRes.data as DashboardStats['events']) ?? [];
   const feedback = (feedbackRes.data as PrivateFeedback[]) ?? [];
-  const ratedSessions = (sessionsRes.data as { rating: number | null }[]) ?? [];
 
   const bySource = new Map<string | null, { id: string | null; scans: number; googleOpened: number }>();
   for (const row of (sourcesRes.data as { event_type: string; source: string | null }[]) ?? []) {
@@ -117,18 +103,12 @@ async function fetchStats(business: Business): Promise<DashboardStats> {
     bySource.set(id, entry);
   }
   const sources = [...bySource.values()].sort((a, b) => b.scans - a.scans);
-  const avgRating = ratedSessions.length > 0
-    ? ratedSessions.reduce((sum, s) => sum + (s.rating ?? 0), 0) / ratedSessions.length
-    : 0;
-
-  const ratingDistribution = [1, 2, 3, 4, 5].map((star) =>
-    ratedSessions.filter((s) => s.rating === star).length
-  );
 
   // Topic counts in one request, filtered through the session's business.
-  // Sessions are purged after 90 days, so this covers recent visits.
+  // Sessions are purged after 90 days, so this covers recent visits. Skipped
+  // until the first review has been started, when there cannot be any.
   let topTopics: { label: string; count: number }[] = [];
-  if (ratedSessions.length > 0) {
+  if ((startedRes.count ?? 0) > 0) {
     const { data: sessionTopics, error: sessionTopicsError } = await supabase
       .from('review_session_topics')
       .select('topic_id, review_topics(label), review_sessions!inner(business_id)')
@@ -153,8 +133,6 @@ async function fetchStats(business: Business): Promise<DashboardStats> {
     googleOpened: googleRes.count ?? 0,
     privateFeedbackCount: feedbackCountRes.count ?? 0,
     newFeedbackCount: newFeedbackRes.count ?? 0,
-    avgRating,
-    ratingDistribution,
     topTopics,
     recentFeedback: feedback,
     sources,
