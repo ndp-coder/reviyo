@@ -37,9 +37,20 @@ export default {
         paper: '#f7f6f2',
       },
       fontFamily: {
-        // Headings only. Self-hosted (no request to Google Fonts), and body text
-        // stays on system fonts so reading text never waits for a download.
-        display: ['"Bricolage Grotesque Variable"', 'system-ui', 'sans-serif'],
+        // One family for the whole site, chosen to match the geometric logo
+        // wordmark. Self-hosted (no request to Google Fonts); it has the ₹ sign.
+        // The fallbacks show until it loads.
+        sans: [
+          '"Plus Jakarta Sans Variable"',
+          'system-ui',
+          '-apple-system',
+          '"Segoe UI"',
+          'Roboto',
+          '"Noto Sans"',
+          '"Helvetica Neue"',
+          'Arial',
+          'sans-serif',
+        ],
       },
     },
   },

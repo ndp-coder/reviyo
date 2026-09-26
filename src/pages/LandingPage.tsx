@@ -93,7 +93,7 @@ export function LandingPage() {
           <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.2fr_1fr] lg:gap-12">
             <div>
               <p className="text-sm font-semibold text-accent-700">Google reviews for local businesses in India</p>
-              <h1 className="mt-4 text-[2.1rem] font-bold leading-[1.08] text-balance text-gray-900 sm:text-5xl lg:text-[3.25rem]">
+              <h1 className="mt-4 text-[2.1rem] font-extrabold leading-[1.08] text-balance text-gray-900 sm:text-5xl lg:text-[3.25rem]">
                 Your customers would review you on Google.{' '}
                 <span className="text-gray-500">They just don’t know what to write.</span>
               </h1>
@@ -174,7 +174,7 @@ export function LandingPage() {
             <ol className="grid gap-8 sm:grid-cols-3 sm:gap-6">
               {rules.map((rule, index) => (
                 <li key={rule.title}>
-                  <p className="font-display text-4xl font-bold text-accent-400" aria-hidden="true">
+                  <p className="text-4xl font-bold text-accent-400" aria-hidden="true">
                     {index + 1}
                   </p>
                   <h3 className="mt-3 font-semibold">{rule.title}</h3>

@@ -1,5 +1,5 @@
-/* Self-hosted headline font (see fontFamily.display in tailwind.config.js). */
-@import '@fontsource-variable/bricolage-grotesque/wght.css';
+/* Self-hosted site font (see fontFamily.sans in tailwind.config.js). */
+@import '@fontsource-variable/plus-jakarta-sans/wght.css';
 
 @tailwind base;
 @tailwind components;
@@ -8,17 +8,12 @@
 @layer base {
   body {
     @apply text-gray-900 antialiased;
-    /* Body text uses system fonts: nothing to download before it can be read.
-       Headings use the self-hosted display face below. */
-    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
   }
 
-  /* Page and section headings use the brand face; smaller headings and all
-     running text stay on the system font. */
+  /* Large headings are set a little tighter, as display type usually is. */
   h1,
   h2 {
-    font-family: theme('fontFamily.display');
-    letter-spacing: -0.015em;
+    letter-spacing: -0.02em;
   }
 
   /*

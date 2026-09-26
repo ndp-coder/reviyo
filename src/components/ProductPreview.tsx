@@ -39,7 +39,7 @@ export function ProductPreview() {
             <div className="h-full w-3/4 rounded-full bg-brand-900" />
           </div>
 
-          <p className="mt-4 text-center font-display text-[15px] font-bold text-gray-900">Your draft review</p>
+          <p className="mt-4 text-center text-[15px] font-bold text-gray-900">Your draft review</p>
           <div className="mt-2 flex justify-center gap-0.5">
             {[1, 2, 3, 4, 5].map((star) => (
               <Star key={star} className="h-4 w-4 fill-amber-400 text-amber-500" />
@@ -68,7 +68,7 @@ export function ProductPreview() {
 
       {/* Counter card */}
       <div className="absolute bottom-8 left-0 w-[7.75rem] -rotate-3 rounded-xl border border-gray-200 bg-white p-3 text-center shadow-[0_16px_32px_-16px_rgba(8,22,54,0.35)] sm:w-[10rem]">
-        <p className="font-display text-[13px] font-bold text-gray-900">Kaveri Café</p>
+        <p className="text-[13px] font-bold text-gray-900">Kaveri Café</p>
         <p className="mt-0.5 text-[9.5px] leading-snug text-gray-600">How was your visit? Tell us about it.</p>
         <svg viewBox="-2 -2 29 29" className="mx-auto mt-2 h-auto w-full max-w-[6.5rem]" shapeRendering="crispEdges">
           <rect x="-2" y="-2" width="29" height="29" fill="#fff" />

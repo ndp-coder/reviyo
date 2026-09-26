@@ -68,7 +68,7 @@ export function ReviewLinkGeneratorPage() {
           <div className="mx-auto grid max-w-6xl items-start gap-10 lg:grid-cols-[1fr_1.15fr] lg:gap-16">
             <div className="lg:pt-4">
               <p className="text-sm font-semibold text-accent-700">Free tool · No sign-up</p>
-              <h1 className="mt-3 text-[2rem] font-bold leading-[1.1] text-balance text-gray-900 sm:text-5xl">
+              <h1 className="mt-3 text-[2rem] font-extrabold leading-[1.1] text-balance text-gray-900 sm:text-5xl">
                 Free Google review link &amp; QR code generator
               </h1>
               <p className="mt-6 text-lg leading-relaxed text-gray-700">

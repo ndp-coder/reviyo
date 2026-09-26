@@ -490,7 +490,7 @@ them verbatim, so a wrong value there is a false disclosure.
 |-------|--------|---------|
 | `public/brand/reviyo-logo.png`, `reviyo-icon.png` | Project-supplied | **You must confirm you own or are licensed to use these.** They are the only raster images in the repo. |
 | Icons | `lucide-react` | ISC |
-| Heading font (Bricolage Grotesque) | `@fontsource-variable/bricolage-grotesque`, bundled and served from the site itself | SIL Open Font License 1.1 |
+| Site font (Plus Jakarta Sans) | `@fontsource-variable/plus-jakarta-sans`, bundled and served from the site itself | SIL Open Font License 1.1 |
 | QR codes | Generated at runtime by `qrcode` (MIT); the landing-page illustration's code is precomputed with it | No third-party rights |
 
 There are no stock photographs, no illustrations, and no web fonts fetched from
