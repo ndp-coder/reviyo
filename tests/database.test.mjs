@@ -323,3 +323,16 @@ check('owners can change feedback status but not the customer\'s words', async (
   await deniedFor(user, `UPDATE private_feedback SET message = 'edited' WHERE business_id = $1`, [B], 'edit message');
   await deniedFor(user, `DELETE FROM private_feedback WHERE business_id = $1`, [B], 'delete feedback');
 });
+
+check('the email log is server-only and lets each email be claimed once', async () => {
+  for (const role of ['anon', 'authenticated']) {
+    for (const priv of ['SELECT', 'INSERT', 'DELETE']) {
+      const r = await one(`SELECT has_table_privilege($1, 'public.email_log', $2) AS ok`, [role, priv]);
+      assert.equal(r.ok, false, `${role} has ${priv} on email_log`);
+    }
+  }
+  const claim = () => q(`INSERT INTO email_log (kind, ref, business_id) VALUES ('receipt', 'order_x', $1) ON CONFLICT DO NOTHING RETURNING kind`, [B]);
+  assert.equal((await claim()).length, 1, 'first claim wins');
+  assert.equal((await claim()).length, 0, 'second claim is refused');
+  await rejects(`INSERT INTO email_log (kind, ref) VALUES ('newsletter', 'x')`, [], /email_log_kind_check/, 'unknown kind');
+});

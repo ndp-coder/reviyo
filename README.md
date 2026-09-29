@@ -229,6 +229,56 @@ Hosting requirements:
 same two public `VITE_` variables to that host. Database migrations and Edge
 Functions are deployed separately with the Supabase CLI commands above.
 
+## Email from support@reviyo.in
+
+Every email an owner gets comes from `support@reviyo.in` (the Hostinger
+mailbox), and replies land in that inbox. Customers who scan a QR code are
+never emailed. Two parts send email, and each is set up once:
+
+### 1. Sign-in codes and account emails (Supabase Auth)
+
+Supabase dashboard > **Authentication > Emails > SMTP Settings**, turn on
+custom SMTP:
+
+| Field | Value |
+|-------|-------|
+| Sender email | `support@reviyo.in` |
+| Sender name | `Reviyo` |
+| Host | `smtp.hostinger.com` |
+| Port | `465` |
+| Username | `support@reviyo.in` |
+| Password | the mailbox password |
+
+Then **Authentication > Emails > Templates**: paste
+`supabase/templates/magic_link.html` into **Magic link** (it shows the
+6-digit sign-in code, `{{ .Token }}`), `confirmation.html` into **Confirm
+signup**, and `recovery.html` into **Reset password**. Owners can then choose
+"Sign in with an email code" on the sign-in page (existing accounts only; new
+owners still sign up, which records their acceptance of the Terms).
+
+### 2. Receipts and billing reminders (Edge Functions)
+
+`supabase/functions/_shared/email.ts` sends, each exactly once (tracked in the
+`email_log` table):
+
+- a **payment receipt** when a plan is paid or renewed (a receipt, not a tax
+  invoice, until a GSTIN is added),
+- a **renewal notice** when an AutoPay charge is scheduled (the bank or UPI
+  app sends its own too),
+- a **payment failed** email when a renewal charge fails,
+- a **plan ending** reminder three days before a trial or plan ends with no
+  AutoPay to renew it.
+
+Receipts go out straight away from `verify-razorpay-payment` and
+`razorpay-webhook`; the `autopay-scheduler` run sends anything missed plus the
+reminders, so it must be scheduled (see Deploy). Set the secrets from
+`supabase/.env.example` (`SMTP_PASSWORD` is the mailbox password), then deploy
+`verify-razorpay-payment`, `razorpay-webhook`, and `autopay-scheduler`. With
+no `SMTP_PASSWORD`, nothing is sent and payments work as before.
+
+Add Hostinger's SPF and DKIM records (and a DMARC record) for `reviyo.in`
+first, or these emails will land in spam.
+
 ## Integrations
 
 ### Google Business Profile API

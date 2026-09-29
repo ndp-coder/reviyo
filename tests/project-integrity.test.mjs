@@ -534,3 +534,63 @@ test('printed QR codes and shared links always point at the public site, never t
     assert.doesNotMatch(page, /location\.origin/, `${file} must not use the browser's address for customer links`);
   }
 });
+
+test('owner emails come from support@reviyo.in, match the site config, and render without gaps', async (t) => {
+  const [templatesSrc, legalSrc, plansSrc, email, webhook, verify, scheduler] = await Promise.all([
+    read('supabase/functions/_shared/email-templates.ts'), read('src/config/legal.ts'), read('src/config/plans.ts'),
+    read('supabase/functions/_shared/email.ts'), read('supabase/functions/razorpay-webhook/index.ts'),
+    read('supabase/functions/verify-razorpay-payment/index.ts'), read('supabase/functions/autopay-scheduler/index.ts'),
+  ]);
+  // The Edge Functions cannot import the web app's config, so keep them in step.
+  const field = (src, name) => src.match(new RegExp(`${name}: ['"]([^'"]*)['"]`))?.[1];
+  for (const name of ['legalName', 'supportEmail', 'siteUrl']) {
+    assert.equal(field(templatesSrc, name), field(legalSrc, name), `${name} differs between email-templates.ts and legal.ts`);
+  }
+  const address = field(legalSrc, 'address');
+  assert.equal(field(templatesSrc, 'address'), address.startsWith('TODO_') ? '' : address, 'receipt address must match legal.ts');
+  for (const [, plan, label] of plansSrc.matchAll(/'(\d+_months)': \{ label: '([^']+)'/g)) {
+    assert.match(templatesSrc, new RegExp(`"${plan}": "${label}"`), `plan label for ${plan}`);
+  }
+
+  // Sent once (email_log), never blocking a payment, and triggered everywhere money settles.
+  assert.match(email, /from\("email_log"\)/);
+  assert.match(email, /ignoreDuplicates: true/);
+  assert.match(email, /waitUntil/);
+  assert.match(webhook, /sendReceipt\(admin, orderId\)/);
+  assert.match(webhook, /sendPaymentFailed\(admin, orderId\)/);
+  assert.match(verify, /sendReceipt\(supabase as AdminClient, razorpay_order_id\)/);
+  assert.match(scheduler, /sendPendingEmails\(admin, summary\)/);
+
+  let templates;
+  try {
+    templates = await import(new URL('../supabase/functions/_shared/email-templates.ts', import.meta.url));
+  } catch {
+    t.skip('this Node version cannot import TypeScript directly');
+    return;
+  }
+  const emails = [
+    templates.receiptEmail({ businessName: 'Kaveri <Café>', plan: '12_months', amountPaise: 299900, paymentId: 'pay_1', orderId: 'order_1', paidAt: '2026-09-29T10:00:00Z', accessUntil: '2027-09-29T10:00:00Z', autopay: true }),
+    templates.renewalNoticeEmail({ businessName: 'Kaveri Café', plan: '6_months', amountPaise: 199900, chargeOn: '2026-10-02T10:00:00Z' }),
+    templates.paymentFailedEmail({ businessName: 'Kaveri Café', plan: '6_months', amountPaise: 199900, accessUntil: null }),
+    templates.planEndingEmail({ businessName: 'Kaveri Café', endsOn: '2026-10-02T10:00:00Z', isTrial: true }),
+  ];
+  for (const e of emails) {
+    assert.ok(e.subject && e.text && e.html);
+    assert.doesNotMatch(e.text + e.html, /undefined|NaN|TODO_|Invalid Date/);
+    assert.match(e.text, /support@reviyo\.in/);
+  }
+  assert.match(emails[0].text, /₹2,999/);
+  assert.match(emails[0].html, /Kaveri &lt;Café&gt;/, 'business names are escaped in HTML');
+  assert.doesNotMatch(emails[0].text, /tax invoice/i, 'a receipt, not a tax invoice, until there is a GSTIN');
+  assert.match(emails[1].text, /2 October 2026/);
+});
+
+test('sign-in codes go to existing accounts only, and the email template shows the code', async () => {
+  const [auth, login, template] = await Promise.all([
+    read('src/lib/auth-context.tsx'), read('src/pages/auth/LoginPage.tsx'), read('supabase/templates/magic_link.html'),
+  ]);
+  assert.match(auth, /signInWithOtp\(\{ email, options: \{ shouldCreateUser: false \} \}\)/);
+  assert.match(auth, /verifyOtp\(\{ email, token: code, type: 'email' \}\)/);
+  assert.match(login, /autoComplete="one-time-code"/);
+  assert.match(template, /\{\{ \.Token \}\}/);
+});

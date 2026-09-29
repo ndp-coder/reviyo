@@ -212,6 +212,11 @@ export function PrivacyPolicyPage() {
               'Processing subscription payments. Razorpay is an RBI-authorised payment aggregator.',
             ],
             [
+              'Hostinger (email)',
+              'Business owners’ email address and the content of the emails we send them: sign-in codes, account emails, payment receipts, and billing reminders. Customers who scan a QR code are never emailed.',
+              'Sending those emails from our support address.',
+            ],
+            [
               'The business whose QR code you scanned',
               'Your selected topics, comment, drafted review, and any private feedback.',
               'That is the point of the product — the business asked for feedback and you chose to give it.',

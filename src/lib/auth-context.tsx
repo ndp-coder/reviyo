@@ -15,6 +15,10 @@ interface AuthContextValue {
     termsConsentVersion: string
   ) => Promise<{ error: string | null; needsConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  /** Emails a one-time sign-in code (from support@reviyo.in) to an existing account. */
+  sendSignInCode: (email: string) => Promise<{ error: string | null }>;
+  /** Signs in with the code from that email. */
+  verifySignInCode: (email: string, code: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   /** Sets a new password for the signed-in (or password-recovery) session. */
@@ -160,6 +164,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null };
   }
 
+  async function sendSignInCode(email: string) {
+    const supabase = await loadSupabase();
+    // Existing accounts only: a new owner signs up, which records their
+    // acceptance of the Terms. The email template shows {{ .Token }}.
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    if (error) {
+      if (/signups not allowed|user not found/i.test(error.message)) {
+        return { error: 'There’s no account with that email. Check it, or sign up.' };
+      }
+      if (/rate limit|seconds/i.test(error.message)) {
+        return { error: 'A code was sent a moment ago. Wait a minute before asking for another.' };
+      }
+      return { error: 'We couldn’t send a code. Check the email address and try again.' };
+    }
+    return { error: null };
+  }
+
+  async function verifySignInCode(email: string, code: string) {
+    const supabase = await loadSupabase();
+    const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
+    if (error) {
+      return {
+        error: /expired/i.test(error.message)
+          ? 'That code has expired. Ask for a new one.'
+          : 'That code isn’t right. Check the latest email and try again.',
+      };
+    }
+    return { error: null };
+  }
+
   async function signOut() {
     const supabase = await loadSupabase();
     await supabase.auth.signOut();
@@ -197,7 +231,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, session, profile, loading, signUp, signIn, signOut, resetPassword, updatePassword, refreshProfile }}
+      value={{
+        user,
+        session,
+        profile,
+        loading,
+        signUp,
+        signIn,
+        sendSignInCode,
+        verifySignInCode,
+        signOut,
+        resetPassword,
+        updatePassword,
+        refreshProfile,
+      }}
     >
       {children}
     </AuthContext.Provider>

@@ -14,6 +14,7 @@ import {
   finalizeAutopayAuthorization,
   verifyHmacSha256,
 } from "../_shared/autopay.ts";
+import { inBackground, sendPaymentFailed, sendReceipt } from "../_shared/email.ts";
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
@@ -79,6 +80,7 @@ async function handlePaymentEvent(admin: Admin, eventType: string, orderId: stri
       p_captured: eventType !== "payment.failed",
     });
     if (error) throw new Error(`Could not settle AutoPay charge: ${error.message}`);
+    await inBackground(eventType === "payment.failed" ? sendPaymentFailed(admin, orderId) : sendReceipt(admin, orderId));
     return;
   }
 
@@ -90,6 +92,7 @@ async function handlePaymentEvent(admin: Admin, eventType: string, orderId: stri
       p_payment_id: paymentId,
     });
     if (error) throw new Error(`Failed to process paid order: ${error.message}`);
+    await inBackground(sendReceipt(admin, orderId));
   }
 }
 

@@ -22,6 +22,7 @@ import {
   razorpay,
   refundAuthorization,
 } from "../_shared/autopay.ts";
+import { sendPendingEmails } from "../_shared/email.ts";
 
 // Pre-debit notice we wait for before debiting. Cards need 36h 5m after the
 // notice is delivered; UPI 24h. Two extra hours covers delivery delay.
@@ -240,6 +241,13 @@ Deno.serve(async (req: Request) => {
     await reconcileStaleCharges(admin, summary);
     await sendCharges(admin, summary);
     await prepareCharges(admin, summary);
+    // Renewal notices for the charges just prepared, plus receipts, failure
+    // notices, and plan-ending reminders that nothing else has sent yet.
+    try {
+      await sendPendingEmails(admin, summary);
+    } catch (err) {
+      console.error("autopay-scheduler: emails", err);
+    }
     console.log("autopay-scheduler run", summary);
     return json({ ok: true, ...summary });
   } catch (err) {
