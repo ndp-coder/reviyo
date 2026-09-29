@@ -5,7 +5,17 @@
  * see which spot brings in the most reviews. It identifies a place, never a
  * customer.
  */
+import { legal } from '@/config/legal';
+
 export const SOURCE_PARAM = 'src';
+
+/**
+ * Where customer links point: printed QR codes, WhatsApp messages, and the
+ * review page link. Always the public site (legal.siteUrl), never the address
+ * the dashboard happens to be open on, so a QR code made while testing on
+ * localhost or a preview URL still works once it is printed.
+ */
+export const PUBLIC_SITE_ORIGIN = legal.siteUrl.replace(/\/+$/, '');
 export const WHATSAPP_SOURCE = 'whatsapp';
 const MAX_SOURCE_LENGTH = 40;
 
@@ -30,8 +40,8 @@ export function readSource(search: string): string | null {
   return id || null;
 }
 
-export function reviewUrlFor(origin: string, businessSlug: string, source?: string | null): string {
-  const base = `${origin}/r/${businessSlug}`;
+export function reviewUrlFor(businessSlug: string, source?: string | null): string {
+  const base = `${PUBLIC_SITE_ORIGIN}/r/${businessSlug}`;
   return source ? `${base}?${SOURCE_PARAM}=${encodeURIComponent(source)}` : base;
 }
 

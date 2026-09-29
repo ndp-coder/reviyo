@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, type KeyboardEvent } from 'react';
+import { reviewUrlFor } from '@/lib/review-source';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { Save, Plus, X, ArrowUp, ArrowDown, Upload, Eye, EyeOff, Check, Copy } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -320,7 +321,7 @@ export function SettingsPage() {
 
   if (!business) return null;
 
-  const reviewPageUrl = `${window.location.origin}/r/${business.slug}`;
+  const reviewPageUrl = reviewUrlFor(business.slug);
   const activeCount = topics.filter((t) => t.active).length;
   const suggestions = getSuggestedTopics(category).filter(
     (s) => !topics.some((t) => t.label.trim().toLowerCase() === s.toLowerCase())

@@ -519,3 +519,18 @@ test('a Google link saved under older rules does not block saving the profile', 
   const settings = await read('src/pages/dashboard/SettingsPage.tsx');
   assert.match(settings, /const urlProblem = linkDirty \? validateGoogleReviewUrl\(googleReviewUrl\) : null;/);
 });
+
+test('printed QR codes and shared links always point at the public site, never the current address', async () => {
+  const source = await read('src/lib/review-source.ts');
+  assert.match(source, /PUBLIC_SITE_ORIGIN = legal\.siteUrl/);
+  assert.match(source, /\$\{PUBLIC_SITE_ORIGIN\}\/r\//);
+  for (const file of [
+    'src/pages/dashboard/QRManagementPage.tsx', 'src/pages/onboarding/OnboardingPage.tsx',
+    'src/pages/dashboard/SettingsPage.tsx', 'src/components/dashboard/ExtraQrCodes.tsx',
+    'src/components/dashboard/WhatsAppRequest.tsx',
+  ]) {
+    const page = await read(file);
+    assert.match(page, /reviewUrlFor\(/, `${file} builds review links with reviewUrlFor`);
+    assert.doesNotMatch(page, /location\.origin/, `${file} must not use the browser's address for customer links`);
+  }
+});

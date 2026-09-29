@@ -41,7 +41,7 @@ function updateSavedCodes(businessId: string, change: (codes: PlacedCode[]) => P
 }
 
 function CodeRow({ business, code, onRemove }: { business: Business; code: PlacedCode; onRemove: () => void }) {
-  const url = reviewUrlFor(window.location.origin, business.slug, code.id);
+  const url = reviewUrlFor(business.slug, code.id);
   const [dataUrl, setDataUrl] = useState('');
 
   useEffect(() => {

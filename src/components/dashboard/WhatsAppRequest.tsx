@@ -20,7 +20,7 @@ const defaultMessage = (businessName: string) =>
  * Analytics can show how many reviews these messages bring in.
  */
 export function WhatsAppRequest({ business }: { business: Business }) {
-  const link = reviewUrlFor(window.location.origin, business.slug, WHATSAPP_SOURCE);
+  const link = reviewUrlFor(business.slug, WHATSAPP_SOURCE);
   const [message, setMessage] = useState(() => {
     try {
       return localStorage.getItem(storageKey(business.id)) ?? defaultMessage(business.name);

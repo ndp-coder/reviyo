@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { reviewUrlFor } from '@/lib/review-source';
 import { useOutletContext } from 'react-router-dom';
 import { Download, Copy, ExternalLink, Check, Printer } from 'lucide-react';
 import QRCode from 'qrcode';
@@ -16,7 +17,7 @@ export function QRManagementPage() {
   const [copyFailed, setCopyFailed] = useState(false);
   const [qrFailed, setQrFailed] = useState(false);
 
-  const reviewUrl = business ? `${window.location.origin}/r/${business.slug}` : '';
+  const reviewUrl = business ? reviewUrlFor(business.slug) : '';
 
   useEffect(() => {
     if (!reviewUrl) return;

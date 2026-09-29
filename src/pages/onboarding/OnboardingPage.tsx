@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { reviewUrlFor } from '@/lib/review-source';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
@@ -133,7 +134,7 @@ export function OnboardingPage() {
 
   const effectiveCategory = category === OTHER_CATEGORY ? customCategory.trim() : category;
 
-  const reviewUrl = business ? `${window.location.origin}/r/${business.slug}` : '';
+  const reviewUrl = business ? reviewUrlFor(business.slug) : '';
 
   useEffect(() => {
     if (reviewUrl) {
