@@ -29,7 +29,7 @@ export const legal = {
   country: 'India',
 
   /** General support mailbox. Monitored during the stated support hours. */
-  supportEmail: 'TODO_SUPPORT_EMAIL',
+  supportEmail: 'support@revio.in',
   /** Customer-care phone number in international format. */
   supportPhone: '+91 95811 68889',
   /** Stated support hours, shown to customers so response times are honest. */
@@ -42,12 +42,12 @@ export const legal = {
    * founder. The name and email must be real and monitored.
    */
   grievanceOfficerName: 'Naga Durga Prasad Chunduru',
-  grievanceEmail: 'TODO_GRIEVANCE_EMAIL',
+  grievanceEmail: 'support@revio.in',
   /** DPDPA s.13(2): grievances must be answered within a stated period. */
   grievanceResponseTarget: '30 days',
 
   /** Privacy / data-protection enquiries. May be the same as grievanceEmail. */
-  privacyEmail: 'TODO_PRIVACY_EMAIL',
+  privacyEmail: 'support@revio.in',
 
   /** GSTIN if registered, otherwise set to null and the UI omits it. */
   gstin: null as string | null,
@@ -55,7 +55,7 @@ export const legal = {
   cin: null as string | null,
 
   /** Public website origin, used in policy text and canonical links. */
-  siteUrl: 'https://www.reviyo.in',
+  siteUrl: 'https://www.revio.in',
 
   /** Governing law and exclusive jurisdiction for disputes. */
   governingLaw: 'India',
@@ -85,8 +85,8 @@ export const legal = {
    */
   // The selected project yagchgwgbttxfihlyddm was last verified in ap-northeast-2.
   dataRegion: 'Northeast Asia (Seoul)',
-  aiProviderName: 'TODO_AI_PROVIDER_NAME',
-  aiProviderPolicyUrl: 'TODO_AI_PROVIDER_POLICY_URL',
+  aiProviderName: 'Google LLC (Gemini API)',
+  aiProviderPolicyUrl: 'https://ai.google.dev/gemini-api/terms',
 
   /** How long raw customer review-session text is kept before deletion. */
   sessionRetentionDays: 90,

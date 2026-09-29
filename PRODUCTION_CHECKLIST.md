@@ -20,18 +20,21 @@ CLI.
 - [ ] Replace `TODO_REGISTERED_ADDRESS` in `src/config/legal.ts` with the real
   registered or principal business address, including street/locality, city,
   state, and PIN code. The supplied Vijayawada / 520001 is incomplete.
-- [ ] Buy/configure the planned `reviyo.com` mailbox, or supply a different
-  working mailbox. Replace `TODO_SUPPORT_EMAIL`, `TODO_PRIVACY_EMAIL`, and
-  `TODO_GRIEVANCE_EMAIL` in `src/config/legal.ts` only after a send/receive
-  test. The domain had no MX record during this audit, and you said the mailbox
-  is not yet purchased.
+- [ ] Send a test email to and from `support@revio.in` (Hostinger). It is now
+  the support, privacy, and grievance address in `src/config/legal.ts`, and
+  `revio.in` has Hostinger MX records (checked 29 September 2026), but a
+  send/receive test has not been done yet.
 - [ ] Sign the Supabase CLI into an account with Developer or Owner access to
   `yagchgwgbttxfihlyddm`, or grant that access to the current account. Link
   the repository and set the production host's `VITE_SUPABASE_URL` and
   `VITE_SUPABASE_PUBLISHABLE_KEY` to this same project.
-- [ ] Verify the chosen production AI provider, key, model, and policy URL;
-  replace `TODO_AI_PROVIDER_NAME` and `TODO_AI_PROVIDER_POLICY_URL` in
-  `src/config/legal.ts` with the actual processor details. Then rerun `npm test`.
+- [ ] Verify the production AI key and model. `src/config/legal.ts` names
+  Google LLC (Gemini API) as the AI processor, with the Gemini API terms as its
+  policy URL; change both if you switch `AI_PROVIDER` to OpenAI.
+  With Gemini, the `GEMINI_API_KEY` must belong to a Google Cloud project with
+  billing enabled (the paid tier). On the free tier Google may use prompts,
+  including customers' comments, to improve its products, which would make the
+  Privacy Policy's "paid API, not used for training" statement false.
 - [ ] Run the guarded `npm run build` with the selected project's HTTPS URL and
   publishable key. It fails if the wrong project or any unfinished legal field
   would be bundled into a release.
@@ -64,8 +67,9 @@ CLI.
 - [ ] Configure the production host: HTTPS redirect, SPA fallback to
   `app.html` for non-public routes, serve the prerendered public HTML files,
   set CSP and security headers, environment variables, and a rollback to the
-  previous immutable frontend build. `www.reviyo.in` did not resolve during
-  the audit; finish DNS and TLS setup before launch.
+  previous immutable frontend build. `www.revio.in` currently points at Hostinger's
+  CDN (checked 29 September 2026); point it at the production host, redirect
+  `revio.in` to it, and finish TLS setup before launch.
 - [ ] Configure monitored frontend error reporting and Supabase/Cron/Razorpay
   alerts. Never send review text, tokens, secrets, or full payment payloads to
   the monitoring provider.
@@ -74,8 +78,9 @@ CLI.
 
 - [ ] New owner: signup, confirmation/reset email, login, logout, onboarding,
   duplicate-slug handling, and account deletion.
-- [ ] Customer: QR link on a phone, consent, every star rating, topic/comment
-  validation, AI draft, edit/copy, Google handoff, and private feedback.
+- [ ] Customer: QR link on a phone (including a QR scanner app's in-app
+  browser), consent, topic/comment validation, AI draft, edit/copy, Google
+  handoff, "Write it myself" when drafting fails, and private feedback.
 - [ ] Billing: one-time test payment success/failure/dismissal, duplicate
   callbacks, invalid signatures, and expired subscriptions.
 - [ ] AutoPay: UPI and card mandate setup, ₹1 refund, trial start, scheduled

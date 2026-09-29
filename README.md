@@ -224,8 +224,8 @@ Hosting requirements:
   and every other unknown path to `404.html` with a 404 status. Both files
   above already do this; when you add an app route, add it to both
   (`tests/seo.test.mjs` checks).
-- Serve the site only on `https://www.reviyo.in`, and 301-redirect
-  `reviyo.in` and `http://` to it, so search engines see one canonical host. Add the
+- Serve the site only on `https://www.revio.in`, and 301-redirect
+  `revio.in` and `http://` to it, so search engines see one canonical host. Add the
 same two public `VITE_` variables to that host. Database migrations and Edge
 Functions are deployed separately with the Supabase CLI commands above.
 
