@@ -229,6 +229,34 @@ Hosting requirements:
 same two public `VITE_` variables to that host. Database migrations and Edge
 Functions are deployed separately with the Supabase CLI commands above.
 
+## Hosting on Netlify with the Hostinger domain
+
+`netlify.toml` holds the build settings, security headers, and asset caching;
+`public/_redirects` holds the app-route rewrites and 404 behaviour.
+
+1. Netlify > **Add new site > Import an existing project** > GitHub >
+   `reviyo`, branch `claude/confident-fermi-72mvn5` (or `main` once merged).
+   Build settings are read from `netlify.toml`.
+2. **Site configuration > Environment variables**: `VITE_SUPABASE_URL`
+   (`https://yagchgwgbttxfihlyddm.supabase.co`) and
+   `VITE_SUPABASE_PUBLISHABLE_KEY`. The build stops while any `TODO_` value
+   remains in `src/config/legal.ts`.
+3. **Domain management > Add a domain**: `www.reviyo.in` as the primary
+   domain, plus `reviyo.in` (Netlify redirects it to `www`).
+4. Hostinger > **Domains > reviyo.in > DNS / Nameservers**: change the `A`
+   record for `@` to `75.2.60.5` and set a `CNAME` for `www` pointing to
+   `<your-site>.netlify.app`. Leave the `MX`, `TXT` (SPF, DKIM, DMARC), and
+   other mail records alone, or support@reviyo.in stops receiving email.
+5. Back in Netlify, **HTTPS > Verify DNS configuration**, then wait for the
+   free Let's Encrypt certificate.
+6. Supabase: set the Edge Function secret `APP_ORIGINS=https://www.reviyo.in`,
+   and under **Authentication > URL Configuration** set the Site URL to
+   `https://www.reviyo.in` and add `https://www.reviyo.in/onboarding` and
+   `https://www.reviyo.in/reset-password` as redirect URLs.
+7. After a live Razorpay test payment works, rename
+   `Content-Security-Policy-Report-Only` to `Content-Security-Policy` in
+   `netlify.toml` to enforce it.
+
 ## Email from support@reviyo.in
 
 Every email an owner gets comes from `support@reviyo.in` (the Hostinger

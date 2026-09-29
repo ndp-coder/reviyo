@@ -1,0 +1,33 @@
+# Netlify: builds and serves www.reviyo.in. The app-route rewrites and the
+# 404 behaviour live in public/_redirects (copied into dist by the build).
+#
+# Set these under Site configuration > Environment variables before the first
+# deploy: VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY (and optionally
+# VITE_RAZORPAY_KEY_ID). The build refuses to run without them, and while any
+# TODO_ value remains in src/config/legal.ts.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Vite 8 needs Node 20.19+ or 22.12+.
+  NODE_VERSION = "22"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    # Report-only until a live Razorpay test payment has passed with it; then
+    # rename the key to Content-Security-Policy to enforce it (see README).
+    Content-Security-Policy-Report-Only = "default-src 'self'; script-src 'self' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://yagchgwgbttxfihlyddm.supabase.co wss://yagchgwgbttxfihlyddm.supabase.co https://api.razorpay.com https://lumberjack.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; form-action 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'"
+
+# Built files have content hashes in their names, so they never change.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
