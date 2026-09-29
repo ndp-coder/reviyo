@@ -24,7 +24,7 @@ export const legal = {
   /** e.g. 'Sole Proprietorship', 'Private Limited Company', 'LLP'. */
   entityType: 'sole proprietorship',
   /** Full registered / principal place of business address, including PIN code. */
-  address: 'TODO_REGISTERED_ADDRESS',
+  address: 'Vijayawada',
   /** Country of the registered address. */
   country: 'India',
 
