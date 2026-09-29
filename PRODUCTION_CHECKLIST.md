@@ -20,11 +20,14 @@ CLI.
 - [ ] Replace `TODO_REGISTERED_ADDRESS` in `src/config/legal.ts` with the real
   registered or principal business address, including street/locality, city,
   state, and PIN code. The supplied Vijayawada / 520001 is incomplete.
-- [ ] Buy/configure the planned `reviyo.com` mailbox, or supply a different
-  working mailbox. Replace `TODO_SUPPORT_EMAIL`, `TODO_PRIVACY_EMAIL`, and
-  `TODO_GRIEVANCE_EMAIL` in `src/config/legal.ts` only after a send/receive
-  test. The domain had no MX record during this audit, and you said the mailbox
-  is not yet purchased.
+- [x] Domain `reviyo.in` bought; support, privacy, and grievance email set to
+  `support@reviyo.in` in `src/config/legal.ts`. Before launch, send a test email
+  to it from an outside account and confirm it arrives and replies go out.
+- [ ] Point DNS for `reviyo.in` at the host: serve the site on
+  `https://www.reviyo.in` (the canonical URL in `legal.siteUrl`) and
+  301-redirect `https://reviyo.in` and `http://` to it. Add MX records for the
+  mailbox, plus SPF, DKIM, and DMARC so mail from `support@reviyo.in` is not
+  marked as spam.
 - [ ] Sign the Supabase CLI into an account with Developer or Owner access to
   `yagchgwgbttxfihlyddm`, or grant that access to the current account. Link
   the repository and set the production host's `VITE_SUPABASE_URL` and
@@ -64,8 +67,8 @@ CLI.
 - [ ] Configure the production host: HTTPS redirect, SPA fallback to
   `app.html` for non-public routes, serve the prerendered public HTML files,
   set CSP and security headers, environment variables, and a rollback to the
-  previous immutable frontend build. `www.reviyo.in` did not resolve during
-  the audit; finish DNS and TLS setup before launch.
+  previous immutable frontend build. finish DNS and TLS setup for
+  `www.reviyo.in` before launch.
 - [ ] Configure monitored frontend error reporting and Supabase/Cron/Razorpay
   alerts. Never send review text, tokens, secrets, or full payment payloads to
   the monitoring provider.

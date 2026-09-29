@@ -29,7 +29,7 @@ export const legal = {
   country: 'India',
 
   /** General support mailbox. Monitored during the stated support hours. */
-  supportEmail: 'TODO_SUPPORT_EMAIL',
+  supportEmail: 'support@reviyo.in',
   /** Customer-care phone number in international format. */
   supportPhone: '+91 95811 68889',
   /** Stated support hours, shown to customers so response times are honest. */
@@ -42,12 +42,12 @@ export const legal = {
    * founder. The name and email must be real and monitored.
    */
   grievanceOfficerName: 'Naga Durga Prasad Chunduru',
-  grievanceEmail: 'TODO_GRIEVANCE_EMAIL',
+  grievanceEmail: 'support@reviyo.in',
   /** DPDPA s.13(2): grievances must be answered within a stated period. */
   grievanceResponseTarget: '30 days',
 
   /** Privacy / data-protection enquiries. May be the same as grievanceEmail. */
-  privacyEmail: 'TODO_PRIVACY_EMAIL',
+  privacyEmail: 'support@reviyo.in',
 
   /** GSTIN if registered, otherwise set to null and the UI omits it. */
   gstin: null as string | null,
