@@ -111,7 +111,8 @@ export function DashboardOverview() {
   const funnel = [
     { label: 'Scanned the QR code', value: stats.totalScans },
     { label: 'Started a review', value: stats.reviewStarted },
-    { label: 'Got an AI draft', value: stats.reviewsGenerated },
+    // One per visit: "Another version" and length changes would inflate it.
+    { label: 'Got an AI draft', value: stats.customersWithDraft },
     { label: 'Opened Google to post', value: stats.googleOpened },
   ];
   const maxValue = Math.max(...funnel.map((f) => f.value), 1);

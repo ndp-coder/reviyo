@@ -142,10 +142,18 @@ export function SettingsPage() {
     if (!business) return;
 
     // Rejected here as well as by a database CHECK constraint, so a bad link
-    // can never reach a customer's review page.
-    const urlProblem = validateGoogleReviewUrl(googleReviewUrl);
+    // can never reach a customer's review page. Only a changed link is
+    // checked: one saved before the direct-link rule must not block saving a
+    // new name or logo (Overview already asks the owner to switch it).
+    const urlProblem = linkDirty ? validateGoogleReviewUrl(googleReviewUrl) : null;
     setUrlError(urlProblem);
-    if (urlProblem) return;
+    if (urlProblem) {
+      // The field with the error may be on another tab.
+      if (activeTab !== 'google') {
+        setStatus({ variant: 'error', message: 'Your Google review link needs fixing first. Open the Google review link tab to see why.' });
+      }
+      return;
+    }
 
     if (!name.trim()) {
       setStatus({ variant: 'error', message: 'Your business name can’t be empty.' });
@@ -154,7 +162,9 @@ export function SettingsPage() {
 
     // Saved in the form that opens the review form itself (g.page links get
     // "/review"), and shown that way in the field too.
-    const reviewLink = googleReviewUrl.trim() ? directReviewUrl(googleReviewUrl) : '';
+    const reviewLink = !linkDirty
+      ? business.google_review_url ?? ''
+      : googleReviewUrl.trim() ? directReviewUrl(googleReviewUrl) : '';
     setGoogleReviewUrl(reviewLink);
 
     setSaving(true);

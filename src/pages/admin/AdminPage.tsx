@@ -24,33 +24,34 @@ export function AdminPage() {
   useEffect(() => {
     async function loadAdminStats() {
       try {
-        const [businessesRes, subsRes, usersRes, aiRes] = await Promise.all([
-          supabase.from('businesses').select('id', { count: 'exact', head: true }),
-          supabase.from('subscriptions').select('status, expires_at'),
-          supabase.from('profiles').select('id', { count: 'exact', head: true }),
-          supabase.from('ai_generation_log').select('id', { count: 'exact', head: true }),
+        // Counted by the database. Fetching the rows and counting them here
+        // stopped at 1,000, the most Supabase returns in one request.
+        const countRows = (table: string) => supabase.from(table).select('*', { count: 'exact', head: true });
+        const [businessesRes, usersRes, aiRes, subsRes, activeRes, expiredRes, payingRes] = await Promise.all([
+          countRows('businesses'),
+          countRows('profiles'),
+          countRows('ai_generation_log'),
+          countRows('subscriptions'),
+          countRows('subscriptions').in('status', ['active', 'trial']),
+          countRows('subscriptions').eq('status', 'expired'),
+          countRows('subscriptions').eq('status', 'active').gt('expires_at', new Date().toISOString()),
         ]);
 
-        const queryError = businessesRes.error ?? subsRes.error ?? usersRes.error ?? aiRes.error;
+        const queryError =
+          businessesRes.error ?? usersRes.error ?? aiRes.error ?? subsRes.error ??
+          activeRes.error ?? expiredRes.error ?? payingRes.error;
         if (queryError) throw queryError;
-
-        const subs = (subsRes.data ?? []) as { status: string; expires_at: string | null }[];
-        const active = subs.filter((s) => s.status === 'active' || s.status === 'trial').length;
-        const expired = subs.filter((s) => s.status === 'expired').length;
-        // A subscription row exists once a business starts its AutoPay trial or
-        // pays once, so every row is a business that got past the payment step.
-        const payingNow = subs.filter(
-          (s) => s.status === 'active' && s.expires_at !== null && new Date(s.expires_at).getTime() > Date.now()
-        ).length;
 
         setStats({
           businessCount: businessesRes.count ?? 0,
-          activeSubs: active,
-          expiredSubs: expired,
+          activeSubs: activeRes.count ?? 0,
+          expiredSubs: expiredRes.count ?? 0,
           aiGenerations: aiRes.count ?? 0,
           totalUsers: usersRes.count ?? 0,
-          subscriptionsStarted: subs.length,
-          payingNow,
+          // A subscription row exists once a business starts its AutoPay trial
+          // or pays once, so every row is a business past the payment step.
+          subscriptionsStarted: subsRes.count ?? 0,
+          payingNow: payingRes.count ?? 0,
           loading: false,
           error: null,
         });

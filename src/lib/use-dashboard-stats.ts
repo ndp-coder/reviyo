@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { dashboardStatsCache } from '@/lib/dashboard-stats-cache';
+import { fetchAllRows } from '@/lib/fetch-all-rows';
 import type { AnalyticsEvent, PrivateFeedback, Business } from '@/lib/types';
 
 export interface DashboardStats {
   totalScans: number;
   reviewStarted: number;
+  /** Every draft written, including "Another version" and length changes. */
   reviewsGenerated: number;
+  /** Visits that got a first draft, for the funnel: regenerations excluded. */
+  customersWithDraft: number;
   googleOpened: number;
   privateFeedbackCount: number;
   newFeedbackCount: number;
@@ -32,6 +36,7 @@ const EMPTY: DashboardStats = {
   totalScans: 0,
   reviewStarted: 0,
   reviewsGenerated: 0,
+  customersWithDraft: 0,
   googleOpened: 0,
   privateFeedbackCount: 0,
   newFeedbackCount: 0,
@@ -54,13 +59,17 @@ async function fetchStats(business: Business): Promise<DashboardStats> {
       .eq('business_id', business.id)
       .in('event_type', types);
 
-  // Totals are exact counts. (They used to be counted from the latest 500
-  // events, which silently capped every number for busier businesses.)
-  const [scansRes, startedRes, generatedRes, googleRes, feedbackCountRes, newFeedbackRes, eventsRes, feedbackRes, sourcesRes] =
+  const since = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+  // Totals are exact counts. Row lists are read in pages: Supabase returns at
+  // most 1,000 rows per request, so a single request silently undercounted
+  // every busier business.
+  const [scansRes, startedRes, generatedRes, firstDraftRes, googleRes, feedbackCountRes, newFeedbackRes, events, feedbackRes, sourceRows] =
     await Promise.all([
       eventCount(['qr_page_view']),
       eventCount(['review_started']),
       eventCount(['review_generated', 'review_regenerated']),
+      eventCount(['review_generated']),
       eventCount(['google_review_opened']),
       supabase.from('private_feedback').select('id', { count: 'exact', head: true }).eq('business_id', business.id),
       supabase
@@ -68,34 +77,41 @@ async function fetchStats(business: Business): Promise<DashboardStats> {
         .select('id', { count: 'exact', head: true })
         .eq('business_id', business.id)
         .eq('status', 'new'),
-      supabase
-        .from('analytics_events')
-        .select('event_type, created_at')
-        .eq('business_id', business.id)
-        .eq('event_type', 'qr_page_view')
-        .gte('created_at', new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString())
-        .limit(10000),
+      fetchAllRows<DashboardStats['events'][number]>((from, to) =>
+        supabase
+          .from('analytics_events')
+          .select('event_type, created_at')
+          .eq('business_id', business.id)
+          .eq('event_type', 'qr_page_view')
+          .gte('created_at', since(8))
+          .order('created_at')
+          .order('id')
+          .range(from, to)
+      ),
       supabase.from('private_feedback').select('*').eq('business_id', business.id).order('created_at', { ascending: false }).limit(5),
       // Only the event type and its ?src tag, for the per-QR-code breakdown.
-      supabase
-        .from('analytics_events')
-        .select('event_type, source:metadata->>source')
-        .eq('business_id', business.id)
-        .in('event_type', ['qr_page_view', 'google_review_opened'])
-        .gte('created_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
-        .limit(20000),
+      fetchAllRows<{ event_type: string; source: string | null }>((from, to) =>
+        supabase
+          .from('analytics_events')
+          .select('event_type, source:metadata->>source')
+          .eq('business_id', business.id)
+          .in('event_type', ['qr_page_view', 'google_review_opened'])
+          .gte('created_at', since(90))
+          .order('created_at')
+          .order('id')
+          .range(from, to)
+      ),
     ]);
 
   const queryError =
-    scansRes.error ?? startedRes.error ?? generatedRes.error ?? googleRes.error ??
-    feedbackCountRes.error ?? newFeedbackRes.error ?? eventsRes.error ?? feedbackRes.error ?? sourcesRes.error;
+    scansRes.error ?? startedRes.error ?? generatedRes.error ?? firstDraftRes.error ?? googleRes.error ??
+    feedbackCountRes.error ?? newFeedbackRes.error ?? feedbackRes.error;
   if (queryError) throw queryError;
 
-  const events = (eventsRes.data as DashboardStats['events']) ?? [];
   const feedback = (feedbackRes.data as PrivateFeedback[]) ?? [];
 
   const bySource = new Map<string | null, { id: string | null; scans: number; googleOpened: number }>();
-  for (const row of (sourcesRes.data as { event_type: string; source: string | null }[]) ?? []) {
+  for (const row of sourceRows) {
     const id = row.source || null;
     const entry = bySource.get(id) ?? { id, scans: 0, googleOpened: 0 };
     if (row.event_type === 'qr_page_view') entry.scans += 1;
@@ -109,15 +125,18 @@ async function fetchStats(business: Business): Promise<DashboardStats> {
   // until the first review has been started, when there cannot be any.
   let topTopics: { label: string; count: number }[] = [];
   if ((startedRes.count ?? 0) > 0) {
-    const { data: sessionTopics, error: sessionTopicsError } = await supabase
-      .from('review_session_topics')
-      .select('topic_id, review_topics(label), review_sessions!inner(business_id)')
-      .eq('review_sessions.business_id', business.id)
-      .limit(5000);
-    if (sessionTopicsError) throw sessionTopicsError;
+    const sessionTopics = await fetchAllRows<SessionTopicRow>((from, to) =>
+      supabase
+        .from('review_session_topics')
+        .select('topic_id, review_topics(label), review_sessions!inner(business_id)')
+        .eq('review_sessions.business_id', business.id)
+        .order('review_session_id')
+        .order('topic_id')
+        .range(from, to)
+    );
 
     const counts = new Map<string, { label: string; count: number }>();
-    for (const row of (sessionTopics ?? []) as SessionTopicRow[]) {
+    for (const row of sessionTopics) {
       const joined = Array.isArray(row.review_topics) ? row.review_topics[0] : row.review_topics;
       const entry = counts.get(row.topic_id) ?? { label: joined?.label ?? 'Removed topic', count: 0 };
       entry.count += 1;
@@ -130,6 +149,7 @@ async function fetchStats(business: Business): Promise<DashboardStats> {
     totalScans: scansRes.count ?? 0,
     reviewStarted: startedRes.count ?? 0,
     reviewsGenerated: generatedRes.count ?? 0,
+    customersWithDraft: firstDraftRes.count ?? 0,
     googleOpened: googleRes.count ?? 0,
     privateFeedbackCount: feedbackCountRes.count ?? 0,
     newFeedbackCount: newFeedbackRes.count ?? 0,

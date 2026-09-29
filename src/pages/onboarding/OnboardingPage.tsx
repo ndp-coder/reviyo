@@ -35,13 +35,17 @@ const STEPS = [
 ] as const;
 const STEP = { business: 0, google: 1, logo: 2, topics: 3, trial: 4, qr: 5 } as const;
 const TOTAL_STEPS = STEPS.length;
-// create_business_with_defaults accepts at most 20 topics.
+// create_business_with_defaults accepts at most 20 topics of 1-80 characters.
 const MAX_TOPICS = 20;
+const MAX_TOPIC_LENGTH = 80;
 
 function slugify(text: string): string {
   return text
     .toLowerCase()
     .trim()
+    // "Café" becomes "cafe" rather than "caf".
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
@@ -487,6 +491,7 @@ export function OnboardingPage() {
                     <input
                       value={topic}
                       aria-label={`Topic ${i + 1} label`}
+                      maxLength={MAX_TOPIC_LENGTH}
                       onChange={(e) => {
                         const newTopics = [...topics];
                         newTopics[i] = e.target.value;
@@ -518,6 +523,7 @@ export function OnboardingPage() {
                 <Input
                   value={newTopic}
                   aria-label="New topic"
+                  maxLength={MAX_TOPIC_LENGTH}
                   onChange={(e) => setNewTopic(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTopic())}
                   placeholder="Add a topic"

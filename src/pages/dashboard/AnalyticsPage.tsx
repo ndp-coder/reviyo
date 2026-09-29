@@ -71,9 +71,10 @@ export function AnalyticsPage() {
     const second = stats.topTopics[1];
     insights.push(`"${second.label}" comes next, picked ${second.count} time${second.count === 1 ? '' : 's'}.`);
   }
-  if (stats.googleOpened > 0 && stats.reviewsGenerated > 0) {
-    const conversionRate = Math.round((stats.googleOpened / stats.reviewsGenerated) * 100);
-    insights.push(`${conversionRate}% of generated reviews led to opening Google.`);
+  // Per visit, not per draft: regenerated drafts would pull the rate down.
+  if (stats.googleOpened > 0 && stats.customersWithDraft > 0) {
+    const conversionRate = Math.min(100, Math.round((stats.googleOpened / stats.customersWithDraft) * 100));
+    insights.push(`${conversionRate}% of customers who got a draft went on to open Google.`);
   }
   if (stats.privateFeedbackCount > 0) {
     insights.push(`You've received ${stats.privateFeedbackCount} private feedback message${stats.privateFeedbackCount > 1 ? 's' : ''}.`);

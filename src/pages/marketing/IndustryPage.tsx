@@ -1,5 +1,4 @@
 import { Link, useParams } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
 import { MarketingHeader } from '@/components/MarketingHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SkipLink } from '@/components/SkipLink';
@@ -36,7 +35,7 @@ export function IndustryPage() {
               <p className="mt-6 text-lg leading-relaxed text-gray-700">{industry.intro}</p>
               <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
                 <Link to="/signup" className={`${buttonClasses({ size: 'lg' })} w-full sm:w-auto`}>
-                  Start your {legal.trialDays}-day free trial <ArrowRight className="h-5 w-5" aria-hidden="true" />
+                  Start your {legal.trialDays}-day free trial
                 </Link>
                 <Link
                   to={TOOL_PATH}
@@ -138,7 +137,7 @@ export function IndustryPage() {
               to="/signup"
               className="inline-flex min-h-12 flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-6 text-base font-semibold text-brand-900 transition-colors hover:bg-brand-50"
             >
-              Start your free trial <ArrowRight className="h-5 w-5" aria-hidden="true" />
+              Start your free trial
             </Link>
           </div>
         </section>

@@ -37,7 +37,7 @@ export function NotFoundPage() {
               for help. Otherwise, one of these should get you where you were going.
             </p>
             <Link to="/" className={`${buttonClasses({ size: 'lg' })} mt-8`}>
-              Go to the home page <ArrowRight className="h-5 w-5" aria-hidden="true" />
+              Go to the home page
             </Link>
           </div>
 
