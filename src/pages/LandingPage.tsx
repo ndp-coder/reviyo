@@ -103,7 +103,7 @@ export function LandingPage() {
               </p>
               <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
                 <Link to="/signup" className={`${buttonClasses({ size: 'lg' })} w-full sm:w-auto`}>
-                  Start {legal.trialDays}-day free trial <ArrowRight className="h-5 w-5" aria-hidden="true" />
+                  Start {legal.trialDays}-day free trial
                 </Link>
                 <Link
                   to={TOOL_PATH}
@@ -266,7 +266,7 @@ export function LandingPage() {
               to="/signup"
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-white px-6 text-base font-semibold text-brand-900 transition-colors hover:bg-brand-50"
             >
-              Start your free trial <ArrowRight className="h-5 w-5" aria-hidden="true" />
+              Start your free trial
             </Link>
           </div>
         </section>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useOutletContext, useSearchParams } from 'react-router-dom';
 import { Star, MessageSquare, Check, RotateCcw, Eye } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { fetchAllRows } from '@/lib/fetch-all-rows';
 import { legal } from '@/config/legal';
 import { Alert, Card, Skeleton, Badge, EmptyState, Button, PageHeader } from '@/components/ui';
 import type { Business, PrivateFeedback, PrivateFeedbackStatus } from '@/lib/types';
@@ -38,14 +39,26 @@ export function PrivateFeedbackPage() {
     async function loadFeedback() {
       if (!business) return;
       setLoading(true);
-      const { data, error } = await supabase
-        .from('private_feedback')
-        .select('*')
-        .eq('business_id', business.id)
-        .order('created_at', { ascending: false });
+      // Paged: one request stops at 1,000 rows, which would hide the oldest
+      // messages while the "new" badge still counted them.
+      let rows: PrivateFeedback[] = [];
+      let failed = false;
+      try {
+        rows = await fetchAllRows<PrivateFeedback>((from, to) =>
+          supabase
+            .from('private_feedback')
+            .select('*')
+            .eq('business_id', business.id)
+            .order('created_at', { ascending: false })
+            .order('id')
+            .range(from, to)
+        );
+      } catch {
+        failed = true;
+      }
       if (cancelled) return;
-      setLoadError(Boolean(error));
-      setFeedback((data as PrivateFeedback[]) ?? []);
+      setLoadError(failed);
+      setFeedback(rows);
       setLoading(false);
     }
     loadFeedback();

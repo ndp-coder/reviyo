@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, Copy, Download, ExternalLink } from 'lucide-react';
+import { Check, Copy, Download, ExternalLink } from 'lucide-react';
 import { MarketingHeader } from '@/components/MarketingHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SkipLink } from '@/components/SkipLink';
@@ -79,7 +79,7 @@ export function ReviewLinkGeneratorPage() {
           <div className="mx-auto grid max-w-6xl items-start gap-10 lg:grid-cols-[1fr_1.15fr] lg:gap-16">
             <div>
               <Breadcrumbs />
-              <p className="mt-8 text-sm font-semibold text-accent-700">Free tool · No sign-up</p>
+              <p className="mt-8 text-sm font-semibold text-accent-700">Free tool, no sign-up</p>
               <h1 className="mt-3 text-[2rem] font-bold leading-[1.15] text-balance text-gray-900 sm:text-5xl">
                 Free Google review link &amp; QR code generator
               </h1>
@@ -200,7 +200,7 @@ export function ReviewLinkGeneratorPage() {
                 .
               </p>
               <Link to="/signup" className={`${buttonClasses()} mt-4`}>
-                  Try Reviyo free for {legal.trialDays} days <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  Try Reviyo free for {legal.trialDays} days
                 </Link>
               </div>
 

@@ -47,7 +47,8 @@ export function downloadDataExport(data: DataExport, businessSlug?: string): voi
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  // Revoking straight away cancels the download in some browsers.
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 /** The exact phrase a user must type before erasure proceeds. */

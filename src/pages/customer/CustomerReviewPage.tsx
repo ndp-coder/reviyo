@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, Check, Copy, ExternalLink, MessageSquare, PenLine, Info, RefreshCw, Edit3, AlertCircle, Lock } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check, Copy, ExternalLink, MessageSquare, PenLine, RefreshCw, Edit3, AlertCircle, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { generateReview } from '@/lib/ai-client';
 import { trackEvent } from '@/lib/analytics';
+import { copyText } from '@/lib/clipboard';
 import { legal, displayValue } from '@/config/legal';
 import { customerReviewUrl } from '@/lib/url-safety';
 import { readSource } from '@/lib/review-source';
@@ -262,6 +263,16 @@ export function CustomerReviewPage() {
   // owner's funnel shows how many visitors began. Analytics only: nothing the
   // customer entered is sent until they agree and tap "Write my review".
   const startedTracked = useRef(false);
+  // The owner's funnel counts visits, so the first draft and the first trip to
+  // Google are recorded once; later drafts are recorded as regenerations.
+  const draftTracked = useRef(false);
+  const googleOpenTracked = useRef(false);
+  // Where "Back" on the private feedback screen returns to.
+  const feedbackReturnStep = useRef<Step>('start');
+  const openFeedback = () => {
+    feedbackReturnStep.current = step;
+    goTo('feedback');
+  };
   const markStarted = () => {
     if (startedTracked.current || !slug || !bizInfo) return;
     startedTracked.current = true;
@@ -371,7 +382,13 @@ export function CustomerReviewPage() {
         p_generated_review: result.review,
         p_status: 'review_generated',
       });
-      track(bizInfo.business_slug, bizInfo.session_token, isRegen ? 'review_regenerated' : 'review_generated', { style });
+      track(
+        bizInfo.business_slug,
+        bizInfo.session_token,
+        draftTracked.current ? 'review_regenerated' : 'review_generated',
+        { style }
+      );
+      draftTracked.current = true;
       setStep('review');
     } catch {
       setAiError('We couldn’t reach our review writer. Check your connection.');
@@ -399,16 +416,20 @@ export function CustomerReviewPage() {
     const textToCopy = isEditing ? editableReview : generatedReview;
     if (isEditing) setGeneratedReview(editableReview);
 
-    navigator.clipboard
-      .writeText(textToCopy)
-      .then(() => {
-        setCopied(true);
-        setClipboardFailed(false);
-      })
-      .catch(() => setClipboardFailed(true));
+    void copyText(textToCopy).then((ok) => {
+      setCopied(ok);
+      setClipboardFailed(!ok);
+      // The thank-you screen replaces the draft, so it only follows a copy
+      // that worked. If copying failed, the draft stays on screen for the
+      // customer to copy by hand when they come back from Google.
+      if (ok && opensGoogle) window.setTimeout(() => goTo('done'), 600);
+    });
 
     track(slug, bizInfo.session_token, 'review_copied');
-    if (opensGoogle) track(slug, bizInfo.session_token, 'google_review_opened');
+    if (opensGoogle && !googleOpenTracked.current) {
+      googleOpenTracked.current = true;
+      track(slug, bizInfo.session_token, 'google_review_opened');
+    }
     void saveSession('update_review_session', { p_session_token: bizInfo.session_token, p_status: 'completed' });
   };
 
@@ -711,7 +732,7 @@ export function CustomerReviewPage() {
           </div>
           <button
             type="button"
-            onClick={() => goTo('feedback')}
+            onClick={openFeedback}
             className="mt-6 min-h-11 w-full rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
           >
             Send private feedback to {bizInfo.business_name} instead
@@ -736,20 +757,6 @@ export function CustomerReviewPage() {
           <Alert variant="error" className="mt-4">
             {aiError} Your current draft is below — you can still edit it yourself.
           </Alert>
-        )}
-
-        {/* Transparency about machine-generated text. The customer is about to
-            publish this under their own name, so they need to know an AI wrote
-            the first draft and that they are responsible for its accuracy. */}
-        {!ownDraft && (
-        <p className="mt-4 flex items-start gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-xs leading-relaxed text-amber-900">
-          <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
-          <span>
-            <strong>This draft was written by AI</strong> from the topics you tapped and your comment.
-            Please check it reflects your real experience before posting — you are the one
-            publishing it.
-          </span>
-        </p>
         )}
 
         <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
@@ -818,11 +825,8 @@ export function CustomerReviewPage() {
               href={googleReviewUrl}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => {
-                copyReview(true);
-                // Show the thank-you screen when they come back to this tab.
-                window.setTimeout(() => goTo('done'), 600);
-              }}
+              // Once the copy works, the thank-you screen is waiting when they come back.
+              onClick={() => copyReview(true)}
               className={`${buttonClasses({ size: 'lg' })} w-full`}
             >
               <Copy className="h-5 w-5" aria-hidden="true" />
@@ -893,7 +897,7 @@ export function CustomerReviewPage() {
         <div className="mt-6 border-t border-gray-200 pt-4">
           <button
             type="button"
-            onClick={() => goTo('feedback')}
+            onClick={openFeedback}
             className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
           >
             <MessageSquare className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
@@ -946,9 +950,9 @@ export function CustomerReviewPage() {
             </div>
             {feedbackError && <Alert variant="error" className="mt-4">{feedbackError}</Alert>}
             <div className="mt-4 flex gap-3">
-              {/* Back returns to wherever the customer came from: the draft if
-                  there is one, otherwise the first screen. */}
-              <Button variant="ghost" onClick={() => goTo(generatedReview ? 'review' : 'start')} disabled={busy}>
+              {/* Back returns to the screen the customer came from, so a draft
+                  or their own half-written review is still there. */}
+              <Button variant="ghost" onClick={() => goTo(feedbackReturnStep.current)} disabled={busy}>
                 <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
               </Button>
               <Button className="flex-1" onClick={submitFeedback} disabled={!feedbackMessage.trim()} loading={busy}>
@@ -990,7 +994,7 @@ export function CustomerReviewPage() {
             {!feedbackSent && (
               <button
                 type="button"
-                onClick={() => goTo('feedback')}
+                onClick={openFeedback}
                 className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
               >
                 <MessageSquare className="h-4 w-4" aria-hidden="true" /> Send private feedback to the business

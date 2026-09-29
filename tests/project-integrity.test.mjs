@@ -161,6 +161,35 @@ test('Gemini generation uses the current model and documented API-key header', a
   assert.doesNotMatch(edgeFunction, /\?key=\$\{encodeURIComponent\(apiKey\)\}/);
 });
 
+test('AI drafts are not cut short by the token limit', async () => {
+  const fn = await read('supabase/functions/generate-review/index.ts');
+
+  // Gemini 3 thinking counts against maxOutputTokens; a 300 cap cut drafts short.
+  assert.doesNotMatch(fn, /maxOutputTokens: 300|max_tokens: 300/);
+  assert.match(fn, /thinkingConfig = \{ thinkingLevel: "LOW" \}/);
+  // A draft that hits the limit is retried, never shown half-finished.
+  assert.match(fn, /finishReason === "MAX_TOKENS"/);
+  assert.match(fn, /finish_reason === "length"/);
+});
+
+test('the AI keeps the customer\'s topics and the business type, without keyword stuffing', async () => {
+  const [fn, categories] = await Promise.all([
+    read('supabase/functions/generate-review/index.ts'),
+    read('src/config/categories.ts'),
+  ]);
+
+  assert.match(fn, /Mention every topic the customer picked/);
+  assert.match(fn, /never add a city, area, or service the customer did not give/);
+  // Every preset category reaches the AI as words, not a code like "dental_clinic".
+  const presets = [...categories.matchAll(/value: '([a-z_]+)'/g)]
+    .map((match) => match[1])
+    .filter((value) => value !== 'other');
+  assert.ok(presets.length > 0, 'no preset categories found');
+  for (const value of presets) {
+    assert.match(fn, new RegExp(`^\\s+${value}: "`, 'm'), `CATEGORY_WORDS is missing ${value}`);
+  }
+});
+
 test('AI review quota is claimed atomically before calling the provider', async () => {
   const edgeFn = await read('supabase/functions/generate-review/index.ts');
   const migration = await read('supabase/migrations/20260925140000_atomic_ai_generation_quota.sql');
@@ -414,4 +443,79 @@ test('customers are sent to Google\'s review form itself, never the business lis
   assert.match(page, /customerReviewUrl\(bizInfo\.business_google_review_url\)/);
   assert.match(help, /isDirectReviewLink\(currentUrl\)/);
   assert.match(overview, /isDirectReviewLink\(reviewLink\)/);
+});
+
+test('dashboard numbers and lists are read past Supabase\'s 1,000-row cap', async (t) => {
+  // Supabase returns at most 1,000 rows per request whatever .limit() asks
+  // for, so a larger .limit() silently undercounts instead of failing.
+  const files = [
+    'src/lib/use-dashboard-stats.ts',
+    'src/pages/dashboard/PrivateFeedbackPage.tsx',
+    'src/pages/admin/AdminPage.tsx',
+  ];
+  const sources = await Promise.all(files.map(read));
+  for (const [index, source] of sources.entries()) {
+    for (const [, n] of source.matchAll(/\.limit\((\d[\d_]*)\)/g)) {
+      assert.ok(Number(n.replace(/_/g, '')) <= 1000, `${files[index]} asks for .limit(${n}), which returns at most 1,000 rows`);
+    }
+  }
+  const [stats, feedback, admin] = sources;
+  assert.match(stats, /fetchAllRows/);
+  assert.match(feedback, /fetchAllRows/);
+  // Admin totals are counted by the database, not by counting fetched rows.
+  assert.doesNotMatch(admin, /from\('subscriptions'\)\.select\('status, expires_at'\)/);
+
+  let helper;
+  try {
+    helper = await import(new URL('../src/lib/fetch-all-rows.ts', import.meta.url));
+  } catch {
+    t.skip('this Node version cannot import TypeScript directly');
+    return;
+  }
+  const table = Array.from({ length: 2500 }, (_, i) => i);
+  const requests = [];
+  const rows = await helper.fetchAllRows(async (from, to) => {
+    requests.push([from, to]);
+    // Like Supabase: never more than 1,000 rows, whatever range is asked for.
+    return { data: table.slice(from, Math.min(to + 1, from + 1000)), error: null };
+  });
+  assert.equal(rows.length, 2500);
+  assert.deepEqual(requests, [[0, 999], [1000, 1999], [2000, 2999]]);
+  await assert.rejects(helper.fetchAllRows(async () => ({ data: null, error: new Error('offline') })), /offline/);
+});
+
+test('the owner\'s funnel counts each visit once', async () => {
+  const [page, stats, overview, analytics] = await Promise.all([
+    read('src/pages/customer/CustomerReviewPage.tsx'),
+    read('src/lib/use-dashboard-stats.ts'),
+    read('src/pages/dashboard/DashboardOverview.tsx'),
+    read('src/pages/dashboard/AnalyticsPage.tsx'),
+  ]);
+  // "Another version" and length changes are regenerations, not new visits.
+  assert.match(page, /draftTracked\.current \? 'review_regenerated' : 'review_generated'/);
+  assert.match(page, /if \(opensGoogle && !googleOpenTracked\.current\)/);
+  assert.match(stats, /customersWithDraft: firstDraftRes\.count/);
+  assert.match(overview, /label: 'Got an AI draft', value: stats\.customersWithDraft/);
+  assert.match(analytics, /stats\.googleOpened \/ stats\.customersWithDraft/);
+});
+
+test('a failed copy never takes the customer\'s review off the screen', async () => {
+  const [page, clipboard] = await Promise.all([
+    read('src/pages/customer/CustomerReviewPage.tsx'),
+    read('src/lib/clipboard.ts'),
+  ]);
+  // In-app browsers opened by QR scanner apps often lack the Clipboard API.
+  assert.match(clipboard, /navigator\.clipboard\?\.writeText/);
+  assert.match(clipboard, /document\.execCommand\('copy'\)/);
+  assert.match(page, /copyText\(textToCopy\)/);
+  // The thank-you screen replaces the draft, so it only follows a copy that worked.
+  assert.match(page, /if \(ok && opensGoogle\) window\.setTimeout\(\(\) => goTo\('done'\)/);
+  assert.doesNotMatch(page, /copyReview\(true\);\s*\n\s*\/\/[^\n]*\n\s*window\.setTimeout\(\(\) => goTo\('done'\)/);
+  // Back from private feedback returns to the screen the customer came from.
+  assert.match(page, /goTo\(feedbackReturnStep\.current\)/);
+});
+
+test('a Google link saved under older rules does not block saving the profile', async () => {
+  const settings = await read('src/pages/dashboard/SettingsPage.tsx');
+  assert.match(settings, /const urlProblem = linkDirty \? validateGoogleReviewUrl\(googleReviewUrl\) : null;/);
 });

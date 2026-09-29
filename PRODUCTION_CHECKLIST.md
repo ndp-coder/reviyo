@@ -20,21 +20,22 @@ CLI.
 - [ ] Replace `TODO_REGISTERED_ADDRESS` in `src/config/legal.ts` with the real
   registered or principal business address, including street/locality, city,
   state, and PIN code. The supplied Vijayawada / 520001 is incomplete.
-- [x] Domain `reviyo.in` bought; support, privacy, and grievance email set to
-  `support@reviyo.in` in `src/config/legal.ts`. Before launch, send a test email
-  to it from an outside account and confirm it arrives and replies go out.
-- [ ] Point DNS for `reviyo.in` at the host: serve the site on
-  `https://www.reviyo.in` (the canonical URL in `legal.siteUrl`) and
-  301-redirect `https://reviyo.in` and `http://` to it. Add MX records for the
-  mailbox, plus SPF, DKIM, and DMARC so mail from `support@reviyo.in` is not
-  marked as spam.
+- [ ] Send a test email to and from `support@reviyo.in`. It is the support,
+  privacy, and grievance address in `src/config/legal.ts`. Confirm the domain
+  has MX records for the mailbox, plus SPF, DKIM, and DMARC, so replies are
+  not marked as spam. (An earlier check on 29 September looked at `revio.in`,
+  without the "y"; `reviyo.in` has not been checked from here.)
 - [ ] Sign the Supabase CLI into an account with Developer or Owner access to
   `yagchgwgbttxfihlyddm`, or grant that access to the current account. Link
   the repository and set the production host's `VITE_SUPABASE_URL` and
   `VITE_SUPABASE_PUBLISHABLE_KEY` to this same project.
-- [ ] Verify the chosen production AI provider, key, model, and policy URL;
-  replace `TODO_AI_PROVIDER_NAME` and `TODO_AI_PROVIDER_POLICY_URL` in
-  `src/config/legal.ts` with the actual processor details. Then rerun `npm test`.
+- [ ] Verify the production AI key and model. `src/config/legal.ts` names
+  Google LLC (Gemini API) as the AI processor, with the Gemini API terms as its
+  policy URL; change both if you switch `AI_PROVIDER` to OpenAI.
+  With Gemini, the `GEMINI_API_KEY` must belong to a Google Cloud project with
+  billing enabled (the paid tier). On the free tier Google may use prompts,
+  including customers' comments, to improve its products, which would make the
+  Privacy Policy's "paid API, not used for training" statement false.
 - [ ] Run the guarded `npm run build` with the selected project's HTTPS URL and
   publishable key. It fails if the wrong project or any unfinished legal field
   would be bundled into a release.
@@ -67,8 +68,8 @@ CLI.
 - [ ] Configure the production host: HTTPS redirect, SPA fallback to
   `app.html` for non-public routes, serve the prerendered public HTML files,
   set CSP and security headers, environment variables, and a rollback to the
-  previous immutable frontend build. finish DNS and TLS setup for
-  `www.reviyo.in` before launch.
+  previous immutable frontend build. Point `www.reviyo.in` at the production host,
+  301-redirect `reviyo.in` to it, and finish TLS setup before launch.
 - [ ] Configure monitored frontend error reporting and Supabase/Cron/Razorpay
   alerts. Never send review text, tokens, secrets, or full payment payloads to
   the monitoring provider.
@@ -77,8 +78,9 @@ CLI.
 
 - [ ] New owner: signup, confirmation/reset email, login, logout, onboarding,
   duplicate-slug handling, and account deletion.
-- [ ] Customer: QR link on a phone, consent, every star rating, topic/comment
-  validation, AI draft, edit/copy, Google handoff, and private feedback.
+- [ ] Customer: QR link on a phone (including a QR scanner app's in-app
+  browser), consent, topic/comment validation, AI draft, edit/copy, Google
+  handoff, "Write it myself" when drafting fails, and private feedback.
 - [ ] Billing: one-time test payment success/failure/dismissal, duplicate
   callbacks, invalid signatures, and expired subscriptions.
 - [ ] AutoPay: UPI and card mandate setup, ₹1 refund, trial start, scheduled

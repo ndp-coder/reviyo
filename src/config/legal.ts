@@ -85,8 +85,8 @@ export const legal = {
    */
   // The selected project yagchgwgbttxfihlyddm was last verified in ap-northeast-2.
   dataRegion: 'Northeast Asia (Seoul)',
-  aiProviderName: 'TODO_AI_PROVIDER_NAME',
-  aiProviderPolicyUrl: 'TODO_AI_PROVIDER_POLICY_URL',
+  aiProviderName: 'Google LLC (Gemini API)',
+  aiProviderPolicyUrl: 'https://ai.google.dev/gemini-api/terms',
 
   /** How long raw customer review-session text is kept before deletion. */
   sessionRetentionDays: 90,
