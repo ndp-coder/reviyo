@@ -12,7 +12,7 @@ export const SENDER = {
   supportEmail: "support@reviyo.in",
   siteUrl: "https://www.reviyo.in",
   /** Registered address, printed on receipts. Empty until it is filled in. */
-  address: "",
+  address: "Vijayawada",
 } as const;
 
 export const PLAN_LABELS: Record<string, string> = {
