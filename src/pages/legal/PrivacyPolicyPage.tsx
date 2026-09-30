@@ -404,7 +404,9 @@ export function PrivacyPolicyPage() {
         <p>
           {N} uses no advertising cookies, no analytics cookies, and no third-party tracking. The only
           browser storage we use is for signed-in business owners: their sign-in session, and text
-          they typed into two dashboard tools, kept on their own device. The full detail — and why we therefore do not show you a cookie consent banner —
+          they typed into two dashboard tools, kept on their own device. We count visits to our public
+          pages as daily totals per page, with the linking website&rsquo;s name and no cookie or
+          identifier. The full detail — and why we therefore do not show you a cookie consent banner —
           is in our{' '}
           <Link className="text-brand-700 underline underline-offset-2" to="/cookies">
             Cookie Policy

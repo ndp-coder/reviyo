@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { BrandLogo } from '@/components/BrandLogo';
 import { Alert, Button, Card, Skeleton, Badge, PageHeader } from '@/components/ui';
+import { SiteTrafficCard } from './SiteTrafficCard';
 
 export function AdminPage() {
   const { signOut } = useAuth();
@@ -140,6 +141,8 @@ export function AdminPage() {
           </ol>
         </Card>
       )}
+
+      <SiteTrafficCard />
       </main>
     </div>
   );

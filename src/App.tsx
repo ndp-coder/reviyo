@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/auth-context';
 import { Spinner } from '@/components/ui';
 import { RouteMeta } from '@/components/RouteMeta';
 import { ScrollToTop } from '@/components/ScrollToTop';
+import { PageViewCounter } from '@/components/PageViewCounter';
 import { TOOL_PATH } from '@/config/seo';
 
 // Public marketing and policy pages are prerendered to static HTML for search
@@ -74,6 +75,7 @@ function App() {
     <>
     <RouteMeta />
     <ScrollToTop />
+    <PageViewCounter />
     <Suspense fallback={<PageLoader />}>
       <Routes>
       {/* Public marketing routes */}

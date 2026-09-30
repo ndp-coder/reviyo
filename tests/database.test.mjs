@@ -336,3 +336,46 @@ check('the email log is server-only and lets each email be claimed once', async 
   assert.equal((await claim()).length, 0, 'second claim is refused');
   await rejects(`INSERT INTO email_log (kind, ref) VALUES ('newsletter', 'x')`, [], /email_log_kind_check/, 'unknown kind');
 });
+
+check('website visit counts hold no personal data, skip private pages, and only admins read them', async () => {
+  // Counts only: no column could hold an IP, cookie, user, or device identifier.
+  const cols = (await q(`SELECT column_name FROM information_schema.columns WHERE table_name = 'site_page_views' ORDER BY column_name`)).map((r) => r.column_name);
+  assert.deepEqual(cols, ['day', 'path', 'referrer_host', 'views']);
+  for (const role of ['anon', 'authenticated']) {
+    for (const priv of ['SELECT', 'INSERT', 'UPDATE', 'DELETE']) {
+      const r = await one(`SELECT has_table_privilege($1, 'public.site_page_views', $2) AS ok`, [role, priv]);
+      assert.equal(r.ok, false, `${role} has ${priv} on site_page_views`);
+    }
+  }
+
+  const view = (path, ref = '') => asAnon(() => q(`SELECT record_site_page_view($1, $2)`, [path, ref]));
+  await view('/pricing', 'www.Google.com');
+  await view('/pricing/', 'google.com');
+  await view('/pricing', 'www.reviyo.in'); // our own site counts as direct
+  await view('/', '');
+  // Never counted: customer review pages, the app, junk.
+  for (const path of ['/r/pet-spa', '/dashboard', '/dashboard/billing', '/admin', '/onboarding', '/<script>', 'pricing']) {
+    await view(path, 'google.com');
+  }
+  const rows = await q(`SELECT path, referrer_host, views FROM site_page_views ORDER BY path, referrer_host`);
+  assert.deepEqual(rows, [
+    { path: '/', referrer_host: '', views: 1 },
+    { path: '/pricing', referrer_host: '', views: 1 },
+    { path: '/pricing', referrer_host: 'google.com', views: 2 },
+  ]);
+
+  // Owners cannot read it; admins get the summary.
+  await asUser(U2, () => rejects(`SELECT site_traffic_summary(30)`, [], /Admins only/, 'owner reads traffic'));
+  await asAnon(() => rejects(`SELECT site_traffic_summary(30)`, [], /permission denied/, 'anon reads traffic'));
+  await db.exec(`UPDATE profiles SET role = 'admin' WHERE id = '${U2}'`);
+  try {
+    const summary = (await asUser(U2, () => one(`SELECT site_traffic_summary(7) AS s`))).s;
+    assert.equal(summary.today, 4);
+    assert.equal(summary.last_7_days, 4);
+    assert.equal(summary.by_day.length, 7);
+    assert.deepEqual(summary.top_pages[0], { path: '/pricing', views: 3 });
+    assert.deepEqual(summary.top_sources.map((s) => s.source).sort(), ['', 'google.com']);
+  } finally {
+    await db.exec(`UPDATE profiles SET role = 'user' WHERE id = '${U2}'`);
+  }
+});

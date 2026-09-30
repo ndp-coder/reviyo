@@ -139,7 +139,7 @@ export function CookiePolicyPage() {
         </p>
       </Clause>
 
-      <Clause id="analytics" heading="5. Our analytics do not use cookies">
+      <Clause id="analytics" heading="5. Our analytics and visit counts do not use cookies">
         <p>
           The dashboard shows a business how many people opened its review page, started a review,
           generated a draft, and opened Google. That is real, and it is worth being precise about how
@@ -154,8 +154,16 @@ export function CookiePolicyPage() {
           ]}
         />
         <p>
-          This is why the analytics feature does not change the answer in clause 6: there is no
-          tracking technology in your browser to consent to.
+          We also count visits to our own public pages (the home page, pricing, guides, and policies)
+          so we know which pages people read. Each visit adds one to a daily total for that page,
+          stored with the date and, on the page you arrived at, the name of the website that linked
+          you (for example, google.com). Nothing else is sent: no cookie, no identifier, and nothing
+          stored in your browser, and the same limits in the list above apply. Customer review pages
+          and the signed-in app are never counted.
+        </p>
+        <p>
+          This is why neither kind of count changes the answer in clause 6: there is no tracking
+          technology in your browser to consent to.
         </p>
       </Clause>
 

@@ -634,3 +634,22 @@ test('sign-in codes go to existing accounts only, and the email template shows t
   assert.match(login, /autoComplete="one-time-code"/);
   assert.match(template, /\{\{ \.Token \}\}/);
 });
+
+test('website visit counting sends no identifiers, skips private pages, and is disclosed', async () => {
+  const [lib, counter, app, cookies] = await Promise.all([
+    read('src/lib/page-views.ts'),
+    read('src/components/PageViewCounter.tsx'),
+    read('src/App.tsx'),
+    read('src/pages/legal/CookiePolicyPage.tsx'),
+  ]);
+  assert.match(app, /<PageViewCounter \/>/);
+  assert.match(counter, /import\.meta\.env\.PROD/);
+  // Public (indexed) pages only, plus sign-up.
+  assert.match(lib, /!getPageMeta\(pathname\)\.noindex/);
+  // Only the path and the referring host leave the browser; nothing is stored in it.
+  assert.match(lib, /body: JSON\.stringify\(\{ p_path: pathname, p_referrer_host:/);
+  assert.match(lib, /credentials: 'omit'/);
+  assert.doesNotMatch(lib + counter, /localStorage|sessionStorage|document\.cookie|userAgent/);
+  // The Cookie Policy says so.
+  assert.match(cookies, /We also count visits to our own public pages/);
+});
