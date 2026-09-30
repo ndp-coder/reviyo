@@ -29,7 +29,15 @@ export async function claudeGenerate(options: {
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey) throw new Error("Anthropic API key (ANTHROPIC_API_KEY) is not configured");
 
-  const client = new Anthropic({ apiKey, maxRetries: options.maxRetries ?? 2, timeout: 30_000 });
+  // Needed only for an API key that is not scoped to one workspace: the
+  // request must then name the workspace (Console > Workspaces, its ID).
+  const workspaceId = Deno.env.get("ANTHROPIC_WORKSPACE_ID")?.trim();
+  const client = new Anthropic({
+    apiKey,
+    maxRetries: options.maxRetries ?? 2,
+    timeout: 30_000,
+    ...(workspaceId ? { defaultHeaders: { "anthropic-workspace-id": workspaceId } } : {}),
+  });
   const response = await client.messages.create({
     model: claudeModel(),
     max_tokens: options.maxTokens,
