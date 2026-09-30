@@ -133,6 +133,20 @@ test('billing page provides live Razorpay checkout, status badges, and transacti
   assert.match(billing, /never reach\s*\n?\s*Reviyo's servers/i);
 });
 
+test('the site security policy lets Razorpay Checkout load everything it needs', async () => {
+  const toml = await read('netlify.toml');
+  const csp = toml.match(/Content-Security-Policy(?:-Report-Only)? = "([^"]+)"/)[1];
+  const directive = (name) => csp.split(';').map((d) => d.trim()).find((d) => d.startsWith(`${name} `)) ?? '';
+
+  // checkout.js, plus the fraud-check script it pulls from Razorpay's CDN.
+  for (const host of ['https://checkout.razorpay.com', 'https://cdn.razorpay.com']) {
+    assert.ok(directive('script-src').includes(host), `script-src must allow ${host}`);
+  }
+  assert.ok(directive('frame-src').includes('https://api.razorpay.com'));
+  assert.ok(directive('connect-src').includes('https://api.razorpay.com'));
+  assert.ok(directive('connect-src').includes('https://yagchgwgbttxfihlyddm.supabase.co'));
+});
+
 test('supabase/.env.example documents the required Razorpay secrets', async () => {
   const envExample = await read('supabase/.env.example');
 
