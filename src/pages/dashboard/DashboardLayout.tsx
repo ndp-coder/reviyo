@@ -116,10 +116,16 @@ export function DashboardLayout() {
     ]);
     // A failed lookup must not lock out a paying owner. The database enforces
     // access regardless, so the UI stays open and lets that decide.
-    setSubscriptionCheckFailed(Boolean(error));
+    setSubscriptionCheckFailed(Boolean(error || mandateRes.error));
     setSubscription((data as Subscription | null) ?? null);
     setMandate((mandateRes.data as Pick<AutopayMandate, 'status' | 'plan' | 'method'> | null) ?? null);
   }, [business]);
+
+  // A new owner who left onboarding at the payment step (refresh, back
+  // button, closed tab) has a business but has never set up AutoPay. The app
+  // opens only after that, so send them back to finish it. Settings stays
+  // reachable for account deletion.
+  const neverSetUp = subscription === null && mandate === null && !subscriptionCheckFailed;
 
   useEffect(() => {
     refreshSubscription();
@@ -318,6 +324,8 @@ export function DashboardLayout() {
               </div>
               <Skeleton className="mt-6 h-64" />
             </div>
+          ) : neverSetUp && location.pathname !== '/dashboard/settings' ? (
+            <Navigate to="/onboarding" replace />
           ) : !hasAccess && !isOpenPath(location.pathname) ? (
             <Navigate to="/dashboard/billing" replace />
           ) : (

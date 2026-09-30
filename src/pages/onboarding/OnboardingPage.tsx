@@ -40,6 +40,21 @@ const TOTAL_STEPS = STEPS.length;
 const MAX_TOPICS = 20;
 const MAX_TOPIC_LENGTH = 80;
 
+/**
+ * True once the business has had a subscription or an AutoPay setup that got
+ * past the ₹1 check (the trial may still be starting). A failed lookup counts
+ * as finished, so an owner who has paid is never sent back to pay again; the
+ * dashboard and the database still enforce access.
+ */
+async function hasFinishedTrialStep(businessId: string): Promise<boolean> {
+  const [subscriptionRes, mandateRes] = await Promise.all([
+    supabase.from('subscriptions').select('id').eq('business_id', businessId).limit(1),
+    supabase.from('autopay_mandates').select('id').eq('business_id', businessId).neq('status', 'created').limit(1),
+  ]);
+  if (subscriptionRes.error || mandateRes.error) return true;
+  return (subscriptionRes.data?.length ?? 0) > 0 || (mandateRes.data?.length ?? 0) > 0;
+}
+
 function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -54,7 +69,7 @@ function slugify(text: string): string {
 }
 
 export function OnboardingPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   // Signing in always lands here; owners who already have a business are sent
   // on to the dashboard. Hold the page until that is known, so they don't see
@@ -80,20 +95,35 @@ export function OnboardingPage() {
   const [business, setBusiness] = useState<Business | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState('');
 
-  // Check if user already has a business
+  // Owners with a business go to the dashboard, unless they never finished the
+  // trial step: the business is saved before the ₹1 AutoPay check, so a
+  // refresh or a closed tab during payment must bring them back here, to the
+  // payment step, and not into the app.
   useEffect(() => {
     let cancelled = false;
     async function checkExistingBusiness() {
       if (!user) return;
-      const { data } = await supabase
+      const { data, error: businessError } = await supabase
         .from('businesses')
-        .select('id')
+        .select('*')
         .eq('owner_id', user.id)
         .maybeSingle();
       if (cancelled) return;
-      if (data) {
-        navigate('/dashboard', { replace: true });
+      if (businessError) {
+        setError('We couldn’t check your account. Check your connection and refresh the page.');
+        setCheckingExisting(false);
         return;
+      }
+      if (data) {
+        const existing = data as Business;
+        if (await hasFinishedTrialStep(existing.id)) {
+          if (!cancelled) navigate('/dashboard', { replace: true });
+          return;
+        }
+        if (cancelled) return;
+        setBusiness(existing);
+        setBusinessName(existing.name);
+        setStep(STEP.trial);
       }
       setCheckingExisting(false);
     }
@@ -650,17 +680,21 @@ export function OnboardingPage() {
           </div>
         )}
 
-        {/* The trial step must never be a dead end. Skipping leads to Billing,
-            where the same trial setup is waiting. */}
+        {/* The app opens only after AutoPay is set up. Owners who aren't ready
+            can leave: the business is saved and this step is waiting when
+            they sign in again. */}
         {step === STEP.trial && business && (
           <p className="mt-6 text-center text-sm text-gray-600">
-            Not ready to set up AutoPay?{' '}
+            Not ready yet? Your business is saved.{' '}
             <button
               type="button"
-              onClick={() => navigate('/dashboard/billing')}
+              onClick={async () => {
+                await signOut();
+                navigate('/');
+              }}
               className="font-medium text-brand-700 underline underline-offset-2 hover:text-brand-800"
             >
-              Do it later from Billing
+              Sign out and finish later
             </button>
           </p>
         )}
