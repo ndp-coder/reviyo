@@ -1,7 +1,16 @@
-const LOCAL_ORIGINS = new Set([
+const LOCAL_ORIGINS = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
-]);
+];
+
+// The live site, with and without www: the host may serve either before its
+// redirect is in place, and a missing APP_ORIGINS secret must not break
+// payments. Kept in step with siteUrl in src/config/legal.ts by a test.
+// APP_ORIGINS adds more (a preview deploy, a staging domain).
+export const PRODUCTION_ORIGINS = [
+  "https://www.reviyo.in",
+  "https://reviyo.in",
+];
 
 function allowedOrigins(): Set<string> {
   const configured = (Deno.env.get("APP_ORIGINS") ?? "")
@@ -9,12 +18,15 @@ function allowedOrigins(): Set<string> {
     .map((origin) => origin.trim().replace(/\/$/, ""))
     .filter(Boolean);
 
-  return new Set([...LOCAL_ORIGINS, ...configured]);
+  return new Set([...LOCAL_ORIGINS, ...PRODUCTION_ORIGINS, ...configured]);
 }
 
 export function isAllowedBrowserOrigin(req: Request): boolean {
   const origin = req.headers.get("Origin");
-  return !origin || allowedOrigins().has(origin.replace(/\/$/, ""));
+  if (!origin || allowedOrigins().has(origin.replace(/\/$/, ""))) return true;
+  // The browser only reports a CORS failure; the function logs say which origin.
+  console.warn(`Blocked request from origin ${origin}. Add it to APP_ORIGINS if it is ours.`);
+  return false;
 }
 
 export function getCorsHeaders(req: Request): Record<string, string> {

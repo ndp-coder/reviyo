@@ -560,6 +560,21 @@ test('printed QR codes and shared links always point at the public site, never t
   }
 });
 
+test('browser-facing functions allow the live site with and without www', async () => {
+  const [cors, legalSrc] = await Promise.all([
+    read('supabase/functions/_shared/cors.ts'),
+    read('src/config/legal.ts'),
+  ]);
+  const siteUrl = legalSrc.match(/siteUrl: '([^']+)'/)[1];
+  const host = new URL(siteUrl).host.replace(/^www\./, '');
+  const list = cors.match(/PRODUCTION_ORIGINS = \[([^\]]*)\]/)[1];
+  // Without these, payments fail with a CORS error on whichever host the
+  // visitor typed, even when APP_ORIGINS is missing or has only one of them.
+  assert.match(list, new RegExp(`"https://www\\.${host.replace(/\./g, '\\.')}"`));
+  assert.match(list, new RegExp(`"https://${host.replace(/\./g, '\\.')}"`));
+  assert.match(cors, /\.\.\.PRODUCTION_ORIGINS/);
+});
+
 test('owner emails come from support@reviyo.in, match the site config, and render without gaps', async (t) => {
   const [templatesSrc, legalSrc, plansSrc, email, webhook, verify, scheduler] = await Promise.all([
     read('supabase/functions/_shared/email-templates.ts'), read('src/config/legal.ts'), read('src/config/plans.ts'),

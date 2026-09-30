@@ -50,7 +50,8 @@ CLI.
   and upload it with `supabase secrets set --env-file supabase/functions/.env`.
   The last successful audit of this project did not find `APP_ORIGINS`,
   `RAZORPAY_WEBHOOK_SECRET`, or `AUTOPAY_CRON_SECRET`; recheck the secret names
-  once access is restored. Set `APP_ORIGINS` to the deployed origin.
+  once access is restored. `www.reviyo.in` and `reviyo.in` are built-in allowed
+  origins; set `APP_ORIGINS` only for other domains (staging, previews).
 - [ ] Redeploy all Edge Functions after the migrations and secrets are in
   place. Use the complete list in `README.md`.
 - [ ] Configure the Razorpay webhook with the complete event list in

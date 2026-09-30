@@ -146,9 +146,10 @@ owner-supplied URLs to safe schemes.
    GEMINI_API_KEY=
    ```
 
-   Also set `APP_ORIGINS` to the exact deployed frontend origin. Use commas for
-   multiple trusted origins (for example, production and staging). Local Vite
-   origins are allowed automatically. Add all server-side values to an ignored
+   `https://www.reviyo.in`, `https://reviyo.in`, and the local Vite origins are
+   allowed automatically (`supabase/functions/_shared/cors.ts`). Set
+   `APP_ORIGINS` only for other trusted origins, comma-separated (for example,
+   a staging site). Add all server-side values to an ignored
    `supabase/functions/.env` file, then upload them without placing credentials
    in shell history:
 
@@ -249,10 +250,11 @@ Functions are deployed separately with the Supabase CLI commands above.
    other mail records alone, or support@reviyo.in stops receiving email.
 5. Back in Netlify, **HTTPS > Verify DNS configuration**, then wait for the
    free Let's Encrypt certificate.
-6. Supabase: set the Edge Function secret `APP_ORIGINS=https://www.reviyo.in`,
-   and under **Authentication > URL Configuration** set the Site URL to
-   `https://www.reviyo.in` and add `https://www.reviyo.in/onboarding` and
-   `https://www.reviyo.in/reset-password` as redirect URLs.
+6. Supabase: redeploy the Edge Functions (both `www.reviyo.in` and
+   `reviyo.in` are built-in allowed origins, so `APP_ORIGINS` is optional).
+   Under **Authentication > URL Configuration** set the Site URL to
+   `https://www.reviyo.in` and add `https://www.reviyo.in/**` and
+   `https://reviyo.in/**` as redirect URLs.
 7. After a live Razorpay test payment works, rename
    `Content-Security-Policy-Report-Only` to `Content-Security-Policy` in
    `netlify.toml` to enforce it.
