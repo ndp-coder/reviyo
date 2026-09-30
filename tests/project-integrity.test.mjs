@@ -324,7 +324,9 @@ test('AI topic suggestions are owner-only, rate limited, and gated like other pa
   assert.match(fn, /admin\.auth\.getUser\(accessToken\)/);
   assert.match(fn, /business_has_active_subscription/);
   // The rate limit is claimed before the paid AI call.
-  assert.ok(fn.indexOf('claim_topic_suggestion') < fn.indexOf('await geminiGenerate'));
+  for (const call of ['await geminiGenerate', 'await anthropicGenerate', 'await openaiGenerate']) {
+    assert.ok(fn.indexOf('claim_topic_suggestion') < fn.indexOf(call), `rate limit must come before ${call}`);
+  }
   assert.match(sql, /REVOKE EXECUTE ON FUNCTION claim_topic_suggestion\(uuid\) FROM PUBLIC, anon, authenticated;/);
   assert.match(sql, /ON DELETE CASCADE/);
 
@@ -652,4 +654,25 @@ test('website visit counting sends no identifiers, skips private pages, and is d
   assert.doesNotMatch(lib + counter, /localStorage|sessionStorage|document\.cookie|userAgent/);
   // The Cookie Policy says so.
   assert.match(cookies, /We also count visits to our own public pages/);
+});
+
+test('Claude generation uses Haiku 4.5 through the official SDK, and the Privacy Policy names Anthropic', async () => {
+  const [shared, review, topics, legalSrc] = await Promise.all([
+    read('supabase/functions/_shared/anthropic.ts'),
+    read('supabase/functions/generate-review/index.ts'),
+    read('supabase/functions/suggest-topics/index.ts'),
+    read('src/config/legal.ts'),
+  ]);
+  assert.match(shared, /import Anthropic from "npm:@anthropic-ai\/sdk@\d+\.\d+\.\d+"/);
+  assert.match(shared, /DEFAULT_CLAUDE_MODEL = "claude-haiku-4-5"/);
+  assert.match(shared, /Deno\.env\.get\("ANTHROPIC_API_KEY"\)/);
+  // A cut-off or declined reply is never shown to a customer as a draft.
+  assert.match(shared, /stop_reason === "max_tokens"/);
+  assert.match(shared, /stop_reason === "refusal"/);
+  for (const fn of [review, topics]) {
+    assert.match(fn, /provider === "anthropic"/);
+    assert.match(fn, /err instanceof Anthropic\.APIError/);
+  }
+  // Customers' consent covers the provider the policy names.
+  assert.match(legalSrc, /aiProviderName: 'Anthropic, PBC \(Claude API\)'/);
 });

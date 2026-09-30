@@ -7,6 +7,7 @@
 // claim_topic_suggestion(). Once an owner has a business, it also requires an
 // active subscription, like every other paid feature.
 
+import { Anthropic, claudeGenerate } from "../_shared/anthropic.ts";
 import { getCorsHeaders, isAllowedBrowserOrigin } from "../_shared/cors.ts";
 
 const MAX_SUGGESTIONS = 10;
@@ -75,6 +76,17 @@ async function openaiGenerate(prompt: string): Promise<string> {
   const text = data.choices?.[0]?.message?.content?.trim();
   if (!text) throw new Error("OpenAI returned an empty response");
   return text;
+}
+
+async function anthropicGenerate(prompt: string): Promise<string> {
+  try {
+    return await claudeGenerate({ system: SYSTEM_PROMPT, prompt, maxTokens: 500 });
+  } catch (err) {
+    if (err instanceof Anthropic.APIError) {
+      throw new ProviderRequestError("Anthropic", err.status ?? 503, err.message);
+    }
+    throw err;
+  }
 }
 
 async function geminiGenerate(prompt: string): Promise<string> {
@@ -274,6 +286,8 @@ Suggest ${MAX_SUGGESTIONS} review topics customers of this kind of business woul
       raw = await openaiGenerate(prompt);
     } else if (provider === "gemini") {
       raw = await geminiGenerate(prompt);
+    } else if (provider === "anthropic") {
+      raw = await anthropicGenerate(prompt);
     } else {
       return json({ error: "AI suggestions are not configured yet." }, 503);
     }

@@ -3,6 +3,7 @@
 // The function receives structured input and returns a natural review based on
 // the customer's genuine input. It NEVER invents experiences or facts.
 
+import { Anthropic, claudeGenerate } from "../_shared/anthropic.ts";
 import { getCorsHeaders, isAllowedBrowserOrigin } from "../_shared/cors.ts";
 
 interface ReviewRequest {
@@ -85,6 +86,18 @@ async function openaiGenerate(prompt: string): Promise<string> {
   const review = choice?.message?.content?.trim();
   if (!review) throw new Error("OpenAI returned an empty response");
   return review;
+}
+
+async function anthropicGenerate(prompt: string): Promise<string> {
+  try {
+    // retryWithBackoff below does the retrying, so the SDK does not also retry.
+    return await claudeGenerate({ system: SYSTEM_PROMPT, prompt, maxTokens: 1024, maxRetries: 0 });
+  } catch (err) {
+    if (err instanceof Anthropic.APIError) {
+      throw new ProviderRequestError("Anthropic", err.status ?? 503, err.message);
+    }
+    throw err;
+  }
 }
 
 async function geminiGenerate(prompt: string): Promise<string> {
@@ -334,7 +347,7 @@ Deno.serve(async (req: Request) => {
     };
 
     const provider = Deno.env.get("AI_PROVIDER")?.toLowerCase();
-    if (provider !== "openai" && provider !== "gemini") {
+    if (provider !== "openai" && provider !== "gemini" && provider !== "anthropic") {
       return new Response(
         JSON.stringify({ error: "AI review generation is not configured." }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -358,6 +371,8 @@ Deno.serve(async (req: Request) => {
 
     if (provider === "openai") {
       review = await retryWithBackoff(() => openaiGenerate(prompt));
+    } else if (provider === "anthropic") {
+      review = await retryWithBackoff(() => anthropicGenerate(prompt));
     } else {
       review = await retryWithBackoff(() => geminiGenerate(prompt));
     }

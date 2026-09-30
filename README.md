@@ -23,7 +23,7 @@ Reviyo helps businesses collect genuine Google reviews by making it easy for cus
 - **Icons:** Lucide React
 - **QR Codes:** qrcode (npm)
 - **Backend:** Supabase (PostgreSQL, Auth, Edge Functions, Row Level Security)
-- **AI:** Provider-selectable Supabase Edge Function (OpenAI or Gemini)
+- **AI:** Provider-selectable Supabase Edge Function (Claude, OpenAI, or Gemini)
 
 ## Architecture
 
@@ -141,9 +141,9 @@ owner-supplied URLs to safe schemes.
    Or:
 
    ```dotenv
-   AI_PROVIDER=gemini
-   AI_MODEL=gemini-3.8-flash
-   GEMINI_API_KEY=
+   AI_PROVIDER=anthropic
+   AI_MODEL=claude-haiku-4-5
+   ANTHROPIC_API_KEY=
    ```
 
    `https://www.reviyo.in`, `https://reviyo.in`, and the local Vite origins are
@@ -563,7 +563,7 @@ payments.
 | Processor | Receives | When |
 |-----------|----------|------|
 | Supabase | All application data | Always |
-| AI provider (OpenAI or Gemini) | Business name and category, rating, topics, optional comment | Only when a customer requests a draft |
+| AI provider (Claude, OpenAI, or Gemini) | Business name and category, rating, topics, optional comment | Only when a customer requests a draft |
 | Razorpay | Owner name, email, plan, amount | Only at checkout |
 
 Record the actual provider and region in `legal.aiProviderName`,

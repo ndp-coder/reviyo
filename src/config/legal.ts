@@ -74,7 +74,7 @@ export const legal = {
   // customer liked, and the notice sits on that one screen.
   // 29 Sep .1: Hostinger added as the email processor (sign-in codes,
   // receipts, and billing reminders sent from support@reviyo.in).
-  consentVersion: '2026-09-29.1',
+  consentVersion: '2026-09-30.1',
   /** Recorded on each AutoPay mandate, with the wording shown at the checkbox. */
   autopayTermsVersion: '2026-09-25.1',
   /** Free trial length. Must match start_autopay_trial() in the database. */
@@ -87,8 +87,9 @@ export const legal = {
    */
   // The selected project yagchgwgbttxfihlyddm was last verified in ap-northeast-2.
   dataRegion: 'Northeast Asia (Seoul)',
-  aiProviderName: 'Google LLC (Gemini API)',
-  aiProviderPolicyUrl: 'https://ai.google.dev/gemini-api/terms',
+  // Must match AI_PROVIDER in the Edge Function secrets (anthropic).
+  aiProviderName: 'Anthropic, PBC (Claude API)',
+  aiProviderPolicyUrl: 'https://www.anthropic.com/legal/privacy',
 
   /** How long raw customer review-session text is kept before deletion. */
   sessionRetentionDays: 90,

@@ -29,9 +29,11 @@ CLI.
   `yagchgwgbttxfihlyddm`, or grant that access to the current account. Link
   the repository and set the production host's `VITE_SUPABASE_URL` and
   `VITE_SUPABASE_PUBLISHABLE_KEY` to this same project.
-- [ ] Verify the production AI key and model. `src/config/legal.ts` names
-  Google LLC (Gemini API) as the AI processor, with the Gemini API terms as its
-  policy URL; change both if you switch `AI_PROVIDER` to OpenAI.
+- [ ] Verify the production AI key and model: `AI_PROVIDER=anthropic`,
+  `AI_MODEL=claude-haiku-4-5`, and `ANTHROPIC_API_KEY` (with API credit) in the
+  Edge Function secrets. `src/config/legal.ts` names Anthropic, PBC (Claude
+  API) as the AI processor, with Anthropic's privacy policy as its URL; change
+  both if you switch `AI_PROVIDER` back to Gemini or OpenAI.
   With Gemini, the `GEMINI_API_KEY` must belong to a Google Cloud project with
   billing enabled (the paid tier). On the free tier Google may use prompts,
   including customers' comments, to improve its products, which would make the
