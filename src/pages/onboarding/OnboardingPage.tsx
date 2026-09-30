@@ -12,17 +12,20 @@ import {
 } from '@/config/categories';
 import { directReviewUrl, validateGoogleReviewUrl } from '@/lib/url-safety';
 import { prepareLogo } from '@/lib/image';
-import { Button, Input, Card, IconButton, Spinner } from '@/components/ui';
+import { Alert, Button, Input, Card, IconButton, Spinner } from '@/components/ui';
 import { buttonClasses } from '@/components/ui/button-styles';
 import { BrandLogo } from '@/components/BrandLogo';
 import { SkipLink } from '@/components/SkipLink';
 import { AiTopicSuggestions } from '@/components/AiTopicSuggestions';
 import { GoogleReviewLinkHelp } from '@/components/GoogleReviewLinkHelp';
 import { AutopaySetup } from '@/components/AutopaySetup';
+import { PayOncePlans, type PaymentFeedback } from '@/components/PayOncePlans';
+import { paymentGate } from '@/lib/payment-gate';
+import { hasSubscriptionAccess } from '@/lib/subscription';
 import { legal } from '@/config/legal';
 import { Star, Store, Link2, Image, QrCode, ArrowRight, ArrowLeft, ArrowUp, ArrowDown, Check, Copy, Plus, X, Upload, Gift, Download } from 'lucide-react';
 import QRCode from 'qrcode';
-import type { Business } from '@/lib/types';
+import type { Business, Subscription } from '@/lib/types';
 
 // Name and category share the first screen: both take seconds, and splitting
 // them only added a click.
@@ -39,21 +42,6 @@ const TOTAL_STEPS = STEPS.length;
 // create_business_with_defaults accepts at most 20 topics of 1-80 characters.
 const MAX_TOPICS = 20;
 const MAX_TOPIC_LENGTH = 80;
-
-/**
- * True once the business has had a subscription or an AutoPay setup that got
- * past the ₹1 check (the trial may still be starting). A failed lookup counts
- * as finished, so an owner who has paid is never sent back to pay again; the
- * dashboard and the database still enforce access.
- */
-async function hasFinishedTrialStep(businessId: string): Promise<boolean> {
-  const [subscriptionRes, mandateRes] = await Promise.all([
-    supabase.from('subscriptions').select('id').eq('business_id', businessId).limit(1),
-    supabase.from('autopay_mandates').select('id').eq('business_id', businessId).neq('status', 'created').limit(1),
-  ]);
-  if (subscriptionRes.error || mandateRes.error) return true;
-  return (subscriptionRes.data?.length ?? 0) > 0 || (mandateRes.data?.length ?? 0) > 0;
-}
 
 function slugify(text: string): string {
   return text
@@ -75,6 +63,7 @@ export function OnboardingPage() {
   // on to the dashboard. Hold the page until that is known, so they don't see
   // the first setup question flash past.
   const [checkingExisting, setCheckingExisting] = useState(true);
+  const [checkFailed, setCheckFailed] = useState(false);
   const [step, setStep] = useState<number>(STEP.business);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,12 +82,16 @@ export function OnboardingPage() {
   const [topics, setTopics] = useState<string[]>([]);
   const [newTopic, setNewTopic] = useState('');
   const [business, setBusiness] = useState<Business | null>(null);
+  // The subscription of a business that already exists but has never paid
+  // (the old sign-up-only free trial): its trial is used up, so the payment
+  // step offers a plan instead.
+  const [existingSubscription, setExistingSubscription] = useState<Subscription | null>(null);
+  const [payFeedback, setPayFeedback] = useState<PaymentFeedback | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState('');
 
-  // Owners with a business go to the dashboard, unless they never finished the
-  // trial step: the business is saved before the ₹1 AutoPay check, so a
-  // refresh or a closed tab during payment must bring them back here, to the
-  // payment step, and not into the app.
+  // Owners with a business go to the dashboard only once they have paid (the
+  // ₹1 AutoPay check or a plan). Anyone else — a refresh or closed tab during
+  // payment, or an existing owner who never paid — lands on the payment step.
   useEffect(() => {
     let cancelled = false;
     async function checkExistingBusiness() {
@@ -110,19 +103,35 @@ export function OnboardingPage() {
         .maybeSingle();
       if (cancelled) return;
       if (businessError) {
-        setError('We couldn’t check your account. Check your connection and refresh the page.');
+        setCheckFailed(true);
         setCheckingExisting(false);
         return;
       }
       if (data) {
         const existing = data as Business;
-        if (await hasFinishedTrialStep(existing.id)) {
-          if (!cancelled) navigate('/dashboard', { replace: true });
+        const [gate, subscriptionRes] = await Promise.all([
+          paymentGate(existing.id),
+          supabase
+            .from('subscriptions')
+            .select('*')
+            .eq('business_id', existing.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ]);
+        if (cancelled) return;
+        if (gate !== 'not_paid') {
+          navigate('/dashboard', { replace: true });
           return;
         }
-        if (cancelled) return;
+        if (subscriptionRes.error) {
+          setCheckFailed(true);
+          setCheckingExisting(false);
+          return;
+        }
         setBusiness(existing);
         setBusinessName(existing.name);
+        setExistingSubscription((subscriptionRes.data as Subscription | null) ?? null);
         setStep(STEP.trial);
       }
       setCheckingExisting(false);
@@ -163,6 +172,11 @@ export function OnboardingPage() {
   }, [copied]);
 
   const effectiveCategory = category === OTHER_CATEGORY ? customCategory.trim() : category;
+
+  // An owner whose free trial is used up pays for a plan at the trial step.
+  const trialAvailable = existingSubscription === null;
+  const stepLabel = (i: number) => (i === STEP.trial && !trialAvailable ? 'Payment' : STEPS[i].label);
+  const existingAccessLive = hasSubscriptionAccess(existingSubscription);
 
   const reviewUrl = business ? reviewUrlFor(business.slug) : '';
 
@@ -311,6 +325,21 @@ export function OnboardingPage() {
     );
   }
 
+  if (checkFailed) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-paper px-4">
+        <div className="w-full max-w-md">
+          <Alert variant="error" title="We couldn’t load your account">
+            Check your connection and try again.
+          </Alert>
+          <Button className="mt-4" onClick={() => window.location.reload()}>
+            Try again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-paper">
       {/* Header */}
@@ -319,7 +348,7 @@ export function OnboardingPage() {
         <BrandLogo className="h-10 w-auto sm:h-11" />
         <div role="status" aria-live="polite" className="text-sm text-gray-700">
           Step {step + 1} of {TOTAL_STEPS}
-          <span className="sr-only">: {STEPS[step].label}</span>
+          <span className="sr-only">: {stepLabel(step)}</span>
         </div>
       </header>
 
@@ -333,7 +362,7 @@ export function OnboardingPage() {
               style={{ width: `${((step + 1) / TOTAL_STEPS) * 100}%` }}
             />
           </div>
-          <p className="mt-2 text-xs font-medium text-gray-700">{STEPS[step].label}</p>
+          <p className="mt-2 text-xs font-medium text-gray-700">{stepLabel(step)}</p>
         </div>
         <ol aria-label="Setup progress" className="mx-auto hidden max-w-2xl list-none items-center gap-2 p-0 sm:flex">
           {STEPS.map(({ label, icon: Icon }, i) => {
@@ -358,7 +387,7 @@ export function OnboardingPage() {
                   >
                     {isDone ? <Check className="h-4 w-4" aria-hidden="true" /> : <Icon className="h-4 w-4" aria-hidden="true" />}
                   </div>
-                  <span className="whitespace-nowrap text-xs font-medium">{label}</span>
+                  <span className="whitespace-nowrap text-xs font-medium">{stepLabel(i)}</span>
                   <span className="sr-only">{isDone ? 'completed' : isActive ? 'current step' : 'not started'}</span>
                 </div>
                 {i < STEPS.length - 1 && (
@@ -579,7 +608,7 @@ export function OnboardingPage() {
             </Card>
           )}
 
-          {step === STEP.trial && business && (
+          {step === STEP.trial && business && trialAvailable && (
             <Card className="p-5 sm:p-8">
               <h1 className="text-xl font-bold text-gray-900">Start your {legal.trialDays}-day free trial</h1>
               <p className="mt-1.5 text-sm text-gray-600">
@@ -597,6 +626,49 @@ export function OnboardingPage() {
                 />
               </div>
             </Card>
+          )}
+
+          {step === STEP.trial && business && !trialAvailable && (
+            <div className="space-y-6">
+              <Card className="p-5 sm:p-8">
+                <h1 className="text-xl font-bold text-gray-900">
+                  {existingAccessLive ? 'Set up payment to keep going' : 'Choose a plan to continue'}
+                </h1>
+                <p className="mt-1.5 text-sm text-gray-600">
+                  {existingAccessLive
+                    ? 'Your free trial is running. Set up AutoPay now so your review page keeps working when it ends — you won’t be charged for the plan until then.'
+                    : 'Your free trial has ended. Set up AutoPay or pay once to switch on AI review drafting and your dashboard.'}
+                </p>
+                <div className="mt-6">
+                  <AutopaySetup
+                    businessId={business.id}
+                    userName={profile?.full_name || businessName}
+                    userEmail={user?.email}
+                    trialAvailable={false}
+                    currentAccessEndsAt={existingSubscription?.expires_at}
+                    onComplete={(result) => {
+                      // With the trial over, the first charge is still a day or two
+                      // away: Billing shows it until the plan starts.
+                      if (hasSubscriptionAccess(result.subscription ?? existingSubscription)) setStep(STEP.qr);
+                      else navigate('/dashboard/billing');
+                    }}
+                  />
+                </div>
+              </Card>
+              {payFeedback && <Alert variant={payFeedback.type}>{payFeedback.message}</Alert>}
+              <PayOncePlans
+                businessId={business.id}
+                userName={profile?.full_name || businessName}
+                userEmail={user?.email || ''}
+                onFeedback={setPayFeedback}
+                onFinished={(paid) => {
+                  if (paid) {
+                    setPayFeedback(null);
+                    setStep(STEP.qr);
+                  }
+                }}
+              />
+            </div>
           )}
 
           {step === STEP.qr && business && (
@@ -667,7 +739,7 @@ export function OnboardingPage() {
                   </Button>
                 )}
                 <Button onClick={nextStep} disabled={!canProceed() || saving} loading={saving} aria-describedby={blockedReason ? 'onboarding-blocked' : undefined}>
-                  {step === STEP.topics ? 'Create business' : `Next: ${STEPS[step + 1].label}`}{' '}
+                  {step === STEP.topics ? 'Create business' : `Next: ${stepLabel(step + 1)}`}{' '}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>

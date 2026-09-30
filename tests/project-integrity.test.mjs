@@ -262,6 +262,31 @@ test('an ended subscription stops the QR page, AI drafting, and dashboard data',
   assert.match(billing, /refreshSubscription\(\)/);
 });
 
+test('owners who have never paid stay on onboarding\'s payment step, not in the app', async () => {
+  const [gate, onboarding, layout] = await Promise.all([
+    read('src/lib/payment-gate.ts'),
+    read('src/pages/onboarding/OnboardingPage.tsx'),
+    read('src/pages/dashboard/DashboardLayout.tsx'),
+  ]);
+
+  // Paid means the ₹1 AutoPay check went through or a plan was bought; a
+  // subscription alone (the old sign-up-only trial) is not enough.
+  assert.match(gate, /\.not\('auth_payment_id', 'is', null\)/);
+  assert.match(gate, /\.eq\('status', 'paid'\)/);
+  assert.match(gate, /return 'unknown'/);
+
+  // Onboarding resumes at the payment step instead of opening the app...
+  assert.match(onboarding, /paymentGate\(existing\.id\)/);
+  assert.match(onboarding, /if \(gate !== 'not_paid'\) \{\s*navigate\('\/dashboard'/);
+  assert.match(onboarding, /setStep\(STEP\.trial\)/);
+  assert.match(onboarding, /<PayOncePlans/);
+  // ...and offers no way into the dashboard before paying.
+  assert.doesNotMatch(onboarding, /Do it later from Billing/);
+
+  // The dashboard sends unpaid owners back, keeping Settings for account deletion.
+  assert.match(layout, /notPaid && location\.pathname !== '\/dashboard\/settings' \? \(\s*<Navigate to="\/onboarding" replace \/>/);
+});
+
 test('dashboard access rule matches the database rule', async () => {
   const lib = await read('src/lib/subscription.ts');
   assert.match(lib, /status !== 'trial' && subscription\.status !== 'active'/);

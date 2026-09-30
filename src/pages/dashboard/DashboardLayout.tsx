@@ -9,6 +9,7 @@ import { legal, displayValue } from '@/config/legal';
 import { Alert, Button, Skeleton } from '@/components/ui';
 import { getCategoryLabel } from '@/config/categories';
 import { hasSubscriptionAccess, PATHS_OPEN_WITHOUT_SUBSCRIPTION } from '@/lib/subscription';
+import { paymentGate, type PaymentGate } from '@/lib/payment-gate';
 import type { AutopayMandate, Business, Subscription } from '@/lib/types';
 
 export function DashboardLayout() {
@@ -22,6 +23,8 @@ export function DashboardLayout() {
   // undefined = still loading, null = no subscription row at all.
   const [subscription, setSubscription] = useState<Subscription | null | undefined>(undefined);
   const [subscriptionCheckFailed, setSubscriptionCheckFailed] = useState(false);
+  // Whether this business has ever paid; see paymentGate.
+  const [gate, setGate] = useState<PaymentGate | undefined>(undefined);
   // Latest AutoPay setup, so Overview can say whether a charge is coming.
   const [mandate, setMandate] = useState<Pick<AutopayMandate, 'status' | 'plan' | 'method'> | null>(null);
   // Unread private feedback, shown next to the nav item: it is the one thing an
@@ -97,7 +100,7 @@ export function DashboardLayout() {
 
   const refreshSubscription = useCallback(async () => {
     if (!business) return;
-    const [{ data, error }, mandateRes] = await Promise.all([
+    const [{ data, error }, mandateRes, paid] = await Promise.all([
       supabase
         .from('subscriptions')
         .select('*')
@@ -113,19 +116,21 @@ export function DashboardLayout() {
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle(),
+      paymentGate(business.id),
     ]);
     // A failed lookup must not lock out a paying owner. The database enforces
     // access regardless, so the UI stays open and lets that decide.
     setSubscriptionCheckFailed(Boolean(error || mandateRes.error));
     setSubscription((data as Subscription | null) ?? null);
     setMandate((mandateRes.data as Pick<AutopayMandate, 'status' | 'plan' | 'method'> | null) ?? null);
+    setGate(paid);
   }, [business]);
 
-  // A new owner who left onboarding at the payment step (refresh, back
-  // button, closed tab) has a business but has never set up AutoPay. The app
-  // opens only after that, so send them back to finish it. Settings stays
-  // reachable for account deletion.
-  const neverSetUp = subscription === null && mandate === null && !subscriptionCheckFailed;
+  // Owners who have never paid (the ₹1 AutoPay check or a plan) belong on
+  // onboarding's payment step, not in the app: a new owner who refreshed or
+  // left during payment, or an existing owner on the old sign-up-only free
+  // trial. Settings stays reachable for account deletion.
+  const notPaid = gate === 'not_paid';
 
   useEffect(() => {
     refreshSubscription();
@@ -324,7 +329,7 @@ export function DashboardLayout() {
               </div>
               <Skeleton className="mt-6 h-64" />
             </div>
-          ) : neverSetUp && location.pathname !== '/dashboard/settings' ? (
+          ) : notPaid && location.pathname !== '/dashboard/settings' ? (
             <Navigate to="/onboarding" replace />
           ) : !hasAccess && !isOpenPath(location.pathname) ? (
             <Navigate to="/dashboard/billing" replace />

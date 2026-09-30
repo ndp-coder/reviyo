@@ -114,11 +114,16 @@ test('frontend Razorpay helper provides checkout and verification logic', async 
 });
 
 test('billing page provides live Razorpay checkout, status badges, and transaction history', async () => {
-  const billing = await read('src/pages/dashboard/BillingPage.tsx');
+  const [billing, payOnce] = await Promise.all([
+    read('src/pages/dashboard/BillingPage.tsx'),
+    read('src/components/PayOncePlans.tsx'),
+  ]);
 
-  assert.match(billing, /createRazorpayOrder/);
-  assert.match(billing, /startRazorpayCheckout/);
-  assert.match(billing, /verifyRazorpayPayment/);
+  // One-time checkout lives in a component shared with onboarding's payment step.
+  assert.match(billing, /<PayOncePlans/);
+  assert.match(payOnce, /createRazorpayOrder/);
+  assert.match(payOnce, /startRazorpayCheckout/);
+  assert.match(payOnce, /verifyRazorpayPayment/);
   assert.match(billing, /payment_orders/);
   assert.match(billing, /Payment History & Receipts/i);
 
