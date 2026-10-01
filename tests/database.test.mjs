@@ -62,10 +62,44 @@ const asUser = async (uid, fn) => {
 const U1 = '11111111-1111-1111-1111-111111111111';
 const U2 = '22222222-2222-2222-2222-222222222222';
 const PARTNER = '33333333-3333-3333-3333-333333333333';
+const SETUP_OWNER = '77777777-7777-7777-7777-777777777777';
 before(async () => {
 await db.exec(`INSERT INTO auth.users (id, email) VALUES ('${U1}', 'a@x.in'), ('${U2}', 'b@x.in');`);
 // handle_new_user may insert profiles via trigger; make sure they exist.
 await db.exec(`INSERT INTO profiles (id, email) VALUES ('${U1}','a@x.in'), ('${U2}','b@x.in') ON CONFLICT DO NOTHING;`);
+});
+
+check('partner business setup preserves ownership, consent and referral attribution', async () => {
+  await db.exec(`INSERT INTO auth.users(id,email) VALUES('${SETUP_OWNER}','setup-owner@example.in');`);
+  await db.exec(`INSERT INTO auth.users(id,email) VALUES('${PARTNER}','setup-partner@example.in') ON CONFLICT DO NOTHING;`);
+  await db.exec(`INSERT INTO commission_partners(email,name) SELECT lower(email),'Setup partner' FROM auth.users WHERE id='${PARTNER}' ON CONFLICT(email) DO UPDATE SET active=true;`);
+  const args = ['setup-owner@example.in','Prepared salon','Salon',null,null,['Staff','Service']];
+  const sql = `SELECT save_partner_business_draft($1,$2,$3,$4,$5,$6) AS id`;
+  const draft = (await asUser(PARTNER, () => one(sql,args))).id;
+  assert.equal((await asUser(PARTNER, () => one(sql,args))).id,draft,'retry updates same draft');
+  assert.equal((await asUser(PARTNER,()=>one(`SELECT count(*)::int AS n FROM partner_business_drafts`))).n,1);
+  assert.equal((await asUser(U1,()=>one(`SELECT count(*)::int AS n FROM partner_business_drafts`))).n,0);
+  await asUser(PARTNER,()=>rejects(sql,[...args.slice(0,3),'https://evil.example/review',null,args[5]],/Google review link/,'invalid Google link'));
+  await asUser(PARTNER,()=>rejects(sql,[...args.slice(0,4),'data:image/svg+xml;base64,PHN2Zz4=',args[5]],/supported logo/,'unsafe logo'));
+  assert.equal((await one(`SELECT count(*)::int AS n FROM businesses WHERE owner_id=$1`,[SETUP_OWNER])).n,0,'partner does not create owner business');
+  assert.equal((await asUser(SETUP_OWNER,()=>one(`SELECT my_partner_business_draft() AS d`))).d.id,draft);
+  const claim = `SELECT claim_partner_business($1,$2,'Owner edited salon','owner-edited-salon','Salon',NULL,NULL,'Welcome',ARRAY['Staff']) AS b`;
+  await asUser(U1,()=>rejects(claim,[draft,'v1'],/No pending setup/,'wrong owner'));
+  await asUser(SETUP_OWNER,()=>rejects(claim,[draft,null],/Accept the terms/,'missing consent'));
+  await asUser(SETUP_OWNER,()=>rejects(`UPDATE partner_business_drafts SET claimed_at=now() WHERE id=$1`,[draft],/permission denied/,'no client draft writes'));
+  const biz=(await asUser(SETUP_OWNER,()=>one(claim,[draft,'owner-terms-v1']))).b;
+  assert.equal(biz.owner_id,SETUP_OWNER);
+  assert.equal(biz.name,'Owner edited salon');
+  assert.equal((await one(`SELECT terms_consent_version FROM profiles WHERE id=$1`,[SETUP_OWNER])).terms_consent_version,'owner-terms-v1');
+  assert.equal((await asUser(SETUP_OWNER,()=>one(`SELECT my_partner_business_draft() AS d`))).d,null);
+  await asUser(SETUP_OWNER,()=>rejects(claim,[draft,'v1'],/No pending setup/,'duplicate claim'));
+  await asUser(PARTNER,()=>rejects(sql,args,/already has a business/,'partner cannot overwrite claimed setup'));
+  assert.equal((await asUser(PARTNER,()=>one(`SELECT count(*)::int AS n FROM businesses WHERE id=$1`,[biz.id]))).n,0,'partner cannot access owner business');
+  await db.query(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,'setup-owner-annual','12_months',299900)`,[biz.id,SETUP_OWNER]);
+  await db.exec(`UPDATE payment_orders SET status='paid',payment_id='setup-owner-capture' WHERE order_id='setup-owner-annual'`);
+  assert.ok((await one(`SELECT order_id FROM commission_referrals WHERE email='setup-owner@example.in'`)).order_id,'owner payment links automatically');
+  // Keep the later commission scenarios independent.
+  await db.exec(`DELETE FROM partner_business_drafts WHERE id='${draft}'; DELETE FROM commission_referrals WHERE email='setup-owner@example.in'; DELETE FROM payment_orders WHERE order_id='setup-owner-annual'; DELETE FROM businesses WHERE id='${biz.id}'; DELETE FROM auth.users WHERE id='${SETUP_OWNER}'; DELETE FROM commission_partners WHERE email='setup-partner@example.in'; DELETE FROM auth.users WHERE id='${PARTNER}';`);
 });
 
 // --- scenarios ---------------------------------------------------------------
@@ -352,7 +386,7 @@ check('website visit counts hold no personal data, skip private pages, and only 
   const view = (path, ref = '') => asAnon(() => q(`SELECT record_site_page_view($1, $2)`, [path, ref]));
   await view('/pricing', 'www.Google.com');
   await view('/pricing/', 'google.com');
-  await view('/pricing', 'www.reviyo.in'); // our own site counts as direct
+  await view('/pricing', 'revio.in'); // our own site counts as direct
   await view('/', '');
   // Never counted: customer review pages, the app, junk.
   for (const path of ['/r/pet-spa', '/dashboard', '/dashboard/billing', '/admin', '/onboarding', '/<script>', 'pricing']) {

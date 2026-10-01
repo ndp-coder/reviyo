@@ -29,7 +29,7 @@ export const legal = {
   country: 'India',
 
   /** General support mailbox. Monitored during the stated support hours. */
-  supportEmail: 'support@reviyo.in',
+  supportEmail: 'support@revio.in',
   /** Customer-care phone number in international format. */
   supportPhone: '+91 95811 68889',
   /** Stated support hours, shown to customers so response times are honest. */
@@ -42,12 +42,12 @@ export const legal = {
    * founder. The name and email must be real and monitored.
    */
   grievanceOfficerName: 'Naga Durga Prasad Chunduru',
-  grievanceEmail: 'support@reviyo.in',
+  grievanceEmail: 'support@revio.in',
   /** DPDPA s.13(2): grievances must be answered within a stated period. */
   grievanceResponseTarget: '30 days',
 
   /** Privacy / data-protection enquiries. May be the same as grievanceEmail. */
-  privacyEmail: 'support@reviyo.in',
+  privacyEmail: 'support@revio.in',
 
   /** GSTIN if registered, otherwise set to null and the UI omits it. */
   gstin: null as string | null,
@@ -55,7 +55,7 @@ export const legal = {
   cin: null as string | null,
 
   /** Public website origin, used in policy text and canonical links. */
-  siteUrl: 'https://www.reviyo.in',
+  siteUrl: 'https://revio.in',
 
   /** Governing law and exclusive jurisdiction for disputes. */
   governingLaw: 'India',
@@ -73,7 +73,7 @@ export const legal = {
   // 26 Sep .2: no star rating is collected; the review page asks what the
   // customer liked, and the notice sits on that one screen.
   // 29 Sep .1: Hostinger added as the email processor (sign-in codes,
-  // receipts, and billing reminders sent from support@reviyo.in).
+  // receipts, and billing reminders sent from support@revio.in).
   consentVersion: '2026-09-30.1',
   /** Recorded on each AutoPay mandate, with the wording shown at the checkbox. */
   autopayTermsVersion: '2026-09-25.1',

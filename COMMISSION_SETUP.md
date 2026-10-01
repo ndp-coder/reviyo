@@ -8,6 +8,14 @@ database policies and server checks enforce the developer invitation.
 
 ## Rules
 
+Partners can prepare a business from their private dashboard: owner email,
+business name, category, Google review link, logo and topics. Saving registers
+the referral automatically. Resends reuse the saved setup. The owner follows
+the invitation to `/onboarding`, reviews or edits the details, explicitly
+accepts the terms/privacy notice and creates their own business before payment.
+Partners never receive owner login links or access to the owner's dashboard.
+Completed setups cannot be changed by partners.
+
 - Register the owner's signup email before their first payment. Emails are
   trimmed and matched without case. One owner can belong to only one partner;
   self referrals and already-paid owners are refused.
@@ -34,6 +42,7 @@ database policies and server checks enforce the developer invitation.
 
 1. Apply `supabase/migrations/20261001120000_private_commissions.sql` to project
    `yagchgwgbttxfihlyddm`. Review the remote migration history before `db push`.
+   Also apply `20261001160000_partner_business_setup.sql` for partner onboarding.
 2. Deploy `commission-access` and `commission-scheduler` using their checked-in
    `supabase/config.toml` settings. The scheduler authenticates its shared secret;
    the access endpoint validates the signed-in user and developer role itself.
@@ -47,7 +56,10 @@ database policies and server checks enforce the developer invitation.
      subscription payments/refunds/disputes; they are separate from X credentials.
    - `SMTP_PASSWORD` and, if needed, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
      `EMAIL_FROM`: the existing Hostinger invitation-email configuration.
-4. Add `https://www.reviyo.in/partners` to Supabase Auth's redirect allowlist.
+4. Add `https://revio.in/partners` and `https://revio.in/onboarding` to Supabase Auth's redirect allowlist.
+   Set the Auth Site URL to `https://revio.in` and its SMTP sender/user to
+   `support@revio.in`. Saved Auth email templates live under `supabase/templates`;
+   copy their updated links into the dashboard templates if configured there.
    Developer invitations are emailed as an expiring Supabase sign-in link.
    Returning partners can request the existing sign-in code from `/partners`.
 5. Configure RazorpayX API access, its required IP allowlist and funding. Ensure

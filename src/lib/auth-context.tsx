@@ -15,7 +15,7 @@ interface AuthContextValue {
     termsConsentVersion: string
   ) => Promise<{ error: string | null; needsConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  /** Emails a one-time sign-in code (from support@reviyo.in) to an existing account. */
+  /** Emails a one-time sign-in code (from support@revio.in) to an existing account. */
   sendSignInCode: (email: string) => Promise<{ error: string | null }>;
   /** Signs in with the code from that email. */
   verifySignInCode: (email: string, code: string) => Promise<{ error: string | null }>;

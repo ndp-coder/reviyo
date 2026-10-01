@@ -7,6 +7,7 @@ import { Alert, Button, Card, Input, PageHeader, Spinner } from '@/components/ui
 import { BrandLogo } from '@/components/BrandLogo';
 import { ConsentCheckbox } from '@/components/ConsentCheckbox';
 import { formatRupees, PLANS } from '@/config/plans';
+import { PartnerBusinessSetup } from '@/pages/partners/PartnerBusinessSetup';
 
 type Partner = { id: string; name: string; email: string; active: boolean; invitation_sent_at: string | null; bank_last4: string | null; fund_account_id: string | null };
 type Referral = { id: string; partner_id: string; email: string; paid_at: string | null; capture_verified_at: string | null; qualified_at: string | null; created_at: string };
@@ -146,6 +147,7 @@ export function CommissionDashboard({ developer = false }: { developer?: boolean
               <Button type="submit" loading={busy} className="shrink-0">{developer ? 'Send invitation' : 'Register referral'}</Button>
             </form>
           </Card>
+          {!developer && <PartnerBusinessSetup />}
           {!developer && <Card className="mt-6 p-5">
             <h2 className="font-semibold">Payout bank account</h2>
             {myPartner?.fund_account_id ? <p className="mt-3 text-sm text-gray-600">Bank account ending {myPartner.bank_last4} is registered for automatic transfers. Contact the developer if it needs changing.</p> : <form className="mt-4 grid gap-4 sm:grid-cols-2" onSubmit={(event) => {

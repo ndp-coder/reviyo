@@ -20,11 +20,11 @@ CLI.
 - [ ] Replace `TODO_REGISTERED_ADDRESS` in `src/config/legal.ts` with the real
   registered or principal business address, including street/locality, city,
   state, and PIN code. The supplied Vijayawada / 520001 is incomplete.
-- [ ] Send a test email to and from `support@reviyo.in`. It is the support,
+- [ ] Send a test email to and from `support@revio.in`. It is the support,
   privacy, and grievance address in `src/config/legal.ts`. Confirm the domain
   has MX records for the mailbox, plus SPF, DKIM, and DMARC, so replies are
   not marked as spam. (An earlier check on 29 September looked at `revio.in`,
-  without the "y"; `reviyo.in` has not been checked from here.)
+  without the "y"; `revio.in` has not been checked from here.)
 - [ ] Sign the Supabase CLI into an account with Developer or Owner access to
   `yagchgwgbttxfihlyddm`, or grant that access to the current account. Link
   the repository and set the production host's `VITE_SUPABASE_URL` and
@@ -52,7 +52,7 @@ CLI.
   and upload it with `supabase secrets set --env-file supabase/functions/.env`.
   The last successful audit of this project did not find `APP_ORIGINS`,
   `RAZORPAY_WEBHOOK_SECRET`, or `AUTOPAY_CRON_SECRET`; recheck the secret names
-  once access is restored. `www.reviyo.in` and `reviyo.in` are built-in allowed
+  once access is restored. `revio.in` and `revio.in` are built-in allowed
   origins; set `APP_ORIGINS` only for other domains (staging, previews).
 - [ ] Redeploy all Edge Functions after the migrations and secrets are in
   place. Use the complete list in `README.md`.
@@ -71,8 +71,8 @@ CLI.
 - [ ] Configure the production host: HTTPS redirect, SPA fallback to
   `app.html` for non-public routes, serve the prerendered public HTML files,
   set CSP and security headers, environment variables, and a rollback to the
-  previous immutable frontend build. Point `www.reviyo.in` at the production host,
-  301-redirect `reviyo.in` to it, and finish TLS setup before launch.
+  previous immutable frontend build. Point `revio.in` at the production host,
+  301-redirect `www.revio.in` to it, and finish TLS setup before launch.
 - [ ] Configure monitored frontend error reporting and Supabase/Cron/Razorpay
   alerts. Never send review text, tokens, secrets, or full payment payloads to
   the monitoring provider.

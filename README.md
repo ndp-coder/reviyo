@@ -146,7 +146,7 @@ owner-supplied URLs to safe schemes.
    ANTHROPIC_API_KEY=
    ```
 
-   `https://www.reviyo.in`, `https://reviyo.in`, and the local Vite origins are
+   `https://revio.in`, `https://revio.in`, and the local Vite origins are
    allowed automatically (`supabase/functions/_shared/cors.ts`). Set
    `APP_ORIGINS` only for other trusted origins, comma-separated (for example,
    a staging site). Add all server-side values to an ignored
@@ -225,8 +225,8 @@ Hosting requirements:
   and every other unknown path to `404.html` with a 404 status. Both files
   above already do this; when you add an app route, add it to both
   (`tests/seo.test.mjs` checks).
-- Serve the site only on `https://www.reviyo.in`, and 301-redirect
-  `reviyo.in` and `http://` to it, so search engines see one canonical host. Add the
+- Serve the site only on `https://revio.in`, and 301-redirect
+  `revio.in` and `http://` to it, so search engines see one canonical host. Add the
 same two public `VITE_` variables to that host. Database migrations and Edge
 Functions are deployed separately with the Supabase CLI commands above.
 
@@ -242,26 +242,26 @@ Functions are deployed separately with the Supabase CLI commands above.
    (`https://yagchgwgbttxfihlyddm.supabase.co`) and
    `VITE_SUPABASE_PUBLISHABLE_KEY`. The build stops while any `TODO_` value
    remains in `src/config/legal.ts`.
-3. **Domain management > Add a domain**: `www.reviyo.in` as the primary
-   domain, plus `reviyo.in` (Netlify redirects it to `www`).
-4. Hostinger > **Domains > reviyo.in > DNS / Nameservers**: change the `A`
+3. **Domain management > Add a domain**: `revio.in` as the primary
+   domain, plus `revio.in` (Netlify redirects it to `www`).
+4. Hostinger > **Domains > revio.in > DNS / Nameservers**: change the `A`
    record for `@` to `75.2.60.5` and set a `CNAME` for `www` pointing to
    `<your-site>.netlify.app`. Leave the `MX`, `TXT` (SPF, DKIM, DMARC), and
-   other mail records alone, or support@reviyo.in stops receiving email.
+   other mail records alone, or support@revio.in stops receiving email.
 5. Back in Netlify, **HTTPS > Verify DNS configuration**, then wait for the
    free Let's Encrypt certificate.
-6. Supabase: redeploy the Edge Functions (both `www.reviyo.in` and
-   `reviyo.in` are built-in allowed origins, so `APP_ORIGINS` is optional).
+6. Supabase: redeploy the Edge Functions (both `revio.in` and
+   `revio.in` are built-in allowed origins, so `APP_ORIGINS` is optional).
    Under **Authentication > URL Configuration** set the Site URL to
-   `https://www.reviyo.in` and add `https://www.reviyo.in/**` and
-   `https://reviyo.in/**` as redirect URLs.
+   `https://revio.in` and add `https://revio.in/**` and
+   `https://revio.in/**` as redirect URLs.
 7. After a live Razorpay test payment works, rename
    `Content-Security-Policy-Report-Only` to `Content-Security-Policy` in
    `netlify.toml` to enforce it.
 
-## Email from support@reviyo.in
+## Email from support@revio.in
 
-Every email an owner gets comes from `support@reviyo.in` (the Hostinger
+Every email an owner gets comes from `support@revio.in` (the Hostinger
 mailbox), and replies land in that inbox. Customers who scan a QR code are
 never emailed. Two parts send email, and each is set up once:
 
@@ -272,11 +272,11 @@ custom SMTP:
 
 | Field | Value |
 |-------|-------|
-| Sender email | `support@reviyo.in` |
+| Sender email | `support@revio.in` |
 | Sender name | `Reviyo` |
 | Host | `smtp.hostinger.com` |
 | Port | `465` |
-| Username | `support@reviyo.in` |
+| Username | `support@revio.in` |
 | Password | the mailbox password |
 
 Then **Authentication > Emails > Templates**: paste
@@ -306,7 +306,7 @@ reminders, so it must be scheduled (see Deploy). Set the secrets from
 `verify-razorpay-payment`, `razorpay-webhook`, and `autopay-scheduler`. With
 no `SMTP_PASSWORD`, nothing is sent and payments work as before.
 
-Add Hostinger's SPF and DKIM records (and a DMARC record) for `reviyo.in`
+Add Hostinger's SPF and DKIM records (and a DMARC record) for `revio.in`
 first, or these emails will land in spam.
 
 ## Integrations

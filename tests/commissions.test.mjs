@@ -78,7 +78,7 @@ function accessHandler(user,role='user',partner=null) {
   const context={Deno:{serve:fn=>{handler=fn},env:{get:()=>undefined}},createAdminClient:async()=>admin,
     getCorsHeaders:()=>({}),isAllowedBrowserOrigin:()=>true,Response,Request,
     sendEmail:async()=>{throw new Error('Unexpected email')},razorpayX:async()=>{throw new Error('Unexpected payout provider')},
-    SENDER:{siteUrl:'https://www.reviyo.in'},JSON,String,Date};
+    SENDER:{siteUrl:'https://revio.in'},JSON,String,Date};
   vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,context);
   return body=>handler(new Request('https://test.invalid',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}));
 }
@@ -90,6 +90,8 @@ test('the access endpoint itself rejects unauthenticated and non-developer invit
   assert.equal((await accessHandler(user)({action:'access',id:'partner',active:true})).status,403);
   assert.equal((await accessHandler(user)({action:'bank',consent:true})).status,403);
   assert.equal((await accessHandler(user)({action:'bank',consent:false})).status,400);
+  assert.equal((await accessHandler(user)({action:'invite-owner',id:'someone-elses-draft'})).status,403);
+  assert.equal((await accessHandler(user,'user',{id:'partner'})({action:'invite-owner',id:'draft'})).status,503);
   const config=await accessHandler(user,'admin')({action:'setup'});
   assert.equal(config.status,200);
   assert.deepEqual(await config.json(),{emailReady:false,payoutsReady:false,enabled:false,schedulerReady:false});

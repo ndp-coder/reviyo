@@ -142,7 +142,9 @@ test('anonymous clients cannot select review session data directly', async () =>
 test('onboarding uses the transactional setup function', async () => {
   const onboarding = await read('src/pages/onboarding/OnboardingPage.tsx');
 
-  assert.match(onboarding, /\.rpc\('create_business_with_defaults'/);
+  assert.match(onboarding, /\.rpc\(partnerDraft \? 'claim_partner_business' : 'create_business_with_defaults'/);
+  const partnerSetup = await read('supabase/migrations/20261001160000_partner_business_setup.sql');
+  assert.match(partnerSetup, /v_result := create_business_with_defaults\(/);
   assert.doesNotMatch(onboarding, /\.from\('subscriptions'\)\.insert/);
 });
 
@@ -577,7 +579,7 @@ test('browser-facing functions allow the live site with and without www', async 
   assert.match(cors, /\.\.\.PRODUCTION_ORIGINS/);
 });
 
-test('owner emails come from support@reviyo.in, match the site config, and render without gaps', async (t) => {
+test('owner emails come from support@revio.in, match the site config, and render without gaps', async (t) => {
   const [templatesSrc, legalSrc, plansSrc, email, webhook, verify, scheduler] = await Promise.all([
     read('supabase/functions/_shared/email-templates.ts'), read('src/config/legal.ts'), read('src/config/plans.ts'),
     read('supabase/functions/_shared/email.ts'), read('supabase/functions/razorpay-webhook/index.ts'),

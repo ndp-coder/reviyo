@@ -57,6 +57,26 @@ Deno.serve(async (req: Request) => {
       if (sentError) throw sentError;
       return json({ ok: true });
     }
+    if (body.action === "invite-owner") {
+      const { data: partner } = await admin.from("commission_partners").select("id").eq("email", user.email!.toLowerCase()).eq("active", true).maybeSingle();
+      if (!partner) return json({ error: "Invitation required" }, 403);
+      if (!Deno.env.get("SMTP_PASSWORD")) return json({ error: "Invitation email is not configured. Your saved setup is safe; resend once email is configured." }, 503);
+      const { data: draft } = await admin.from("partner_business_drafts").select("id,referral_id,claimed_at,invitation_sent_at").eq("id", String(body.id ?? "")).maybeSingle();
+      if (!draft || draft.claimed_at) return json({ error: "Pending business setup not found" }, 404);
+      const { data: referral } = await admin.from("commission_referrals").select("email").eq("id", draft.referral_id).eq("partner_id", partner.id).maybeSingle();
+      if (!referral) return json({ error: "Pending business setup not found" }, 404);
+      if (draft.invitation_sent_at && Date.now() - Date.parse(draft.invitation_sent_at) < 60000) return json({ error: "Wait a minute before resending" }, 429);
+      const options = { redirectTo: `${SENDER.siteUrl}/onboarding` };
+      let link = await admin.auth.admin.generateLink({ type: "invite", email: referral.email, options });
+      if (link.error?.code === "email_exists" || link.error?.code === "user_already_exists") link = await admin.auth.admin.generateLink({ type: "magiclink", email: referral.email, options });
+      if (link.error || !link.data.properties?.action_link) throw new Error("Could not create invitation");
+      const url = link.data.properties.action_link;
+      const escaped = url.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+      await sendEmail(referral.email, { subject: "Review your Reviyo business setup", text: `A Reviyo partner has prepared your business setup. Review and edit the details, accept the terms, then choose your plan: ${url}`, html: `<p>A Reviyo partner has prepared your business setup.</p><p><a href="${escaped}">Review your business details</a></p><p>You can edit the details before accepting the terms and choosing your plan.</p>` });
+      const { error } = await admin.from("partner_business_drafts").update({ invitation_sent_at: new Date().toISOString() }).eq("id", draft.id);
+      if (error) throw error;
+      return json({ ok: true });
+    }
     if (body.action === "bank") {
       if (body.consent !== true) return json({ error: "Authorise RazorpayX to receive your bank details first" }, 400);
       const { data: partner } = await admin.from("commission_partners").select("id,name,email,fund_account_id,contact_id")

@@ -23,6 +23,7 @@ import { PayOncePlans, type PaymentFeedback } from '@/components/PayOncePlans';
 import { paymentGate } from '@/lib/payment-gate';
 import { hasSubscriptionAccess } from '@/lib/subscription';
 import { legal } from '@/config/legal';
+import { ConsentCheckbox } from '@/components/ConsentCheckbox';
 import { Star, Store, Link2, Image, QrCode, ArrowRight, ArrowLeft, ArrowUp, ArrowDown, Check, Copy, Plus, X, Upload, Gift, Download } from 'lucide-react';
 import QRCode from 'qrcode';
 import type { Business, Subscription } from '@/lib/types';
@@ -63,6 +64,8 @@ export function OnboardingPage() {
   // on to the dashboard. Hold the page until that is known, so they don't see
   // the first setup question flash past.
   const [checkingExisting, setCheckingExisting] = useState(true);
+  const [partnerDraft, setPartnerDraft] = useState<string | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [checkFailed, setCheckFailed] = useState(false);
   const [step, setStep] = useState<number>(STEP.business);
   const [saving, setSaving] = useState(false);
@@ -134,6 +137,20 @@ export function OnboardingPage() {
         setExistingSubscription((subscriptionRes.data as Subscription | null) ?? null);
         setStep(STEP.trial);
       }
+      if (!data) {
+        const { data: draft, error: draftError } = await supabase.rpc('my_partner_business_draft');
+        if (cancelled) return;
+        if (draftError) { setCheckFailed(true); setCheckingExisting(false); return; }
+        if (draft) {
+          setPartnerDraft(draft.id);
+          setBusinessName(draft.name);
+          setCategory(OTHER_CATEGORY);
+          setCustomCategory(draft.category);
+          setGoogleReviewUrl(draft.google_review_url ?? '');
+          setLogoUrl(draft.logo_url ?? '');
+          setTopics(draft.topics);
+        }
+      }
       setCheckingExisting(false);
     }
     checkExistingBusiness();
@@ -190,10 +207,12 @@ export function OnboardingPage() {
 
   const handleCreateBusiness = useCallback(async (): Promise<boolean> => {
     if (!user) return false;
+    if (partnerDraft && !acceptedTerms) { setError('Accept the terms and privacy notice to create your business.'); return false; }
     setSaving(true);
     setError(null);
 
-    const { data: bizData, error: bizError } = await supabase.rpc('create_business_with_defaults', {
+    const { data: bizData, error: bizError } = await supabase.rpc(partnerDraft ? 'claim_partner_business' : 'create_business_with_defaults', {
+      ...(partnerDraft ? { p_draft: partnerDraft, p_consent_version: legal.consentVersion } : {}),
       p_name: businessName.trim(),
       p_slug: slugify(businessName),
       p_category: effectiveCategory,
@@ -218,7 +237,7 @@ export function OnboardingPage() {
     setBusiness(bizData as Business);
     setSaving(false);
     return true;
-  }, [user, businessName, effectiveCategory, googleReviewUrl, logoUrl, topics]);
+  }, [user, businessName, effectiveCategory, googleReviewUrl, logoUrl, topics, partnerDraft, acceptedTerms]);
 
   const nextStep = async () => {
     if (step === STEP.google) {
@@ -605,6 +624,10 @@ export function OnboardingPage() {
                   remaining={MAX_TOPICS - topics.length}
                 />
               </div>
+              {partnerDraft && <div className="mt-5 space-y-3">
+                <p className="text-sm text-gray-600">Your partner prepared these details. Check them before creating your business. We store your email to run your account and your business details to build your review page.</p>
+                <ConsentCheckbox checked={acceptedTerms} onChange={setAcceptedTerms}>I agree to the <Link to="/terms" target="_blank" className="underline">Terms and conditions</Link> and <Link to="/privacy" target="_blank" className="underline">Privacy notice</Link>.</ConsentCheckbox>
+              </div>}
             </Card>
           )}
 
