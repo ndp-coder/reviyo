@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, QrCode, MessageCircle, Sparkles, Inbox, ChartNoAxesColumnIncreasing, SlidersHorizontal, ShieldCheck, Users, PencilLine, ScanLine, Store, Coffee, Scissors, Utensils, Stethoscope, Dumbbell } from 'lucide-react';
+import { Card } from '@/components/ui';
+import '@/pages/landing-page.css';
 import { MarketingHeader } from '@/components/MarketingHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SkipLink } from '@/components/SkipLink';
@@ -71,207 +73,111 @@ const rules = [
   },
 ];
 
+const featureIcons = [QrCode, MessageCircle, Sparkles, Inbox, ChartNoAxesColumnIncreasing, SlidersHorizontal];
+const stepIcons = [ScanLine, PencilLine, Check];
+const ruleIcons = [Users, ShieldCheck, PencilLine];
+const industryIcons = [Stethoscope, Scissors, Utensils, Coffee, Dumbbell];
+
 const capitalise = (text: string) => text.replace(/^\w/, (c) => c.toUpperCase());
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="landing-page min-h-screen bg-white">
       <SkipLink />
-      <MarketingHeader
-        links={[
-          { href: '#how-it-works', label: 'How it works' },
-          { href: '#features', label: 'Features' },
-          { to: '/for', label: 'Industries' },
-          { href: '#pricing', label: 'Pricing' },
-          { href: '#faq', label: 'FAQ' },
-        ]}
-      />
-
+      <MarketingHeader links={[
+        { href: '#how-it-works', label: 'How it works' },
+        { href: '#features', label: 'Features' },
+        { to: '/for', label: 'Industries' },
+        { href: '#pricing', label: 'Pricing' },
+        { href: '#faq', label: 'FAQ' },
+      ]} />
       <main id="main-content" tabIndex={-1}>
-        {/* Hero */}
-        <section className="px-5 pb-16 pt-10 sm:px-6 sm:pt-14 lg:pb-24 lg:pt-20">
-          <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.2fr_1fr] lg:gap-12">
-            <div>
-              <p className="text-sm font-semibold text-accent-700">Google reviews for local businesses in India</p>
-              <h1 className="mt-4 text-[2.1rem] font-bold leading-[1.12] text-balance text-gray-900 sm:text-5xl lg:text-[3.25rem]">
-                Your customers would review you on Google.{' '}
-                <span className="text-gray-500">They just don’t know what to write.</span>
-              </h1>
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-gray-700">
-                Reviyo puts a QR code on your counter. Customers scan it, tap what they liked, and get a
-                draft in their own words to edit and post on Google themselves.
-              </p>
-              <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
-                <Link to="/signup" className={`${buttonClasses({ size: 'lg' })} w-full sm:w-auto`}>
-                  Start {legal.trialDays}-day free trial
-                </Link>
-                <Link
-                  to={TOOL_PATH}
-                  className="text-center text-sm font-semibold text-brand-800 underline decoration-brand-200 decoration-2 underline-offset-4 hover:decoration-brand-700"
-                >
-                  Or get your free review link first
-                </Link>
+        <section className="landing-hero">
+          <div className="landing-container landing-hero-grid">
+            <div className="landing-hero-copy">
+              <p className="landing-context"><Store size={16} aria-hidden="true" /> Made for local businesses in India</p>
+              <h1>A simple scan.<br />A review in their<br className="hidden xl:block" /> own words.</h1>
+              <p className="landing-hero-description">Make it easier for customers to share their experience on Google. One QR code, a little help with the words, and a review they edit and post themselves.</p>
+              <div className="landing-hero-actions">
+                <Link to="/signup" className={`${buttonClasses({ size: 'lg' })} landing-primary`}>Start {legal.trialDays}-day free trial <ArrowRight size={18} aria-hidden="true" /></Link>
+                <a href="#how-it-works" className={`${buttonClasses({ variant: 'outline', size: 'lg' })}`}>See how it works</a>
               </div>
-              <p className="mt-5 text-sm text-gray-600">
-                ₹1 AutoPay check, refunded straight away. Cancel any time before the trial ends and pay nothing.
-              </p>
+              <p className="landing-trial-note">₹1 AutoPay check, refunded. Cancel before the trial ends and pay nothing.</p>
+              <div className="landing-hero-promises"><span><Check size={15} aria-hidden="true" /> No customer app</span><span><Check size={15} aria-hidden="true" /> Their words, their choice</span></div>
             </div>
-            <ProductPreview />
+            <div className="landing-demo-wrap"><ProductPreview /></div>
+          </div>
+          <div className="landing-container landing-tool-strip">
+            <div><QrCode size={22} aria-hidden="true" /><p><strong>Just need a Google review link?</strong><span>Create your link and a printable QR code for free.</span></p></div>
+            <Link to={TOOL_PATH}>Try the free tool <ArrowRight size={17} aria-hidden="true" /></Link>
           </div>
         </section>
 
-        {/* How it works */}
-        <section id="how-it-works" className="scroll-mt-20 border-t border-gray-200 px-5 py-16 sm:px-6 lg:py-24">
-          <div className="mx-auto max-w-6xl">
-            <div className="max-w-2xl">
-              <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">How it works</h2>
-              <p className="mt-3 text-lg text-gray-700">From scan to posted review in about a minute.</p>
-            </div>
-            <ol className="mt-12 grid gap-10 md:grid-cols-3 md:gap-8">
-              {steps.map((step, index) => (
-                <li key={step.title} className="border-t-2 border-brand-900 pt-5">
-                  <p className="text-sm font-semibold text-accent-700">
-                    {index + 1}. {step.where}
-                  </p>
-                  <h3 className="mt-2 text-xl font-semibold text-gray-900">{step.title}</h3>
-                  <p className="mt-2 leading-relaxed text-gray-700">{step.text}</p>
-                </li>
-              ))}
-            </ol>
+        <section id="how-it-works" className="landing-section">
+          <div className="landing-container">
+            <div className="landing-section-heading"><div><h2>A small moment at your counter.<br />A simpler way to share it.</h2><p>From scanning your code to sharing a review. The customer stays in control at every step.</p></div><span className="landing-process-tag"><ScanLine size={18} aria-hidden="true" /> How it works</span></div>
+            <ol className="landing-steps">{steps.map((step, index) => {
+              const Icon = stepIcons[index];
+              return <li key={step.title}><div className="landing-step-top"><span className="landing-step-icon"><Icon size={25} aria-hidden="true" /></span><span className="landing-step-number">Step {index + 1}</span></div><p className="landing-step-location">{step.where}</p><h3>{step.title}</h3><p>{step.text}</p></li>;
+            })}</ol>
           </div>
         </section>
 
-        {/* Features */}
-        <section id="features" className="scroll-mt-20 bg-paper px-5 py-16 sm:px-6 lg:py-24">
-          <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1fr_2fr] lg:gap-16">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">What you get</h2>
-              <p className="mt-3 text-lg text-gray-700">
-                Everything is in every plan. There are no add-ons and no per-review charges.
-              </p>
-            </div>
-            <dl className="grid gap-x-10 sm:grid-cols-2">
-              {features.map((feature) => (
-                <div key={feature.title} className="border-t border-gray-300 py-6">
-                  <dt className="font-semibold text-gray-900">{feature.title}</dt>
-                  <dd className="mt-2 text-sm leading-relaxed text-gray-700">{feature.text}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </section>
-
-        {/* The rules */}
-        <section className="bg-brand-950 px-5 py-16 text-white sm:px-6 lg:py-24">
-          <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1fr_2fr] lg:gap-16">
-            <div>
-              <h2 className="text-3xl font-bold sm:text-4xl">Three rules we don’t bend</h2>
-              <p className="mt-3 text-lg text-brand-100">
-                Google removes reviews, and can restrict a Business Profile, when these are broken. Reviyo is built
-                around them.
-              </p>
-            </div>
-            <ol className="grid gap-8 sm:grid-cols-3 sm:gap-6">
-              {rules.map((rule, index) => (
-                <li key={rule.title}>
-                  <p className="text-4xl font-bold text-accent-400" aria-hidden="true">
-                    {index + 1}
-                  </p>
-                  <h3 className="mt-3 font-semibold">{rule.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-brand-100">{rule.text}</p>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-
-        {/* Who it's for */}
-        <section className="px-5 py-16 sm:px-6 lg:py-24">
-          <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1fr_2fr] lg:gap-16">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">Who it’s for</h2>
-              <p className="mt-3 text-lg text-gray-700">
-                Small, single-location businesses where customers stand at a counter or sit and wait for a moment.
-              </p>
-              <p className="mt-6 text-sm text-gray-700">
-                Just need your review link?{' '}
-                <Link to={TOOL_PATH} className="font-semibold text-brand-800 underline underline-offset-2">
-                  Generate it and a QR code for free
-                </Link>
-                .
-              </p>
-            </div>
-            <ul className="grid content-start border-t border-gray-200 sm:grid-cols-2 sm:gap-x-10">
-              {industries.map((industry) => (
-                <li key={industry.slug} className="border-b border-gray-200">
-                  <Link
-                    to={`/for/${industry.slug}`}
-                    className="group flex items-center justify-between gap-3 py-3.5 font-medium text-gray-900 hover:text-brand-700"
-                  >
-                    {capitalise(industry.plural)}
-                    <ArrowRight
-                      className="h-4 w-4 flex-shrink-0 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-700"
-                      aria-hidden="true"
-                    />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        {/* Pricing */}
-        <section id="pricing" className="scroll-mt-20 border-t border-gray-200 bg-paper px-5 py-16 sm:px-6 lg:py-24">
-          <div className="mx-auto max-w-4xl">
-            <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">Pricing</h2>
-            <p className="mt-3 text-lg text-gray-700">One business, one location. Every feature on both plans, taxes included.</p>
-            <div className="mt-10">
-              <PlanCards />
+        <section id="features" className="landing-section landing-features-section">
+          <div className="landing-container">
+            <div className="landing-section-heading"><div><h2>Ready for your everyday business.</h2><p>From the first scan to the follow-up. Everything is included in every plan.</p></div></div>
+            <div className="landing-feature-layout">
+              <Card className="landing-feature-lead">
+                <span className="landing-feature-icon"><QrCode size={27} aria-hidden="true" /></span>
+                <h3>One link. Wherever your customers are.</h3>
+                <p>Put your QR code on the counter, on a table, or with a bill. Share the same review page after a visit on WhatsApp.</p>
+                <div className="landing-placement" aria-hidden="true"><div><Store size={28} /><span>At the counter</span></div><div><QrCode size={28} /><span>On the bill</span></div><div><MessageCircle size={28} /><span>After the visit</span></div></div>
+                <Link to={TOOL_PATH} className="landing-text-link">Make your first QR code <ArrowRight size={17} aria-hidden="true" /></Link>
+              </Card>
+              <dl className="landing-feature-list">{features.map((feature, index) => {
+                const Icon = featureIcons[index];
+                return <div key={feature.title}><span className="landing-feature-icon"><Icon size={21} aria-hidden="true" /></span><div><dt>{feature.title}</dt><dd>{feature.text}</dd></div></div>;
+              })}</dl>
             </div>
           </div>
         </section>
 
-        {/* FAQ */}
-        <section id="faq" className="scroll-mt-20 px-5 py-16 sm:px-6 lg:py-24">
-          <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1fr_2fr] lg:gap-16">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">Questions owners ask</h2>
-              <p className="mt-3 text-gray-700">
-                Something else?{' '}
-                <Link to="/contact" className="font-semibold text-brand-800 underline underline-offset-2">
-                  Get in touch
-                </Link>
-                .
-              </p>
-            </div>
-            <ul className="list-none divide-y divide-gray-200 border-y border-gray-200 p-0">
-              {landingFaqs.map((item) => (
-                <li key={item.q} className="py-6">
-                  <h3 className="font-semibold text-gray-900">{item.q}</h3>
-                  <p className="mt-2 leading-relaxed text-gray-700">{item.a}</p>
-                </li>
-              ))}
-            </ul>
+        <section className="landing-section landing-trust-section">
+          <div className="landing-container">
+            <div className="landing-trust-heading"><ShieldCheck size={30} aria-hidden="true" /><h2>Real experiences.<br />Always the customer’s voice.</h2><p>Three rules built into Reviyo. No shortcuts that put your Google Business Profile at risk.</p></div>
+            <ul className="landing-rules">{rules.map((rule, index) => { const Icon = ruleIcons[index]; return <li key={rule.title}><Icon size={24} aria-hidden="true" /><h3>{rule.title}</h3><p>{rule.text}</p></li>; })}</ul>
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="bg-brand-900 px-5 py-14 sm:px-6 lg:py-16">
-          <div className="mx-auto flex max-w-6xl flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h2 className="text-3xl font-bold text-white sm:text-4xl">Try it at your counter for {legal.trialDays} days.</h2>
-              <p className="mt-2 text-brand-100">₹1 AutoPay check, refunded. Cancel any time before the trial ends.</p>
-            </div>
-            <Link
-              to="/signup"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-white px-6 text-base font-semibold text-brand-900 transition-colors hover:bg-brand-50"
-            >
-              Start your free trial
-            </Link>
+        <section className="landing-section">
+          <div className="landing-container landing-industry-layout">
+            <div><h2>For the places<br />people come back to.</h2><p className="landing-section-description">Cafés, clinics, salons, shops. Built for small, single-location businesses and the customers who walk through their doors.</p><Link to="/for" className="landing-text-link">Explore your industry <ArrowRight size={17} aria-hidden="true" /></Link></div>
+            <ul className="landing-industries">{industries.map((industry, index) => { const Icon = industryIcons[index] ?? Store; return <li key={industry.slug}><Link to={`/for/${industry.slug}`}><Icon size={20} aria-hidden="true" /><span>{capitalise(industry.plural)}</span><ArrowRight size={16} aria-hidden="true" /></Link></li>; })}</ul>
+          </div>
+        </section>
+
+        <section id="pricing" className="landing-section landing-pricing-section">
+          <div className="landing-container">
+            <div className="landing-pricing-heading"><h2>Simple plans. Everything included.</h2><p>One business, one location. Every feature on both plans, taxes included.<br />No add-ons. No per-review charges.</p></div>
+            <div className="landing-plans"><PlanCards /></div>
+            <p className="landing-pricing-note">Start with a {legal.trialDays}-day trial. ₹1 AutoPay check, refunded straight away. Cancel before the trial ends to avoid the plan charge.</p>
+          </div>
+        </section>
+
+        <section id="faq" className="landing-section">
+          <div className="landing-container landing-faq-layout">
+            <div><h2>A few things<br />you might be wondering.</h2><p className="landing-section-description">Straight answers before you get started.</p><Link to="/contact" className="landing-text-link">Talk to us <ArrowRight size={17} aria-hidden="true" /></Link></div>
+            <div className="landing-faqs">{landingFaqs.map((item, index) => <details key={item.q} open={index === 0}><summary>{item.q}<ChevronDown size={19} aria-hidden="true" /></summary><p>{item.a}</p></details>)}</div>
+          </div>
+        </section>
+
+        <section className="landing-final-section">
+          <div className="landing-container landing-final-panel">
+            <div><span className="landing-final-icon"><ScanLine size={32} aria-hidden="true" /></span><h2>Your next review<br />starts with a simple scan.</h2><p>Try Reviyo at your counter for {legal.trialDays} days.</p><p className="landing-final-note">₹1 AutoPay check, refunded. Cancel any time before the trial ends.</p></div>
+            <div className="landing-final-actions"><Link to="/signup" className={`${buttonClasses({ size: 'lg' })} landing-light-button`}>Start your free trial <ArrowRight size={18} aria-hidden="true" /></Link><Link to={TOOL_PATH}>Or create a free review link</Link></div>
           </div>
         </section>
       </main>
-
       <SiteFooter />
     </div>
   );

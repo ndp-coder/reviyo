@@ -70,7 +70,7 @@ export function MarketingHeader({ links = DEFAULT_MARKETING_LINKS }: { links?: M
           <BrandLogo className="h-10 w-auto sm:h-11" />
         </Link>
 
-        <div className="hidden items-center gap-6 md:flex">
+        <div className="marketing-desktop hidden items-center gap-6 md:flex">
           {links.map((link) => renderLink(link, desktopLink))}
           {signedIn ? (
             <Link
@@ -94,7 +94,7 @@ export function MarketingHeader({ links = DEFAULT_MARKETING_LINKS }: { links?: M
           )}
         </div>
 
-        <div className="flex items-center gap-1 md:hidden">
+        <div className="marketing-mobile flex items-center gap-1 md:hidden">
           <Link
             to={signedIn ? '/dashboard' : '/signup'}
             className="inline-flex min-h-10 items-center whitespace-nowrap rounded-lg bg-brand-900 px-4 text-sm font-semibold text-white hover:bg-brand-800"
@@ -115,7 +115,7 @@ export function MarketingHeader({ links = DEFAULT_MARKETING_LINKS }: { links?: M
       </nav>
 
       {open && (
-        <div id="marketing-menu" className="border-t border-gray-200 bg-white px-4 pb-4 pt-2 md:hidden">
+        <div id="marketing-menu" className="marketing-mobile-menu border-t border-gray-200 bg-white px-4 pb-4 pt-2 md:hidden">
           <ul className="space-y-0.5">
             {links.map((link) => (
               <li key={link.label}>{renderLink(link, mobileLink)}</li>
