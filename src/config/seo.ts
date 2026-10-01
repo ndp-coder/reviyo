@@ -3,6 +3,7 @@ import { branding } from '@/config/branding';
 import { PLANS, PLAN_ORDER, formatRupees } from '@/config/plans';
 import { industries, type Industry } from '@/config/industries';
 import { landingFaqs, reviewLinkToolFaqs } from '@/config/faq';
+import { GUIDE_PATH, GUIDE_PUBLISHED, reviewGuides } from '@/config/review-guides';
 
 /**
  * Search and social metadata for every URL, in one place.
@@ -271,6 +272,32 @@ export function publicPages(): PageMeta[] {
       jsonLd: [breadcrumbs([{ name: 'Industries', path: '/for' }])],
     },
     ...industries.map(industryPage),
+    {
+      path: GUIDE_PATH,
+      title: 'Google Review Guides: AI Writing, QR Codes & Software | Reviyo',
+      description: 'Practical guides for local businesses: AI-assisted review writing, free QR codes, neutral review requests, and choosing Google review software in India.',
+      trail: [{ name: 'Guides', path: GUIDE_PATH }],
+      changefreq: 'monthly',
+      priority: 0.7,
+      jsonLd: [breadcrumbs([{ name: 'Guides', path: GUIDE_PATH }])],
+    },
+    ...reviewGuides.map((guide): PageMeta => {
+      const path = `${GUIDE_PATH}/${guide.slug}`;
+      const trail = [{ name: 'Guides', path: GUIDE_PATH }, { name: guide.title, path }];
+      return {
+        path, trail, title: `${guide.title} | Reviyo`, description: guide.description,
+        ogType: 'article', changefreq: 'monthly', priority: 0.8,
+        jsonLd: [breadcrumbs(trail), faqPage(guide.faqs), {
+          '@context': 'https://schema.org', '@type': 'Article',
+          headline: guide.title, description: guide.description,
+          mainEntityOfPage: `${SITE_URL}${path}`, url: `${SITE_URL}${path}`,
+          datePublished: GUIDE_PUBLISHED, inLanguage: 'en-IN',
+          image: DEFAULT_OG_IMAGE,
+          author: { '@type': 'Organization', name: SITE_NAME, url: `${SITE_URL}/` },
+          publisher: { '@id': `${SITE_URL}/#organization`, '@type': 'Organization', name: SITE_NAME, url: `${SITE_URL}/` },
+        }],
+      };
+    }),
     { ...legalPage('/contact', 'Contact Us', 'Contact Reviyo: support email, phone, business address, and our grievance officer.'),
       jsonLd: [localBusiness, breadcrumbs([{ name: 'Contact Us', path: '/contact' }])] },
     legalPage('/privacy', 'Privacy Policy', 'What personal data Reviyo collects, why, how long we keep it, and your rights under India’s DPDP Act, 2023.'),
@@ -378,6 +405,7 @@ export function renderLlmsTxt(): string {
     `- [${page.title.replace(/ \| Reviyo$/, '')}](${canonicalUrl(page)}): ${page.description}`;
   const product = pages.filter((p) => ['/', '/pricing', TOOL_PATH, '/for'].includes(p.path));
   const trades = pages.filter((p) => p.path.startsWith('/for/'));
+  const guides = pages.filter((p) => p.path.startsWith(GUIDE_PATH));
   const policies = pages.filter((p) => p.changefreq === 'yearly');
 
   return [
@@ -397,6 +425,10 @@ export function renderLlmsTxt(): string {
     '## Industries',
     '',
     ...trades.map(line),
+    '',
+    '## Review guides',
+    '',
+    ...guides.map(line),
     '',
     '## Policies',
     '',

@@ -60,7 +60,7 @@ test('hosting sends app routes to the noindex shell and every other unknown URL 
   // Every signed-in or customer route in the app must reach the app shell on
   // both hosts, or it would 404 on a refresh.
   // Derived from App.tsx, so a new app route cannot be added without hosting it.
-  const PUBLIC = new Set(['', 'pricing', 'for', 'privacy', 'terms', 'cookies', 'refunds', 'contact']);
+  const PUBLIC = new Set(['', 'pricing', 'for', 'guides', 'privacy', 'terms', 'cookies', 'refunds', 'contact']);
   const appRoutes = [...app.matchAll(/<Route path="\/([a-z-]*)/g)].map((m) => m[1]).filter((r) => !PUBLIC.has(r));
   assert.deepEqual(
     [...new Set(appRoutes)].sort(),

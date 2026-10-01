@@ -36,6 +36,7 @@ export function SiteFooter() {
           <nav aria-label="Product">
             <h2 className="text-sm font-semibold text-gray-900">Product</h2>
             <ul className="mt-4 space-y-2.5">
+              <li><Link to="/guides" className={linkClass}>Google review guides</Link></li>
               <li>
                 <Link to="/pricing" className={linkClass}>
                   Pricing

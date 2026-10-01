@@ -22,6 +22,7 @@ import { ContactPage } from '@/pages/legal/ContactPage';
 import { IndustriesPage } from '@/pages/marketing/IndustriesPage';
 import { IndustryPage } from '@/pages/marketing/IndustryPage';
 import { ReviewLinkGeneratorPage } from '@/pages/marketing/ReviewLinkGeneratorPage';
+import { ReviewGuidePage, ReviewGuidesPage } from '@/pages/marketing/ReviewGuidesPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage').then((module) => ({ default: module.LoginPage })));
@@ -84,6 +85,8 @@ function App() {
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/for" element={<IndustriesPage />} />
       <Route path="/for/:slug" element={<IndustryPage />} />
+      <Route path="/guides" element={<ReviewGuidesPage />} />
+      <Route path="/guides/:slug" element={<ReviewGuidePage />} />
       <Route path={TOOL_PATH} element={<ReviewLinkGeneratorPage />} />
 
       {/* Legal & policy routes. These must stay publicly reachable without auth:

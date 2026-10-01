@@ -163,6 +163,15 @@ export function LandingPage() {
         </section>
 
         <section className="landing-final-section">
+          <div className="landing-container mb-12 border-t border-gray-200 pt-8">
+            <h2>Start with a practical guide.</h2>
+            <p className="landing-section-description">Set up your review QR code, understand AI writing help, or compare tools for your business.</p>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-x-8">
+              <Link to="/guides/google-review-qr-code" className="landing-text-link">Create a Google review QR code</Link>
+              <Link to="/guides/ai-google-review-assistant" className="landing-text-link">How AI review writing works</Link>
+              <Link to="/guides" className="landing-text-link">All review guides</Link>
+            </div>
+          </div>
           <div className="landing-container landing-final-panel">
             <div><h2>Your next review<br />starts with a simple scan.</h2><p>Try Reviyo at your counter for {legal.trialDays} days.</p><p className="landing-final-note">₹1 AutoPay check, refunded. Cancel any time before the trial ends.</p></div>
             <div className="landing-final-actions"><Link to="/signup" className={`${buttonClasses({ size: 'lg' })} landing-light-button`}>Start your free trial </Link><Link to={TOOL_PATH}>Or create a free review link</Link></div>
