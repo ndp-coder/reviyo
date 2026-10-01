@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, ChevronDown, QrCode, MessageCircle, Sparkles, Inbox, ChartNoAxesColumnIncreasing, SlidersHorizontal, ShieldCheck, Users, PencilLine, ScanLine, Store, Coffee, Scissors, Utensils, Stethoscope, Dumbbell } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { Card } from '@/components/ui';
 import '@/pages/landing-page.css';
 import { MarketingHeader } from '@/components/MarketingHeader';
@@ -73,11 +73,6 @@ const rules = [
   },
 ];
 
-const featureIcons = [QrCode, MessageCircle, Sparkles, Inbox, ChartNoAxesColumnIncreasing, SlidersHorizontal];
-const stepIcons = [ScanLine, PencilLine, Check];
-const ruleIcons = [Users, ShieldCheck, PencilLine];
-const industryIcons = [Stethoscope, Scissors, Utensils, Coffee, Dumbbell];
-
 const capitalise = (text: string) => text.replace(/^\w/, (c) => c.toUpperCase());
 
 export function LandingPage() {
@@ -95,30 +90,29 @@ export function LandingPage() {
         <section className="landing-hero">
           <div className="landing-container landing-hero-grid">
             <div className="landing-hero-copy">
-              <p className="landing-context"><Store size={16} aria-hidden="true" /> Made for local businesses in India</p>
+              <p className="landing-context">Made for local businesses in India</p>
               <h1>A simple scan.<br />A review in their<br className="hidden xl:block" /> own words.</h1>
               <p className="landing-hero-description">Make it easier for customers to share their experience on Google. One QR code, a little help with the words, and a review they edit and post themselves.</p>
               <div className="landing-hero-actions">
-                <Link to="/signup" className={`${buttonClasses({ size: 'lg' })} landing-primary`}>Start {legal.trialDays}-day free trial <ArrowRight size={18} aria-hidden="true" /></Link>
+                <Link to="/signup" className={`${buttonClasses({ size: 'lg' })} landing-primary`}>Start {legal.trialDays}-day free trial </Link>
                 <a href="#how-it-works" className={`${buttonClasses({ variant: 'outline', size: 'lg' })}`}>See how it works</a>
               </div>
               <p className="landing-trial-note">₹1 AutoPay check, refunded. Cancel before the trial ends and pay nothing.</p>
-              <div className="landing-hero-promises"><span><Check size={15} aria-hidden="true" /> No customer app</span><span><Check size={15} aria-hidden="true" /> Their words, their choice</span></div>
+              <p className="landing-hero-promises">No customer app. Their words, their choice.</p>
             </div>
             <div className="landing-demo-wrap"><ProductPreview /></div>
           </div>
           <div className="landing-container landing-tool-strip">
-            <div><QrCode size={22} aria-hidden="true" /><p><strong>Just need a Google review link?</strong><span>Create your link and a printable QR code for free.</span></p></div>
-            <Link to={TOOL_PATH}>Try the free tool <ArrowRight size={17} aria-hidden="true" /></Link>
+            <div><p><strong>Just need a Google review link?</strong><span>Create your link and a printable QR code for free.</span></p></div>
+            <Link to={TOOL_PATH}>Try the free tool </Link>
           </div>
         </section>
 
         <section id="how-it-works" className="landing-section">
           <div className="landing-container">
-            <div className="landing-section-heading"><div><h2>A small moment at your counter.<br />A simpler way to share it.</h2><p>From scanning your code to sharing a review. The customer stays in control at every step.</p></div><span className="landing-process-tag"><ScanLine size={18} aria-hidden="true" /> How it works</span></div>
+            <div className="landing-section-heading"><div><h2>A small moment at your counter.<br />A simpler way to share it.</h2><p>From scanning your code to sharing a review. The customer stays in control at every step.</p></div><span className="landing-process-tag">How it works</span></div>
             <ol className="landing-steps">{steps.map((step, index) => {
-              const Icon = stepIcons[index];
-              return <li key={step.title}><div className="landing-step-top"><span className="landing-step-icon"><Icon size={25} aria-hidden="true" /></span><span className="landing-step-number">Step {index + 1}</span></div><p className="landing-step-location">{step.where}</p><h3>{step.title}</h3><p>{step.text}</p></li>;
+              return <li key={step.title}><div className="landing-step-top"><span className="landing-step-number">Step {index + 1}</span></div><p className="landing-step-location">{step.where}</p><h3>{step.title}</h3><p>{step.text}</p></li>;
             })}</ol>
           </div>
         </section>
@@ -128,15 +122,12 @@ export function LandingPage() {
             <div className="landing-section-heading"><div><h2>Ready for your everyday business.</h2><p>From the first scan to the follow-up. Everything is included in every plan.</p></div></div>
             <div className="landing-feature-layout">
               <Card className="landing-feature-lead">
-                <span className="landing-feature-icon"><QrCode size={27} aria-hidden="true" /></span>
                 <h3>One link. Wherever your customers are.</h3>
                 <p>Put your QR code on the counter, on a table, or with a bill. Share the same review page after a visit on WhatsApp.</p>
-                <div className="landing-placement" aria-hidden="true"><div><Store size={28} /><span>At the counter</span></div><div><QrCode size={28} /><span>On the bill</span></div><div><MessageCircle size={28} /><span>After the visit</span></div></div>
-                <Link to={TOOL_PATH} className="landing-text-link">Make your first QR code <ArrowRight size={17} aria-hidden="true" /></Link>
+                <Link to={TOOL_PATH} className="landing-text-link">Make your first QR code </Link>
               </Card>
-              <dl className="landing-feature-list">{features.map((feature, index) => {
-                const Icon = featureIcons[index];
-                return <div key={feature.title}><span className="landing-feature-icon"><Icon size={21} aria-hidden="true" /></span><div><dt>{feature.title}</dt><dd>{feature.text}</dd></div></div>;
+              <dl className="landing-feature-list">{features.map((feature) => {
+                return <div key={feature.title}><div><dt>{feature.title}</dt><dd>{feature.text}</dd></div></div>;
               })}</dl>
             </div>
           </div>
@@ -144,15 +135,15 @@ export function LandingPage() {
 
         <section className="landing-section landing-trust-section">
           <div className="landing-container">
-            <div className="landing-trust-heading"><ShieldCheck size={30} aria-hidden="true" /><h2>Real experiences.<br />Always the customer’s voice.</h2><p>Three rules built into Reviyo. No shortcuts that put your Google Business Profile at risk.</p></div>
-            <ul className="landing-rules">{rules.map((rule, index) => { const Icon = ruleIcons[index]; return <li key={rule.title}><Icon size={24} aria-hidden="true" /><h3>{rule.title}</h3><p>{rule.text}</p></li>; })}</ul>
+            <div className="landing-trust-heading"><h2>Real experiences.<br />Always the customer’s voice.</h2><p>Three rules built into Reviyo. No shortcuts that put your Google Business Profile at risk.</p></div>
+            <ul className="landing-rules">{rules.map((rule) => { return <li key={rule.title}><h3>{rule.title}</h3><p>{rule.text}</p></li>; })}</ul>
           </div>
         </section>
 
         <section className="landing-section">
           <div className="landing-container landing-industry-layout">
-            <div><h2>For the places<br />people come back to.</h2><p className="landing-section-description">Cafés, clinics, salons, shops. Built for small, single-location businesses and the customers who walk through their doors.</p><Link to="/for" className="landing-text-link">Explore your industry <ArrowRight size={17} aria-hidden="true" /></Link></div>
-            <ul className="landing-industries">{industries.map((industry, index) => { const Icon = industryIcons[index] ?? Store; return <li key={industry.slug}><Link to={`/for/${industry.slug}`}><Icon size={20} aria-hidden="true" /><span>{capitalise(industry.plural)}</span><ArrowRight size={16} aria-hidden="true" /></Link></li>; })}</ul>
+            <div><h2>For the places<br />people come back to.</h2><p className="landing-section-description">Cafés, clinics, salons, shops. Built for small, single-location businesses and the customers who walk through their doors.</p><Link to="/for" className="landing-text-link">Explore your industry </Link></div>
+            <ul className="landing-industries">{industries.map((industry) => { return <li key={industry.slug}><Link to={`/for/${industry.slug}`}><span>{capitalise(industry.plural)}</span></Link></li>; })}</ul>
           </div>
         </section>
 
@@ -166,15 +157,15 @@ export function LandingPage() {
 
         <section id="faq" className="landing-section">
           <div className="landing-container landing-faq-layout">
-            <div><h2>A few things<br />you might be wondering.</h2><p className="landing-section-description">Straight answers before you get started.</p><Link to="/contact" className="landing-text-link">Talk to us <ArrowRight size={17} aria-hidden="true" /></Link></div>
+            <div><h2>A few things<br />you might be wondering.</h2><p className="landing-section-description">Straight answers before you get started.</p><Link to="/contact" className="landing-text-link">Talk to us </Link></div>
             <div className="landing-faqs">{landingFaqs.map((item, index) => <details key={item.q} open={index === 0}><summary>{item.q}<ChevronDown size={19} aria-hidden="true" /></summary><p>{item.a}</p></details>)}</div>
           </div>
         </section>
 
         <section className="landing-final-section">
           <div className="landing-container landing-final-panel">
-            <div><span className="landing-final-icon"><ScanLine size={32} aria-hidden="true" /></span><h2>Your next review<br />starts with a simple scan.</h2><p>Try Reviyo at your counter for {legal.trialDays} days.</p><p className="landing-final-note">₹1 AutoPay check, refunded. Cancel any time before the trial ends.</p></div>
-            <div className="landing-final-actions"><Link to="/signup" className={`${buttonClasses({ size: 'lg' })} landing-light-button`}>Start your free trial <ArrowRight size={18} aria-hidden="true" /></Link><Link to={TOOL_PATH}>Or create a free review link</Link></div>
+            <div><h2>Your next review<br />starts with a simple scan.</h2><p>Try Reviyo at your counter for {legal.trialDays} days.</p><p className="landing-final-note">₹1 AutoPay check, refunded. Cancel any time before the trial ends.</p></div>
+            <div className="landing-final-actions"><Link to="/signup" className={`${buttonClasses({ size: 'lg' })} landing-light-button`}>Start your free trial </Link><Link to={TOOL_PATH}>Or create a free review link</Link></div>
           </div>
         </section>
       </main>
