@@ -1,4 +1,4 @@
-// Sends owner emails from support@revio.in through the Hostinger mailbox
+// Sends owner emails from support@reviyo.in through the Hostinger mailbox
 // (SMTP over TLS on port 465; Supabase blocks ports 25 and 587 for Edge
 // Functions). Every email is claimed in the email_log table first, so the
 // browser, the webhook, and the scheduler can all ask for the same receipt and

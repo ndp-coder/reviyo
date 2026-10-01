@@ -386,7 +386,7 @@ check('website visit counts hold no personal data, skip private pages, and only 
   const view = (path, ref = '') => asAnon(() => q(`SELECT record_site_page_view($1, $2)`, [path, ref]));
   await view('/pricing', 'www.Google.com');
   await view('/pricing/', 'google.com');
-  await view('/pricing', 'revio.in'); // our own site counts as direct
+  await view('/pricing', 'reviyo.in'); // our own site counts as direct
   await view('/', '');
   // Never counted: customer review pages, the app, junk.
   for (const path of ['/r/pet-spa', '/dashboard', '/dashboard/billing', '/admin', '/onboarding', '/<script>', 'pricing']) {

@@ -18,7 +18,7 @@ function sourceLabel(source: string): string {
   return source;
 }
 
-/** Page views of revio.in's public pages, from the site_page_views counts. */
+/** Page views of reviyo.in's public pages, from the site_page_views counts. */
 export function SiteTrafficCard() {
   const [summary, setSummary] = useState<TrafficSummary | null>(null);
   const [failed, setFailed] = useState(false);
@@ -39,7 +39,7 @@ export function SiteTrafficCard() {
     <Card className="mt-6 p-5 sm:p-6">
       <h2 className="text-sm font-semibold text-gray-900">Website visits</h2>
       <p className="mt-0.5 text-xs text-gray-600">
-        Page views of revio.in&apos;s public pages. Counts only: no cookies, and nothing that identifies a
+        Page views of reviyo.in&apos;s public pages. Counts only: no cookies, and nothing that identifies a
         visitor. Customer review pages are not included.
       </p>
 

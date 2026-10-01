@@ -78,7 +78,7 @@ function accessHandler(user,role='user',partner=null) {
   const context={Deno:{serve:fn=>{handler=fn},env:{get:()=>undefined}},createAdminClient:async()=>admin,
     getCorsHeaders:()=>({}),isAllowedBrowserOrigin:()=>true,Response,Request,
     sendEmail:async()=>{throw new Error('Unexpected email')},razorpayX:async()=>{throw new Error('Unexpected payout provider')},
-    SENDER:{siteUrl:'https://revio.in'},JSON,String,Date};
+    SENDER:{siteUrl:'https://reviyo.in'},JSON,String,Date};
   vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,context);
   return body=>handler(new Request('https://test.invalid',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}));
 }

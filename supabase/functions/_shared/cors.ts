@@ -8,8 +8,8 @@ const LOCAL_ORIGINS = [
 // payments. Kept in step with siteUrl in src/config/legal.ts by a test.
 // APP_ORIGINS adds more (a preview deploy, a staging domain).
 export const PRODUCTION_ORIGINS = [
-  "https://revio.in",
-  "https://www.revio.in",
+  "https://reviyo.in",
+  "https://www.reviyo.in",
 ];
 
 function allowedOrigins(): Set<string> {

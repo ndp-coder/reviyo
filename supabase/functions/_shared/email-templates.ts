@@ -9,8 +9,8 @@
 export const SENDER = {
   brand: "Reviyo",
   legalName: "Naga Durga Prasad Chunduru, trading as Reviyo",
-  supportEmail: "support@revio.in",
-  siteUrl: "https://revio.in",
+  supportEmail: "support@reviyo.in",
+  siteUrl: "https://reviyo.in",
   /** Registered address, printed on receipts. Empty until it is filled in. */
   address: "Vijayawada",
 } as const;

@@ -579,7 +579,7 @@ test('browser-facing functions allow the live site with and without www', async 
   assert.match(cors, /\.\.\.PRODUCTION_ORIGINS/);
 });
 
-test('owner emails come from support@revio.in, match the site config, and render without gaps', async (t) => {
+test('owner emails come from support@reviyo.in, match the site config, and render without gaps', async (t) => {
   const [templatesSrc, legalSrc, plansSrc, email, webhook, verify, scheduler] = await Promise.all([
     read('supabase/functions/_shared/email-templates.ts'), read('src/config/legal.ts'), read('src/config/plans.ts'),
     read('supabase/functions/_shared/email.ts'), read('supabase/functions/razorpay-webhook/index.ts'),

@@ -1,4 +1,4 @@
-# Netlify: builds and serves revio.in. The app-route rewrites and the
+# Netlify: builds and serves reviyo.in. The app-route rewrites and the
 # 404 behaviour live in public/_redirects (copied into dist by the build).
 #
 # Set these under Site configuration > Environment variables before the first

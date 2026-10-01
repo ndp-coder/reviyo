@@ -56,9 +56,9 @@ Completed setups cannot be changed by partners.
      subscription payments/refunds/disputes; they are separate from X credentials.
    - `SMTP_PASSWORD` and, if needed, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
      `EMAIL_FROM`: the existing Hostinger invitation-email configuration.
-4. Add `https://revio.in/partners` and `https://revio.in/onboarding` to Supabase Auth's redirect allowlist.
-   Set the Auth Site URL to `https://revio.in` and its SMTP sender/user to
-   `support@revio.in`. Saved Auth email templates live under `supabase/templates`;
+4. Add `https://reviyo.in/partners` and `https://reviyo.in/onboarding` to Supabase Auth's redirect allowlist.
+   Set the Auth Site URL to `https://reviyo.in` and its SMTP sender/user to
+   `support@reviyo.in`. Saved Auth email templates live under `supabase/templates`;
    copy their updated links into the dashboard templates if configured there.
    Developer invitations are emailed as an expiring Supabase sign-in link.
    Returning partners can request the existing sign-in code from `/partners`.
