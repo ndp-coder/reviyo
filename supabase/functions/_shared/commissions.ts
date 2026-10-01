@@ -44,15 +44,16 @@ function payoutStatus(result: Record<string, unknown>): string {
   return ["queued", "processing", "processed", "failed", "reversed", "cancelled"].includes(status) ? status : "needs_attention";
 }
 
-async function savePayout(admin: AdminClient, id: string, result: Record<string, unknown>, body: Record<string, unknown>) {
+export async function savePayout(admin: AdminClient, id: string, result: Record<string, unknown>, body: Record<string, unknown>, expectedStatus: string) {
   if (typeof result.id !== "string" || !result.id.startsWith("pout_") || result.amount !== body.amount
     || result.currency !== "INR" || result.fund_account_id !== body.fund_account_id || result.reference_id !== id) {
     throw new Error("Payout identity mismatch; reconciliation required");
   }
+  // Optimistic update: a delayed worker cannot overwrite a newer result.
   const { error } = await admin.from("commission_earnings").update({
     payout_id: result.id, status: payoutStatus(result), last_checked_at: new Date().toISOString(),
     detail: ["failed", "reversed", "cancelled"].includes(String(result.status)) ? "RazorpayX transfer did not complete. Developer review required." : null,
-  }).eq("id", id);
+  }).eq("id", id).eq("status", expectedStatus);
   if (error) throw error;
 }
 
@@ -102,7 +103,7 @@ export async function runCommissions(admin: AdminClient): Promise<Record<string,
     try {
       if (e.payout_id) {
         const result = await razorpayX(`payouts/${encodeURIComponent(e.payout_id)}`);
-        await savePayout(admin, e.id, result, e.payout_body);
+        await savePayout(admin, e.id, result, e.payout_body, e.status);
         summary.reconciled++;
       } else {
         if (e.status === "pending") {
@@ -130,7 +131,7 @@ export async function runCommissions(admin: AdminClient): Promise<Record<string,
           continue;
         }
         const result = await razorpayX("payouts", body, e.id);
-        await savePayout(admin, e.id, result, body);
+        await savePayout(admin, e.id, result, body, "sending");
         summary.submitted++;
       }
     } catch {

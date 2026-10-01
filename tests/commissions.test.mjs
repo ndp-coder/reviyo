@@ -51,3 +51,20 @@ test('provider failures do not expose bank data in errors',async()=>{
   const api=helper(async()=>({ok:false,status:400,json:async()=>({bank_account:{account_number:'secret'}})}),{RAZORPAYX_KEY_ID:'x_test',RAZORPAYX_KEY_SECRET:'x_secret'});
   await assert.rejects(()=>api.razorpayX('fund_accounts',{bank_account:{account_number:'secret'}}),/RazorpayX request failed \(400\)/);
 });
+
+test('a delayed payout response cannot overwrite a completed transfer; reversals and identity checks still work',async()=>{
+  const record={id:'earning',status:'processed',payout_id:'pout_test'};
+  const admin={from:()=>({update:patch=>({eq:(field,value)=>({eq:(statusField,expected)=>{
+    if(record[field]===value && record[statusField]===expected) Object.assign(record,patch);
+    return Promise.resolve({error:null});
+  }})})})};
+  const body={amount:100000,fund_account_id:'fa_test'};
+  const result={id:'pout_test',amount:100000,currency:'INR',fund_account_id:'fa_test',reference_id:'earning',status:'queued'};
+  const {savePayout}=helper();
+  await savePayout(admin,'earning',result,body,'sending');
+  assert.equal(record.status,'processed');
+  await savePayout(admin,'earning',{...result,status:'reversed'},body,'processed');
+  assert.equal(record.status,'reversed');
+  await assert.rejects(()=>savePayout(admin,'earning',{...result,amount:200000},body,'reversed'),/identity mismatch/);
+  assert.equal(record.status,'reversed');
+});
