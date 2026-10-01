@@ -289,6 +289,7 @@ const PRIVATE_TITLES: [RegExp, string][] = [
   [/^\/dashboard/, 'Dashboard'],
   [/^\/onboarding/, 'Set up your business'],
   [/^\/admin/, 'Admin'],
+  [/^\/partners$/, 'Partner dashboard'],
   [/^\/login/, 'Sign in'],
   [/^\/signup/, 'Create your account'],
   [/^\/forgot-password/, 'Reset your password'],

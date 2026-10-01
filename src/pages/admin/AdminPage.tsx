@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { BrandLogo } from '@/components/BrandLogo';
 import { Alert, Button, Card, Skeleton, Badge, PageHeader } from '@/components/ui';
 import { SiteTrafficCard } from './SiteTrafficCard';
+import { CommissionDashboard } from '@/pages/partners/CommissionDashboard';
 
 export function AdminPage() {
   const { signOut } = useAuth();
@@ -143,6 +144,7 @@ export function AdminPage() {
       )}
 
       <SiteTrafficCard />
+      <CommissionDashboard developer />
       </main>
     </div>
   );

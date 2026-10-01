@@ -64,7 +64,7 @@ test('hosting sends app routes to the noindex shell and every other unknown URL 
   const appRoutes = [...app.matchAll(/<Route path="\/([a-z-]*)/g)].map((m) => m[1]).filter((r) => !PUBLIC.has(r));
   assert.deepEqual(
     [...new Set(appRoutes)].sort(),
-    ['admin', 'dashboard', 'forgot-password', 'login', 'onboarding', 'r', 'reset-password', 'signup'],
+    ['admin', 'dashboard', 'forgot-password', 'login', 'onboarding', 'partners', 'r', 'reset-password', 'signup'],
   );
   const config = JSON.parse(vercel);
   assert.equal(config.cleanUrls, true);

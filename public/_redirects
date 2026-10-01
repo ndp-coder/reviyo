@@ -8,6 +8,7 @@
 /reset-password   /app.html  200
 /onboarding       /app.html  200
 /admin            /app.html  200
+/partners         /app.html  200
 /dashboard        /app.html  200
 /dashboard/*      /app.html  200
 /r/*              /app.html  200

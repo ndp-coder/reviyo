@@ -37,6 +37,7 @@ const QRManagementPage = lazy(() => import('@/pages/dashboard/QRManagementPage')
 const SettingsPage = lazy(() => import('@/pages/dashboard/SettingsPage').then((module) => ({ default: module.SettingsPage })));
 const BillingPage = lazy(() => import('@/pages/dashboard/BillingPage').then((module) => ({ default: module.BillingPage })));
 const AdminPage = lazy(() => import('@/pages/admin/AdminPage').then((module) => ({ default: module.AdminPage })));
+const CommissionDashboard = lazy(() => import('@/pages/partners/CommissionDashboard').then((module) => ({ default: module.CommissionDashboard })));
 const CustomerReviewPage = lazy(() => import('@/pages/customer/CustomerReviewPage').then((module) => ({ default: module.CustomerReviewPage })));
 
 function PageLoader() {
@@ -121,6 +122,7 @@ function App() {
       </Route>
 
       {/* Admin */}
+      <Route path="/partners" element={<CommissionDashboard />} />
       <Route path="/admin" element={
         <AdminRoute><AdminPage /></AdminRoute>
       } />

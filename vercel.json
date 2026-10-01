@@ -2,7 +2,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/(login|signup|forgot-password|reset-password|onboarding|admin|dashboard)", "destination": "/app" },
+    { "source": "/(login|signup|forgot-password|reset-password|onboarding|admin|dashboard|partners)", "destination": "/app" },
     { "source": "/dashboard/:path*", "destination": "/app" },
     { "source": "/r/:slug", "destination": "/app" }
   ]
