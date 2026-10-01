@@ -54,8 +54,12 @@ Completed setups cannot be changed by partners.
      set to `true` to enable automatic capture checks, earnings and transfers.
    - Existing payment-gateway `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`: these verify
      subscription payments/refunds/disputes; they are separate from X credentials.
-   - `SMTP_PASSWORD` and, if needed, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
-     `EMAIL_FROM`: the existing Hostinger invitation-email configuration.
+   - `AUTH_EMAIL_INVITATIONS_ENABLED=true`: reuse the verified Hostinger SMTP
+     configuration in Supabase Auth for partner and owner invitations. Returning
+     accounts receive the configured sign-in email, with an OTP or sign-in link.
+   - Alternatively, use `SMTP_PASSWORD` and, if needed, `SMTP_HOST`, `SMTP_PORT`,
+     `SMTP_USER`, `EMAIL_FROM` for direct Hostinger invitation delivery. These
+     Edge SMTP settings are still needed for payment receipts and billing emails.
 4. Add `https://reviyo.in/partners` and `https://reviyo.in/onboarding` to Supabase Auth's redirect allowlist.
    Set the Auth Site URL to `https://reviyo.in` and its SMTP sender/user to
    `support@reviyo.in`. Saved Auth email templates live under `supabase/templates`;

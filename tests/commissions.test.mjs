@@ -96,3 +96,28 @@ test('the access endpoint itself rejects unauthenticated and non-developer invit
   assert.equal(config.status,200);
   assert.deepEqual(await config.json(),{emailReady:false,payoutsReady:false,enabled:false,schedulerReady:false});
 });
+
+test('Auth SMTP invitations send only to the invited owner and fail closed on delivery errors',async()=>{
+  const source=readFileSync(new URL('../supabase/functions/commission-access/index.ts',import.meta.url),'utf8').replace(/^import .*;\r?\n/gm,'');
+  const context={Deno:{serve:()=>{},env:{get:key=>key==='AUTH_EMAIL_INVITATIONS_ENABLED'?'true':undefined}},
+    SENDER:{siteUrl:'https://reviyo.in'},sendEmail:async()=>{throw new Error('Unexpected direct SMTP')},
+    createAdminClient:()=>{},getCorsHeaders:()=>({}),isAllowedBrowserOrigin:()=>true,razorpayX:()=>{},Response,Request};
+  vm.createContext(context);
+  vm.runInContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,context);
+  const send=vm.runInContext('sendInvitation',context);
+  const calls=[];
+  let failure=null;
+  const admin={auth:{admin:{inviteUserByEmail:async(email,options)=>{calls.push({email,options});return {error:failure}}},
+    signInWithOtp:async(options)=>{calls.push(options);return {error:null}}}};
+  const build=()=>{throw new Error('Auth mode must not generate a raw sign-in link')};
+  await send(admin,'owner@example.in','/onboarding',build);
+  assert.equal(calls[0].email,'owner@example.in');
+  assert.equal(calls[0].options.redirectTo,'https://reviyo.in/onboarding');
+  failure={code:'email_exists'};
+  await send(admin,'partner@example.in','/partners',build);
+  assert.equal(calls[2].email,'partner@example.in');
+  assert.equal(calls[2].options.shouldCreateUser,false);
+  assert.equal(calls[2].options.emailRedirectTo,'https://reviyo.in/partners');
+  failure={code:'unexpected_failure'};
+  await assert.rejects(()=>send(admin,'owner@example.in','/onboarding',build),/Could not send invitation/);
+});

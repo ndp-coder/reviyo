@@ -4,6 +4,35 @@ import { sendEmail } from "../_shared/email.ts";
 import { SENDER } from "../_shared/email-templates.ts";
 import { razorpayX } from "../_shared/commissions.ts";
 
+function invitationEmailReady(): boolean {
+  return Deno.env.get("AUTH_EMAIL_INVITATIONS_ENABLED") === "true" || !!Deno.env.get("SMTP_PASSWORD");
+}
+
+async function sendInvitation(
+  admin: Awaited<ReturnType<typeof createAdminClient>>,
+  email: string,
+  path: string,
+  build: (url: string) => { subject: string; text: string; html: string },
+) {
+  const redirectTo = `${SENDER.siteUrl}${path}`;
+  if (Deno.env.get("AUTH_EMAIL_INVITATIONS_ENABLED") === "true") {
+    // Reuse the configured Auth SMTP transport; the mailbox password does not
+    // need to be copied into Edge secrets. Auth sends the link to its owner.
+    const invitation = await admin.auth.admin.inviteUserByEmail(email, { redirectTo });
+    if (invitation.error?.code === "email_exists" || invitation.error?.code === "user_already_exists") {
+      const returning = await admin.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: redirectTo } });
+      if (returning.error) throw new Error("Could not send invitation");
+    } else if (invitation.error) throw new Error("Could not send invitation");
+    return;
+  }
+  let link = await admin.auth.admin.generateLink({ type: "invite", email, options: { redirectTo } });
+  if (link.error?.code === "email_exists" || link.error?.code === "user_already_exists") {
+    link = await admin.auth.admin.generateLink({ type: "magiclink", email, options: { redirectTo } });
+  }
+  if (link.error || !link.data.properties?.action_link) throw new Error("Could not create invitation");
+  await sendEmail(email, build(link.data.properties.action_link));
+}
+
 Deno.serve(async (req: Request) => {
   const headers = { ...getCorsHeaders(req), "Content-Type": "application/json" };
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers });
@@ -20,7 +49,7 @@ Deno.serve(async (req: Request) => {
       const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
       if (profile?.role !== "admin") return json({ error: "Developer access required" }, 403);
       if (body.action === "setup") return json({
-        emailReady: !!Deno.env.get("SMTP_PASSWORD"),
+        emailReady: invitationEmailReady(),
         payoutsReady: !!Deno.env.get("RAZORPAYX_KEY_ID") && !!Deno.env.get("RAZORPAYX_KEY_SECRET") && !!Deno.env.get("RAZORPAYX_ACCOUNT_NUMBER"),
         enabled: Deno.env.get("COMMISSION_PAYOUTS_ENABLED") === "true",
         schedulerReady: (Deno.env.get("COMMISSION_CRON_SECRET") ?? "").length >= 32,
@@ -34,24 +63,19 @@ Deno.serve(async (req: Request) => {
       const email = String(body.email ?? "").trim().toLowerCase();
       const name = String(body.name ?? "").trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || name.length < 2 || name.length > 100) return json({ error: "Enter a name and valid email" }, 400);
-      if (!Deno.env.get("SMTP_PASSWORD")) return json({ error: "Invitation email is not configured" }, 503);
+      if (!invitationEmailReady()) return json({ error: "Invitation email is not configured" }, 503);
       // Existing rows retain their access state. Resending never unrevokes one.
       const { error: insertError } = await admin.from("commission_partners").upsert({ email, name, invited_by: user.id }, { onConflict: "email", ignoreDuplicates: true });
       if (insertError) throw insertError;
       const { data: partner } = await admin.from("commission_partners").select("active").eq("email", email).single();
       if (!partner?.active) return json({ error: "Restore partner access before sending another invitation" }, 400);
-      const options = { redirectTo: `${SENDER.siteUrl}/partners` };
-      let link = await admin.auth.admin.generateLink({ type: "invite", email, options });
-      if (link.error?.code === "email_exists" || link.error?.code === "user_already_exists") {
-        link = await admin.auth.admin.generateLink({ type: "magiclink", email, options });
-      }
-      if (link.error || !link.data.properties?.action_link) throw new Error("Could not create invitation");
-      const url = link.data.properties.action_link;
+      await sendInvitation(admin, email, "/partners", (url) => {
       const escaped = url.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-      await sendEmail(email, {
+      return {
         subject: "Your private Reviyo partner invitation",
         text: `You have been invited to the private Reviyo partner dashboard. Sign in: ${url}\nRegister referrals before their first payment. Earn Rs 1,000 after a Rs 2,999 annual payment has been unrefunded for 14 days, plus Rs 2,000 at every 10 qualifying owners. Add your bank details in the dashboard for automatic payouts.`,
         html: `<p>You have been invited to the private Reviyo partner dashboard.</p><p><a href="${escaped}">Accept invitation</a></p><p>Register referrals before their first payment. Earn ₹1,000 after a ₹2,999 annual payment has been unrefunded for 14 days, plus ₹2,000 at every 10 qualifying owners. Add your bank details in the dashboard for automatic payouts.</p>`,
+      };
       });
       const { error: sentError } = await admin.from("commission_partners").update({ invitation_sent_at: new Date().toISOString() }).eq("email", email);
       if (sentError) throw sentError;
@@ -60,19 +84,16 @@ Deno.serve(async (req: Request) => {
     if (body.action === "invite-owner") {
       const { data: partner } = await admin.from("commission_partners").select("id").eq("email", user.email!.toLowerCase()).eq("active", true).maybeSingle();
       if (!partner) return json({ error: "Invitation required" }, 403);
-      if (!Deno.env.get("SMTP_PASSWORD")) return json({ error: "Invitation email is not configured. Your saved setup is safe; resend once email is configured." }, 503);
+      if (!invitationEmailReady()) return json({ error: "Invitation email is not configured. Your saved setup is safe; resend once email is configured." }, 503);
       const { data: draft } = await admin.from("partner_business_drafts").select("id,referral_id,claimed_at,invitation_sent_at").eq("id", String(body.id ?? "")).maybeSingle();
       if (!draft || draft.claimed_at) return json({ error: "Pending business setup not found" }, 404);
       const { data: referral } = await admin.from("commission_referrals").select("email").eq("id", draft.referral_id).eq("partner_id", partner.id).maybeSingle();
       if (!referral) return json({ error: "Pending business setup not found" }, 404);
       if (draft.invitation_sent_at && Date.now() - Date.parse(draft.invitation_sent_at) < 60000) return json({ error: "Wait a minute before resending" }, 429);
-      const options = { redirectTo: `${SENDER.siteUrl}/onboarding` };
-      let link = await admin.auth.admin.generateLink({ type: "invite", email: referral.email, options });
-      if (link.error?.code === "email_exists" || link.error?.code === "user_already_exists") link = await admin.auth.admin.generateLink({ type: "magiclink", email: referral.email, options });
-      if (link.error || !link.data.properties?.action_link) throw new Error("Could not create invitation");
-      const url = link.data.properties.action_link;
+      await sendInvitation(admin, referral.email, "/onboarding", (url) => {
       const escaped = url.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-      await sendEmail(referral.email, { subject: "Review your Reviyo business setup", text: `A Reviyo partner has prepared your business setup. Review and edit the details, accept the terms, then choose your plan: ${url}`, html: `<p>A Reviyo partner has prepared your business setup.</p><p><a href="${escaped}">Review your business details</a></p><p>You can edit the details before accepting the terms and choosing your plan.</p>` });
+      return { subject: "Review your Reviyo business setup", text: `A Reviyo partner has prepared your business setup. Review and edit the details, accept the terms, then choose your plan: ${url}`, html: `<p>A Reviyo partner has prepared your business setup.</p><p><a href="${escaped}">Review your business details</a></p><p>You can edit the details before accepting the terms and choosing your plan.</p>` };
+      });
       const { error } = await admin.from("partner_business_drafts").update({ invitation_sent_at: new Date().toISOString() }).eq("id", draft.id);
       if (error) throw error;
       return json({ ok: true });

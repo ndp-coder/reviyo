@@ -4,7 +4,7 @@ import type { DeveloperSetup as Setup } from '@/pages/admin/developer-types';
 
 export function DeveloperSetup({ setup }: { setup: Setup | null }) {
   const checks = setup ? [
-    { label: 'Hostinger mail password', ready: setup.emailReady, detail: `Used to send partner and owner invitations from ${legal.supportEmail}.` },
+    { label: 'Invitation email service', ready: setup.emailReady, detail: `Uses the configured Supabase Auth email service or Hostinger SMTP to send invitations from ${legal.supportEmail}.` },
     { label: 'RazorpayX credentials and source account', ready: setup.payoutsReady, detail: 'Required for commission transfers. The account also needs funding and permitted API access.' },
     { label: 'Automatic payouts enabled', ready: setup.enabled, detail: 'Enable after the payout account and automatic processing have been configured and tested.' },
     { label: 'Scheduler access key', ready: setup.schedulerReady, detail: 'The scheduled job must use this key when calling the payout processor.' },
