@@ -497,3 +497,58 @@ check('revoking a partner removes private access and pauses new transfers', asyn
   try { assert.equal((await asUser(U2,()=>one(`SELECT count(*)::int AS n FROM commission_earnings`))).n,22); }
   finally { await db.exec(`UPDATE profiles SET role='user' WHERE id='${U2}'`); }
 });
+
+check('developer controls require admin access, record every change and reject stale actions', async () => {
+  const sql=`SELECT developer_set_business_access($1,$2,$3,$4)`;
+  await asUser(U1,()=>rejects(sql,[B,false,true,'Investigating issue'],/Developer access required/,'owner cannot pause via developer function'));
+  await asUser(U1,()=>rejects(`SELECT developer_summary()`,[],/Developer access required/,'owner cannot see system totals'));
+  await db.exec(`SET ROLE anon`);
+  try { await rejects(`SELECT developer_summary()`,[],/permission denied/,'anonymous summary'); }
+  finally { await db.exec(`RESET ROLE`); }
+  await db.exec(`UPDATE profiles SET role='admin' WHERE id='${U2}'`);
+  try {
+    await asUser(U2,()=>rejects(sql,[B,false,true,''],/Enter a reason/,'reason required'));
+    await asUser(U2,()=>one(sql,[B,false,true,'Investigating support request']));
+    assert.equal((await one(`SELECT is_active FROM businesses WHERE id=$1`,[B])).is_active,false);
+    const audit=await one(`SELECT * FROM developer_activity WHERE business_id=$1`,[B]);
+    assert.equal(audit.actor_id,U2); assert.equal(audit.action,'pause_business');
+    await asUser(U2,()=>rejects(sql,[B,true,true,'Restore from stale screen'],/access changed/,'stale status rejected'));
+    await asUser(U2,()=>one(sql,[B,false,false,'Already paused, no change']));
+    assert.equal((await one(`SELECT count(*)::int AS n FROM developer_activity`)).n,1,'no duplicate activity for no-op');
+    assert.equal((await asUser(U1,()=>one(`SELECT count(*)::int AS n FROM developer_activity`))).n,0);
+    await asUser(U2,()=>rejects(`DELETE FROM developer_activity`,[],/permission denied/,'audit cannot be altered in browser'));
+    const before=(await asUser(U2,()=>one(`SELECT developer_summary() AS s`))).s;
+    await db.query(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,'dev-summary-order','6_months',199900)`,[B,U1]);
+    await db.exec(`UPDATE payment_orders SET status='paid',payment_id='dev-summary-payment' WHERE order_id='dev-summary-order'`);
+    const after=(await asUser(U2,()=>one(`SELECT developer_summary() AS s`))).s;
+    assert.equal(after.paidTotal-before.paidTotal,199900);
+    assert.equal(after.paid30Days-before.paid30Days,199900);
+    await asUser(U2,()=>one(sql,[B,true,false,'Support investigation complete']));
+    assert.equal((await one(`SELECT is_active FROM businesses WHERE id=$1`,[B])).is_active,true);
+    assert.equal((await one(`SELECT count(*)::int AS n FROM developer_activity`)).n,2);
+  } finally { await db.exec(`UPDATE profiles SET role='user' WHERE id='${U2}'`); }
+});
+
+check('developer directory paginates, searches literally and does not expose payment secrets', async () => {
+  await asUser(U1,()=>rejects(`SELECT developer_businesses()`,[],/Developer access required/,'owner directory access'));
+  await asUser(PARTNER,()=>rejects(`SELECT developer_operations()`,[],/Developer access required/,'partner payment access'));
+  await db.exec(`UPDATE profiles SET role='admin' WHERE id='${U2}'`);
+  try {
+    const first=(await asUser(U2,()=>one(`SELECT developer_businesses('commission','all',0) AS d`))).d;
+    const next=(await asUser(U2,()=>one(`SELECT developer_businesses('commission','all',20) AS d`))).d;
+    assert.equal(first.total,21); assert.equal(first.rows.length,20); assert.equal(next.rows.length,1);
+    assert.equal(new Set([...first.rows,...next.rows].map(b=>b.id)).size,21);
+    assert.equal((await asUser(U2,()=>one(`SELECT developer_businesses('%','all',0) AS d`))).d.total,0,'wildcards treated literally');
+    await asUser(U2,()=>rejects(`SELECT developer_businesses('','unknown',0)`,[],/Invalid search/,'bad filter'));
+    const row=first.rows[0];
+    await asUser(U2,()=>one(`SELECT developer_set_business_access($1,false,true,'Directory filter test')`,[row.id]));
+    const paused=(await asUser(U2,()=>one(`SELECT developer_businesses('commission','paused',0) AS d`))).d;
+    assert.equal(paused.total,1); assert.equal(paused.rows[0].id,row.id);
+    await asUser(U2,()=>one(`SELECT developer_set_business_access($1,true,false,'Directory test complete')`,[row.id]));
+    const operations=(await asUser(U2,()=>one(`SELECT developer_operations() AS d`))).d;
+    assert.ok(operations.payments.length>0 && operations.payments.length<=50);
+    assert.ok(operations.activity.length>=4);
+    assert.ok(!JSON.stringify(operations).includes('token_id'));
+    assert.ok(!JSON.stringify(operations).includes('razorpay_customer_id'));
+  } finally { await db.exec(`UPDATE profiles SET role='user' WHERE id='${U2}'`); }
+});
