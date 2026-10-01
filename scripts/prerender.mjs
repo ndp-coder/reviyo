@@ -84,11 +84,15 @@ await writeFile(join(dist, 'sitemap.xml'), sitemap);
 
 await writeFile(
   join(dist, 'robots.txt'),
-  `User-agent: *
+  `# All crawlers, including AI search and training crawlers, may read public pages.
+# The wildcard applies to every user agent; no AI-specific exclusions are used.
+User-agent: *
 Allow: /
-# Private areas and per-business customer review pages are never for search.
+# Public content guide: ${SITE_URL}/llms.txt
+# Private areas and per-business customer review pages are excluded from crawling.
 Disallow: /dashboard
 Disallow: /admin
+Disallow: /partners
 Disallow: /onboarding
 Disallow: /r/
 Disallow: /app.html
