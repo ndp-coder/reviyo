@@ -29,7 +29,9 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.commission-access]
-verify_jwt = true
+# getUser(token) verifies the caller against Supabase Auth inside the function,
+# including projects using rotated JWT signing keys rather than legacy secrets.
+verify_jwt = false
 
 [functions.commission-scheduler]
 verify_jwt = false

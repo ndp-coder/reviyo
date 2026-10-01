@@ -68,3 +68,29 @@ test('a delayed payout response cannot overwrite a completed transfer; reversals
   await assert.rejects(()=>savePayout(admin,'earning',{...result,amount:200000},body,'reversed'),/identity mismatch/);
   assert.equal(record.status,'reversed');
 });
+
+function accessHandler(user,role='user',partner=null) {
+  const source=readFileSync(new URL('../supabase/functions/commission-access/index.ts',import.meta.url),'utf8').replace(/^import .*;\r?\n/gm,'');
+  let handler;
+  const admin={auth:{getUser:async()=>({data:{user},error:null})},from:()=>({select:()=>({eq:()=>({
+    single:async()=>({data:{role}}),eq:()=>({maybeSingle:async()=>({data:partner})}),
+  })})})};
+  const context={Deno:{serve:fn=>{handler=fn},env:{get:()=>undefined}},createAdminClient:async()=>admin,
+    getCorsHeaders:()=>({}),isAllowedBrowserOrigin:()=>true,Response,Request,
+    sendEmail:async()=>{throw new Error('Unexpected email')},razorpayX:async()=>{throw new Error('Unexpected payout provider')},
+    SENDER:{siteUrl:'https://www.reviyo.in'},JSON,String,Date};
+  vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,context);
+  return body=>handler(new Request('https://test.invalid',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}));
+}
+
+test('the access endpoint itself rejects unauthenticated and non-developer invitations',async()=>{
+  assert.equal((await accessHandler(null)({action:'invite',email:'test@example.in'})).status,401);
+  const user={id:'user',email:'user@example.in',email_confirmed_at:'2026-10-01'};
+  assert.equal((await accessHandler(user)({action:'invite',email:'test@example.in'})).status,403);
+  assert.equal((await accessHandler(user)({action:'access',id:'partner',active:true})).status,403);
+  assert.equal((await accessHandler(user)({action:'bank',consent:true})).status,403);
+  assert.equal((await accessHandler(user)({action:'bank',consent:false})).status,400);
+  const config=await accessHandler(user,'admin')({action:'setup'});
+  assert.equal(config.status,200);
+  assert.deepEqual(await config.json(),{emailReady:false,payoutsReady:false,enabled:false,schedulerReady:false});
+});
