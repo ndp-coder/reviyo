@@ -61,6 +61,7 @@ const asUser = async (uid, fn) => {
 
 const U1 = '11111111-1111-1111-1111-111111111111';
 const U2 = '22222222-2222-2222-2222-222222222222';
+const PARTNER = '33333333-3333-3333-3333-333333333333';
 before(async () => {
 await db.exec(`INSERT INTO auth.users (id, email) VALUES ('${U1}', 'a@x.in'), ('${U2}', 'b@x.in');`);
 // handle_new_user may insert profiles via trigger; make sure they exist.
@@ -378,4 +379,87 @@ check('website visit counts hold no personal data, skip private pages, and only 
   } finally {
     await db.exec(`UPDATE profiles SET role = 'user' WHERE id = '${U2}'`);
   }
+});
+
+let partnerId;
+const commissionFixtures = [];
+check('only invited partners register referrals; ownership and money cannot be forged', async () => {
+  await db.exec(`INSERT INTO auth.users(id,email) VALUES('${PARTNER}','partner@example.in');`);
+  partnerId = (await one(`INSERT INTO commission_partners(email,name) VALUES('partner@example.in','Partner') RETURNING id`)).id;
+  await asUser(U1, () => rejects(`SELECT register_commission_referral('nobody@example.in')`, [], /Invitation required/, 'ordinary owner'));
+  await asUser(PARTNER, () => rejects(`SELECT register_commission_referral('PARTNER@example.in')`, [], /refer yourself/, 'self referral'));
+  await asUser(PARTNER, () => rejects(`SELECT register_commission_referral('bad email')`, [], /valid email/, 'bad email'));
+  const id = (await asUser(PARTNER, () => one(`SELECT register_commission_referral(' NewOwner@example.in ') AS id`))).id;
+  assert.equal((await one(`SELECT email FROM commission_referrals WHERE id=$1`, [id])).email, 'newowner@example.in');
+  await asUser(PARTNER, () => rejects(`SELECT register_commission_referral('newowner@EXAMPLE.in')`, [], /already been referred/, 'case-insensitive duplicate'));
+  for (const uid of [U1, PARTNER]) {
+    await asUser(uid, () => rejects(`UPDATE commission_partners SET active=true`, [], /permission denied/, 'access forgery'));
+    await asUser(uid, () => rejects(`INSERT INTO commission_earnings(partner_id,kind,amount,milestone) VALUES($1,'bonus',200000,10)`, [partnerId], /permission denied/, 'earning forgery'));
+    await asUser(uid, () => rejects(`SELECT qualify_commission($1,$1)`, [id], /permission denied/, 'qualification forgery'));
+    await asUser(uid, () => rejects(`SELECT prepare_commission_payout($1,'source')`, [id], /permission denied/, 'payout forgery'));
+  }
+  assert.equal((await asUser(U1, () => one(`SELECT count(*)::int AS n FROM commission_referrals`))).n, 0);
+  assert.equal((await asUser(PARTNER, () => one(`SELECT count(*)::int AS n FROM commission_referrals`))).n, 1);
+  await asAnon(() => rejects(`SELECT * FROM commission_partners`, [], /permission denied/, 'anonymous partner enumeration'));
+});
+
+check('first annual payment is linked, but a capture verified less than 14 days ago cannot qualify', async () => {
+  for (let i = 1; i <= 21; i++) {
+    const uid = `44444444-4444-4444-4444-${String(i).padStart(12, '0')}`;
+    const email = `commission${i}@example.in`;
+    await db.query(`INSERT INTO auth.users(id,email) VALUES($1,$2)`, [uid,email]);
+    const referral = (await one(`INSERT INTO commission_referrals(partner_id,email,created_at) VALUES($1,$2,now()-interval '20 days') RETURNING id`, [partnerId,email])).id;
+    const biz = (await one(`INSERT INTO businesses(owner_id,name,slug,category) VALUES($1,'Referral business',$2,'Cafe') RETURNING id`, [uid,`commission-${i}`])).id;
+    const order = (await one(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,$3,'12_months',$4) RETURNING id`, [biz,uid,`commission-order-${i}`,i === 21 ? 199900 : 299900])).id;
+    await db.query(`UPDATE payment_orders SET status='paid',payment_id=$2 WHERE id=$1`, [order,`commission-payment-${i}`]);
+    commissionFixtures.push({ referral, order, uid, biz });
+  }
+  const f = commissionFixtures[0];
+  assert.equal((await one(`SELECT order_id FROM commission_referrals WHERE id=$1`,[f.referral])).order_id, f.order);
+  assert.equal((await one(`SELECT order_id FROM commission_referrals WHERE id=$1`,[commissionFixtures[20].referral])).order_id, null);
+  await db.query(`UPDATE commission_referrals SET capture_verified_at=now()-interval '13 days' WHERE id=$1`,[f.referral]);
+  assert.equal((await one(`SELECT qualify_commission($1,$2) AS ok`,[f.referral,f.order])).ok,false);
+  await asUser(PARTNER, () => rejects(`SELECT register_commission_referral('commission1@example.in')`, [], /already paid/, 'paid owner'));
+});
+
+check('20 qualifying owners earn exactly 20 commissions and bonuses at 10 and 20; retries do not duplicate money', async () => {
+  for (const f of commissionFixtures.slice(0,20)) {
+    await db.query(`UPDATE commission_referrals SET capture_verified_at=now()-interval '15 days' WHERE id=$1`,[f.referral]);
+    assert.equal((await one(`SELECT qualify_commission($1,$2) AS ok`,[f.referral,f.order])).ok,true);
+    assert.equal((await one(`SELECT qualify_commission($1,$2) AS ok`,[f.referral,f.order])).ok,false);
+  }
+  assert.deepEqual((await q(`SELECT milestone FROM commission_earnings WHERE kind='bonus' ORDER BY milestone`)).map(r=>r.milestone),[10,20]);
+  const total = await one(`SELECT count(*)::int AS n,sum(amount)::int AS amount FROM commission_earnings WHERE partner_id=$1`,[partnerId]);
+  assert.deepEqual(total,{n:22,amount:2400000});
+  // Renewal is never another referral, even with a fresh annual payment.
+  const f=commissionFixtures[0];
+  await db.query(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,'commission-renewal','12_months',299900)`,[f.biz,f.uid]);
+  await db.exec(`UPDATE payment_orders SET status='paid',payment_id='commission-renewal-payment' WHERE order_id='commission-renewal'`);
+  assert.equal((await one(`SELECT count(*)::int AS n FROM commission_earnings WHERE partner_id=$1`,[partnerId])).n,22);
+});
+
+let earningId;
+check('payout preparation waits for bank setup and freezes its exact payload across repeated attempts', async () => {
+  earningId=(await one(`SELECT id FROM commission_earnings WHERE partner_id=$1 ORDER BY id LIMIT 1`,[partnerId])).id;
+  assert.equal((await one(`SELECT prepare_commission_payout($1,'source-one') AS body`,[earningId])).body,null);
+  await db.query(`UPDATE commission_partners SET fund_account_id='fa_first',bank_last4='1234' WHERE id=$1`,[partnerId]);
+  const body=(await one(`SELECT prepare_commission_payout($1,'source-one') AS body`,[earningId])).body;
+  assert.equal(body.fund_account_id,'fa_first');
+  assert.equal(body.reference_id,earningId);
+  await db.query(`UPDATE commission_partners SET fund_account_id='fa_changed' WHERE id=$1`,[partnerId]);
+  assert.deepEqual((await one(`SELECT prepare_commission_payout($1,'source-two') AS body`,[earningId])).body,body);
+  await db.query(`UPDATE commission_earnings SET first_attempt_at=now()-interval '7 days' WHERE id=$1`,[earningId]);
+  assert.equal((await one(`SELECT prepare_commission_payout($1,'source-two') AS body`,[earningId])).body,null);
+  assert.equal((await one(`SELECT status FROM commission_earnings WHERE id=$1`,[earningId])).status,'needs_attention');
+});
+
+check('revoking a partner removes private access and pauses new transfers', async () => {
+  const other=(await one(`SELECT id FROM commission_earnings WHERE partner_id=$1 AND status='pending' LIMIT 1`,[partnerId])).id;
+  await db.query(`UPDATE commission_partners SET active=false WHERE id=$1`,[partnerId]);
+  assert.equal((await asUser(PARTNER, () => one(`SELECT count(*)::int AS n FROM commission_earnings`))).n,0);
+  await asUser(PARTNER, () => rejects(`SELECT register_commission_referral('new2@example.in')`,[],/Invitation required/,'revoked registration'));
+  assert.equal((await one(`SELECT prepare_commission_payout($1,'source') AS body`,[other])).body,null);
+  await db.exec(`UPDATE profiles SET role='admin' WHERE id='${U2}'`);
+  try { assert.equal((await asUser(U2,()=>one(`SELECT count(*)::int AS n FROM commission_earnings`))).n,22); }
+  finally { await db.exec(`UPDATE profiles SET role='user' WHERE id='${U2}'`); }
 });
