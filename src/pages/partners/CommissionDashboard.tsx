@@ -118,7 +118,7 @@ export function CommissionDashboard({ developer = false }: { developer?: boolean
 
   const content = (
     <>
-      <PageHeader title={developer ? 'Partner commissions' : 'Your commissions'} description="Private referral programme. Earnings and bank transfers are tracked automatically." />
+      {developer ? <div><h2 className="text-lg font-semibold">Partner commissions</h2><p className="mt-1 text-sm text-gray-600">Private referral programme. Earnings and bank transfers are tracked automatically.</p></div> : <PageHeader title="Your commissions" description="Private referral programme. Earnings and bank transfers are tracked automatically." />}
       {error && <Alert variant="error" className="mt-4">{error}</Alert>}
       {notice && <Alert variant="success" className="mt-4">{notice}</Alert>}
       {developer && setup && (!setup.emailReady || !setup.payoutsReady || !setup.enabled || !setup.schedulerReady) && <Alert variant="warning" className="mt-4">

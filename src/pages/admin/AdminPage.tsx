@@ -1,151 +1,72 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, CreditCard, AlertTriangle, PenLine, Users, LogOut } from 'lucide-react';
+import { Activity, Building2, CreditCard, LayoutDashboard, LogOut, RefreshCw, Settings, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { BrandLogo } from '@/components/BrandLogo';
-import { Alert, Button, Card, Skeleton, Badge, PageHeader } from '@/components/ui';
-import { SiteTrafficCard } from './SiteTrafficCard';
+import { SkipLink } from '@/components/SkipLink';
+import { Alert, Badge, Button, PageHeader, Skeleton } from '@/components/ui';
 import { CommissionDashboard } from '@/pages/partners/CommissionDashboard';
+import { BusinessDirectory } from '@/pages/admin/BusinessDirectory';
+import { DeveloperOverview } from '@/pages/admin/DeveloperOverview';
+import { DeveloperPayments } from '@/pages/admin/DeveloperPayments';
+import { DeveloperActivity } from '@/pages/admin/DeveloperActivity';
+import { DeveloperSetup } from '@/pages/admin/DeveloperSetup';
+import { developerDate, type DeveloperOperations, type DeveloperSection, type DeveloperSetup as Setup, type DeveloperSummary } from '@/pages/admin/developer-types';
+
+const sections = [
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'businesses', label: 'Businesses', icon: Building2 },
+  { id: 'payments', label: 'Payments', icon: CreditCard },
+  { id: 'partners', label: 'Partners', icon: Users },
+  { id: 'activity', label: 'Activity', icon: Activity },
+  { id: 'setup', label: 'Setup', icon: Settings },
+] as const;
 
 export function AdminPage() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
-  const [stats, setStats] = useState({
-    businessCount: 0,
-    activeSubs: 0,
-    expiredSubs: 0,
-    aiGenerations: 0,
-    totalUsers: 0,
-    subscriptionsStarted: 0,
-    payingNow: 0,
-    loading: true,
-    error: null as string | null,
-  });
+  const [section, setSection] = useState<DeveloperSection>('overview');
+  const [summary, setSummary] = useState<DeveloperSummary | null>(null);
+  const [operations, setOperations] = useState<DeveloperOperations | null>(null);
+  const [setup, setSetup] = useState<Setup | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [updated, setUpdated] = useState<string | null>(null);
+  const [refresh, setRefresh] = useState(0);
+  const request = useRef(0);
 
-  useEffect(() => {
-    async function loadAdminStats() {
-      try {
-        // Counted by the database. Fetching the rows and counting them here
-        // stopped at 1,000, the most Supabase returns in one request.
-        const countRows = (table: string) => supabase.from(table).select('*', { count: 'exact', head: true });
-        const [businessesRes, usersRes, aiRes, subsRes, activeRes, expiredRes, payingRes] = await Promise.all([
-          countRows('businesses'),
-          countRows('profiles'),
-          countRows('ai_generation_log'),
-          countRows('subscriptions'),
-          countRows('subscriptions').in('status', ['active', 'trial']),
-          countRows('subscriptions').eq('status', 'expired'),
-          countRows('subscriptions').eq('status', 'active').gt('expires_at', new Date().toISOString()),
-        ]);
-
-        const queryError =
-          businessesRes.error ?? usersRes.error ?? aiRes.error ?? subsRes.error ??
-          activeRes.error ?? expiredRes.error ?? payingRes.error;
-        if (queryError) throw queryError;
-
-        setStats({
-          businessCount: businessesRes.count ?? 0,
-          activeSubs: activeRes.count ?? 0,
-          expiredSubs: expiredRes.count ?? 0,
-          aiGenerations: aiRes.count ?? 0,
-          totalUsers: usersRes.count ?? 0,
-          // A subscription row exists once a business starts its AutoPay trial
-          // or pays once, so every row is a business past the payment step.
-          subscriptionsStarted: subsRes.count ?? 0,
-          payingNow: payingRes.count ?? 0,
-          loading: false,
-          error: null,
-        });
-      } catch {
-        setStats((prev) => ({ ...prev, loading: false, error: 'Could not load admin statistics.' }));
-      }
-    }
-    loadAdminStats();
+  const load = useCallback(async () => {
+    const current = ++request.current;
+    setLoading(true); setError(null);
+    try {
+      const [totals, records, config] = await Promise.all([
+        supabase.rpc('developer_summary'), supabase.rpc('developer_operations'),
+        supabase.functions.invoke('commission-access', { body: { action: 'setup' } }),
+      ]);
+      if (current !== request.current) return;
+      if (totals.error || records.error || !totals.data || !records.data) throw new Error('Could not load developer records. Refresh and try again.');
+      setSummary(totals.data as DeveloperSummary); setOperations(records.data as DeveloperOperations);
+      setSetup(config.error ? null : config.data as Setup); setUpdated(new Date().toISOString());
+    } catch { if (current === request.current) setError('Could not load developer records. Refresh and try again.'); }
+    finally { if (current === request.current) setLoading(false); }
   }, []);
+  const invalidateRequests = useCallback(() => { request.current++; }, []);
+  useEffect(() => { void load(); return invalidateRequests; }, [load, invalidateRequests]);
 
-  const statCards = [
-    { label: 'Businesses', value: stats.businessCount, icon: Building2 },
-    { label: 'Trial or active subscriptions', value: stats.activeSubs, icon: CreditCard },
-    { label: 'Expired subscriptions', value: stats.expiredSubs, icon: AlertTriangle },
-    { label: 'AI drafts written', value: stats.aiGenerations, icon: PenLine },
-    { label: 'Users', value: stats.totalUsers, icon: Users },
-  ];
+  function refreshAll() { setRefresh((value) => value+1); void load(); }
+  const navigation = <nav aria-label="Developer dashboard sections" className="mt-6 flex flex-wrap gap-2 border-b border-gray-200 pb-4">{sections.map(({id,label,icon:Icon}) => <Button key={id} variant={section === id ? 'primary' : 'outline'} size="sm" aria-pressed={section === id} onClick={() => setSection(id)}><Icon className="h-4 w-4" aria-hidden="true" />{label}</Button>)}</nav>;
 
-  // Where new owners drop off, from data the database already holds: no extra
-  // tracking. Each stage is a subset of the one before it.
-  const funnel = [
-    { label: 'Created an account', value: stats.totalUsers },
-    { label: 'Set up a business', value: stats.businessCount },
-    { label: 'Started a trial or paid', value: stats.subscriptionsStarted },
-    { label: 'Paying now', value: stats.payingNow },
-  ];
-
-  async function handleSignOut() {
-    await signOut();
-    navigate('/');
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <BrandLogo className="h-9 w-auto" />
-            <Badge variant="info">Admin</Badge>
-          </div>
-          <Button variant="ghost" size="sm" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4" aria-hidden="true" /> Sign out
-          </Button>
-        </div>
-      </header>
-      <main id="main-content" tabIndex={-1} className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
-      <PageHeader title="Admin dashboard" description="System overview and usage statistics." />
-
-      {stats.loading ? (
-        <div className="mt-6 grid grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-28" />)}
-        </div>
-      ) : stats.error ? (
-        <Alert variant="error" className="mt-6">{stats.error}</Alert>
-      ) : (
-        <div className="mt-6 grid grid-cols-2 lg:grid-cols-3 gap-4">
-          {statCards.map((stat) => (
-            <Card key={stat.label} className="p-4 sm:p-5">
-              <stat.icon className="h-5 w-5 text-brand-700" aria-hidden="true" />
-              <p className="mt-3 text-2xl font-bold text-gray-900 tabular-nums">{stat.value}</p>
-              <p className="mt-0.5 text-sm text-gray-600">{stat.label}</p>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {!stats.loading && !stats.error && (
-        <Card className="mt-6 p-5 sm:p-6">
-          <h2 className="text-sm font-semibold text-gray-900">Owner signup funnel</h2>
-          <p className="mt-0.5 text-xs text-gray-600">All time. The biggest drop between two stages is where owners give up.</p>
-          <ol className="mt-4 space-y-3">
-            {funnel.map((stage, i) => {
-              const previous = i > 0 ? funnel[i - 1].value : null;
-              return (
-                <li key={stage.label} className="flex items-baseline justify-between gap-3 text-sm">
-                  <span className="text-gray-700">{stage.label}</span>
-                  <span className="flex items-baseline gap-2">
-                    {previous !== null && previous > 0 && (
-                      <span className="text-xs text-gray-600">{Math.round((stage.value / previous) * 100)}% of previous</span>
-                    )}
-                    <span className="font-semibold tabular-nums text-gray-900">{stage.value}</span>
-                  </span>
-                </li>
-              );
-            })}
-          </ol>
-        </Card>
-      )}
-
-      <SiteTrafficCard />
-      <CommissionDashboard developer />
-      </main>
-    </div>
-  );
+  return <div className="min-h-screen bg-gray-50"><SkipLink /><header className="border-b border-gray-200 bg-white"><div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6"><div className="flex items-center gap-3"><BrandLogo className="h-9 w-auto" /><Badge variant="info">Developer</Badge></div><Button variant="ghost" size="sm" onClick={() => void signOut().then(() => navigate('/'))}><LogOut className="h-4 w-4" aria-hidden="true" />Sign out</Button></div></header>
+    <main id="main-content" tabIndex={-1} className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8"><PageHeader title="Developer dashboard" description="Manage businesses, inspect payments and run your private partner programme." actions={<Button variant="outline" loading={loading} onClick={refreshAll}><RefreshCw className="h-4 w-4" aria-hidden="true" />Refresh dashboard</Button>} />
+      {updated && <p className="mt-2 text-xs text-gray-600" role="status">Last refreshed {developerDate(updated)}</p>}
+      {navigation}
+      {error && <Alert variant="error" className="mt-4">{error}</Alert>}
+      {section === 'businesses' ? <BusinessDirectory refresh={refresh} onChange={refreshAll} /> : section === 'partners' ? <CommissionDashboard key={refresh} developer /> : loading ? <div role="status" aria-label="Loading developer records" className="mt-6 grid gap-4 sm:grid-cols-2">{[0,1,2,3].map((i) => <Skeleton key={i} className="h-28" />)}</div> : <>
+        {section === 'overview' && summary && <DeveloperOverview summary={summary} refresh={refresh} open={setSection} />}
+        {section === 'payments' && operations && <DeveloperPayments operations={operations} />}
+        {section === 'activity' && operations && <DeveloperActivity rows={operations.activity} />}
+        {section === 'setup' && <DeveloperSetup setup={setup} />}
+      </>}
+    </main></div>;
 }
