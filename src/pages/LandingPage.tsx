@@ -149,7 +149,7 @@ export function LandingPage() {
 
         <section id="pricing" className="landing-section landing-pricing-section">
           <div className="landing-container">
-            <div className="landing-pricing-heading"><h2>Simple plans. Everything included.</h2><p>One business, one location. Every feature on both plans, taxes included.<br />No add-ons. No per-review charges.</p></div>
+            <div className="landing-pricing-heading"><h2>Simple plans. Everything included.</h2><p>One business, one location. Every feature on every plan, taxes included.<br />No add-ons. No per-review charges.</p></div>
             <div className="landing-plans"><PlanCards /></div>
             <p className="landing-pricing-note">Start with a {legal.trialDays}-day trial. ₹1 AutoPay check, refunded straight away. Cancel before the trial ends to avoid the plan charge.</p>
           </div>

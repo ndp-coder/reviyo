@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { branding } from '@/config/branding';
+import { PLANS } from '@/config/plans';
 import { readFunctionError } from '@/lib/function-errors';
 import type {
   SubscriptionPlan,
@@ -170,7 +171,7 @@ export async function startRazorpayCheckout(params: {
     amount: params.order.amount,
     currency: params.order.currency || 'INR',
     name: branding.name,
-    description: `${params.order.plan === '6_months' ? '6 Months' : '12 Months'} Subscription`,
+    description: `${PLANS[params.order.plan].label} subscription`,
     order_id: params.order.order_id,
     image: new URL(branding.icon, window.location.origin).toString(),
     theme: {

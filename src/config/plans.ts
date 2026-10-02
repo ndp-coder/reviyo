@@ -7,11 +7,12 @@ import type { SubscriptionPlan } from '@/lib/types';
  * can import it without pulling in the Supabase client.
  */
 export const PLANS: Record<SubscriptionPlan, { label: string; price: number; months: number }> = {
+  '1_month': { label: 'Monthly', price: 500, months: 1 },
   '6_months': { label: '6 months', price: 1999, months: 6 },
   '12_months': { label: '12 months', price: 2999, months: 12 },
 };
 
-export const PLAN_ORDER: SubscriptionPlan[] = ['6_months', '12_months'];
+export const PLAN_ORDER: SubscriptionPlan[] = ['1_month', '6_months', '12_months'];
 
 /** The longer plan, highlighted as the better deal. */
 export const BEST_VALUE_PLAN: SubscriptionPlan = '12_months';
@@ -26,8 +27,19 @@ export function perMonth(plan: SubscriptionPlan): string {
   return `${formatRupees(Math.round(price / months))}/month`;
 }
 
-/** What the 12-month plan saves over buying the 6-month plan twice. */
-export const YEARLY_SAVING = PLANS['6_months'].price * 2 - PLANS['12_months'].price;
+export function planTerm(plan: SubscriptionPlan): string {
+  const months = PLANS[plan].months;
+  return `${months} ${months === 1 ? 'month' : 'months'}`;
+}
+
+export function billingPeriod(plan: SubscriptionPlan): string {
+  return PLANS[plan].months === 1 ? 'every month' : `every ${planTerm(plan)}`;
+}
+
+export const PLAN_SUMMARY = PLAN_ORDER.map(plan => `${formatRupees(PLANS[plan].price)} for ${planTerm(plan)}`).join(' or ');
+
+/** What the annual plan saves over twelve monthly purchases. */
+export const YEARLY_SAVING = PLANS['1_month'].price * 12 - PLANS['12_months'].price;
 
 /** Everything a subscription includes — identical for every term. */
 export const PLAN_FEATURES = [

@@ -60,7 +60,7 @@
 .landing-pricing-section { background: #f1f5fb; border-block: 1px solid var(--landing-line); }
 .landing-pricing-heading { text-align: center; }
 .landing-pricing-heading p { margin-top: 18px; color: var(--landing-muted); font-size: 14px; line-height: 1.9; }
-.landing-plans { max-width: 860px; margin: 40px auto 0; }
+.landing-plans { max-width: 1100px; margin: 40px auto 0; }
 .landing-plans > div > div:first-child > div { border-radius: 18px; }
 .landing-plans > div > div:last-child { border-radius: 18px; }
 .landing-pricing-note { margin: 24px auto 0; max-width: 680px; text-align: center; font-size: 11px; color: var(--landing-muted); line-height: 1.9; }

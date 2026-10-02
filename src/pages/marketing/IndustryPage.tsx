@@ -127,7 +127,7 @@ export function IndustryPage() {
                 Start collecting genuine reviews for your {industry.singular}
               </h2>
               <p className="mt-2 text-brand-100">
-                {legal.trialDays}-day free trial. ₹1 AutoPay check, refunded. Plans from {formatRupees(PLANS['6_months'].price)} for {PLANS['6_months'].months} months.{' '}
+                {legal.trialDays}-day free trial. ₹1 AutoPay check, refunded. Monthly plan: {formatRupees(PLANS['1_month'].price)} per month.{' '}
                 <Link to="/pricing" className="font-semibold text-white underline underline-offset-2">
                   See pricing
                 </Link>

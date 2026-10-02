@@ -66,7 +66,7 @@ export const legal = {
    * is recorded against each customer review session and each signup so you can
    * prove which notice a person actually agreed to (DPDPA s.6(1)).
    */
-  policyLastUpdated: '2026-09-30',
+  policyLastUpdated: '2026-10-02',
   // .2 (25 Sep): Terms describe the AutoPay trial and automatic renewal.
   // 26 Sep .1: Privacy and Cookie policies list the dashboard's browser storage
   // and say precisely how IP addresses are (not) handled.
@@ -74,9 +74,10 @@ export const legal = {
   // customer liked, and the notice sits on that one screen.
   // 29 Sep .1: Hostinger added as the email processor (sign-in codes,
   // receipts, and billing reminders sent from support@reviyo.in).
-  consentVersion: '2026-09-30.1',
+  // 2 Oct: added the monthly billing term; existing mandates keep their terms.
+  consentVersion: '2026-10-02.1',
   /** Recorded on each AutoPay mandate, with the wording shown at the checkbox. */
-  autopayTermsVersion: '2026-09-25.1',
+  autopayTermsVersion: '2026-10-02.1',
   /** Free trial length. Must match start_autopay_trial() in the database. */
   trialDays: 14,
 

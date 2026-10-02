@@ -1,6 +1,6 @@
 import { legal, isPlaceholder } from '@/config/legal';
 import { branding } from '@/config/branding';
-import { PLANS, PLAN_ORDER, formatRupees } from '@/config/plans';
+import { PLANS, PLAN_ORDER, PLAN_SUMMARY, formatRupees } from '@/config/plans';
 import { industries, type Industry } from '@/config/industries';
 import { landingFaqs, reviewLinkToolFaqs } from '@/config/faq';
 import { GUIDE_PATH, GUIDE_PUBLISHED, reviewGuides } from '@/config/review-guides';
@@ -38,7 +38,7 @@ type JsonLd = Record<string, unknown>;
 const real = (value: string | null | undefined) => (value && !isPlaceholder(value) ? value : undefined);
 
 const cheapestPlan = PLANS[PLAN_ORDER[0]];
-const planSummary = PLAN_ORDER.map((id) => `${formatRupees(PLANS[id].price)} for ${PLANS[id].months} months`).join(' or ');
+const planSummary = PLAN_SUMMARY;
 
 /** One step in a breadcrumb trail. Home is always first and is not listed. */
 export interface Crumb {

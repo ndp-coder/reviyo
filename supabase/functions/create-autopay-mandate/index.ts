@@ -47,7 +47,7 @@ Deno.serve(async (req: Request) => {
     const consentVersion = typeof body.consent_version === "string" ? body.consent_version.trim() : "";
 
     if (!businessId) return json({ error: "Missing business" }, 400);
-    if (!(plan in AUTOPAY_PLAN_PRICES)) return json({ error: "Choose the 6-month or 12-month plan." }, 400);
+    if (!Object.hasOwn(AUTOPAY_PLAN_PRICES, plan)) return json({ error: "Choose the monthly, 6-month or 12-month plan." }, 400);
     if (!method) return json({ error: "Choose UPI or card." }, 400);
     if (!consentVersion || consentVersion.length > 40) {
       return json({ error: "Please accept the AutoPay terms to continue." }, 400);

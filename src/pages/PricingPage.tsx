@@ -18,7 +18,7 @@ export function PricingPage() {
         <div className="max-w-4xl mx-auto">
           <Breadcrumbs />
           <h1 className="mt-8 text-[2rem] font-bold leading-[1.15] text-balance text-gray-900 sm:text-5xl">
-            Every feature on both plans. Just pick a term.
+            Every feature on every plan. Just pick a term.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-700">
             One subscription covers one business, one location, and one Google Business Profile.

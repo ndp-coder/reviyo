@@ -4,6 +4,7 @@
 import { getCorsHeaders, isAllowedBrowserOrigin } from "../_shared/cors.ts";
 
 const PLAN_PRICES: Record<string, { amount: number; label: string }> = {
+  "1_month": { amount: 50000, label: "Monthly plan" }, // ₹500 in paise
   "6_months": { amount: 199900, label: "6 Months Plan" },   // ₹1,999 in paise
   "12_months": { amount: 299900, label: "12 Months Plan" }, // ₹2,999 in paise
 };
@@ -78,8 +79,8 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    if (!plan || !(plan in PLAN_PRICES)) {
-      return new Response(JSON.stringify({ error: "Invalid plan. Choose '6_months' or '12_months'" }), {
+    if (typeof plan !== "string" || !Object.hasOwn(PLAN_PRICES, plan)) {
+      return new Response(JSON.stringify({ error: "Invalid plan. Choose '1_month', '6_months' or '12_months'" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

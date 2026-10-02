@@ -1,6 +1,6 @@
 export type UserRole = 'user' | 'admin';
 
-export type SubscriptionPlan = '6_months' | '12_months';
+export type SubscriptionPlan = '1_month' | '6_months' | '12_months';
 export type SubscriptionStatus = 'trial' | 'active' | 'expired' | 'cancelled';
 
 export type PrivateFeedbackStatus = 'new' | 'seen' | 'resolved';

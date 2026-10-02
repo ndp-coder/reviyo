@@ -552,3 +552,49 @@ check('developer directory paginates, searches literally and does not expose pay
     assert.ok(!JSON.stringify(operations).includes('razorpay_customer_id'));
   } finally { await db.exec(`UPDATE profiles SET role='user' WHERE id='${U2}'`); }
 });
+
+check('monthly trial, ₹500 charges and month-end renewals are idempotent and never earn commission or bonuses', async () => {
+  const uid = '88888888-8888-8888-8888-888888888888';
+  const email = 'monthly-owner@example.in';
+  await db.query(`INSERT INTO auth.users(id,email) VALUES($1,$2)`, [uid,email]);
+  const monthlyPartner = (await one(`INSERT INTO commission_partners(email,name) VALUES('monthly-partner@example.in','Monthly test partner') RETURNING id`)).id;
+  const referral = (await one(`INSERT INTO commission_referrals(partner_id,email,created_at) VALUES($1,$2,now()-interval '20 days') RETURNING id`, [monthlyPartner,email])).id;
+  const biz = (await one(`INSERT INTO businesses(owner_id,name,slug,category) VALUES($1,'Monthly salon','monthly-salon','Salon') RETURNING id`, [uid])).id;
+  const mandate = (await one(`INSERT INTO autopay_mandates(business_id,user_id,plan,amount,method,razorpay_customer_id,auth_order_id,consent_version)
+    VALUES($1,$2,'1_month',50000,'upi','cust_monthly','monthly-auth','monthly-v1') RETURNING id`, [biz,uid])).id;
+  const trial = (await one(`SELECT start_autopay_trial('monthly-auth','monthly-auth-payment','monthly-token') AS r`)).r;
+  assert.equal(trial.trial_started,true);
+  assert.equal(trial.subscription.plan,'1_month');
+  assert.equal((await one(`SELECT round(extract(epoch FROM expires_at-now())/86400)::int AS days FROM subscriptions WHERE business_id=$1`, [biz])).days,14);
+  await db.query(`UPDATE subscriptions SET expires_at=now()+interval '2 days' WHERE business_id=$1`, [biz]);
+  const due = await one(`SELECT plan,amount FROM autopay_mandates_due_for_charge() WHERE mandate_id=$1`, [mandate]);
+  assert.deepEqual(due,{plan:'1_month',amount:50000});
+
+  // A calendar month from January 31 ends on February 28, not March 2.
+  await db.query(`UPDATE subscriptions SET expires_at='2027-01-31T12:00:00Z' WHERE business_id=$1`, [biz]);
+  const firstOrder = (await one(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount,kind,mandate_id)
+    VALUES($1,$2,'monthly-charge-1','1_month',50000,'autopay',$3) RETURNING id`, [biz,uid,mandate])).id;
+  const paid = (await one(`SELECT settle_autopay_charge('monthly-charge-1','monthly-payment-1',true) AS r`)).r;
+  assert.equal(Date.parse(paid.subscription.expires_at),Date.parse('2027-02-28T12:00:00Z'));
+  assert.equal(paid.subscription.status,'active');
+  const retry = (await one(`SELECT settle_autopay_charge('monthly-charge-1','monthly-payment-1',true) AS r`)).r;
+  assert.equal(retry.already_processed,true);
+  assert.equal(Date.parse(retry.subscription.expires_at),Date.parse(paid.subscription.expires_at));
+  await rejects(`SELECT process_paid_order('monthly-charge-1','another-monthly-payment')`,[],/different payment/,'monthly duplicate payment');
+  assert.equal((await one(`SELECT order_id FROM commission_referrals WHERE id=$1`,[referral])).order_id,null);
+  // Even an incorrectly linked referral cannot turn a monthly charge into an earning.
+  await db.query(`UPDATE commission_referrals SET order_id=$2,capture_verified_at=now()-interval '15 days' WHERE id=$1`, [referral,firstOrder]);
+  assert.equal((await one(`SELECT qualify_commission($1,$2) AS ok`,[referral,firstOrder])).ok,false);
+  for(let i=1;i<=9;i++) {
+    const nextUid=`99999999-9999-9999-9999-${String(i).padStart(12,'0')}`;
+    const nextEmail=`monthly${i}@example.in`;
+    await db.query(`INSERT INTO auth.users(id,email) VALUES($1,$2)`,[nextUid,nextEmail]);
+    await db.query(`INSERT INTO commission_referrals(partner_id,email,created_at) VALUES($1,$2,now()-interval '20 days')`,[monthlyPartner,nextEmail]);
+    const nextBiz=(await one(`INSERT INTO businesses(owner_id,name,slug,category) VALUES($1,'Monthly business',$2,'Salon') RETURNING id`,[nextUid,`monthly-${i}`])).id;
+    await db.query(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,$3,'1_month',50000)`,[nextBiz,nextUid,`monthly-once-${i}`]);
+    await one(`SELECT process_paid_order($1,$2)`,[`monthly-once-${i}`,`monthly-once-payment-${i}`]);
+  }
+  assert.equal((await one(`SELECT count(*)::int AS n FROM commission_earnings WHERE partner_id=$1`,[monthlyPartner])).n,0,'ten monthly customers earn neither commission nor bonus');
+  assert.equal((await one(`SELECT count(*)::int AS n FROM commission_candidates() WHERE referral_id=$1`,[referral])).n,0);
+  await asUser(uid,()=>rejects(`SELECT activate_or_renew_subscription($1,'1_month','forged')`,[biz],/permission denied/,'monthly activation is server-only'));
+});

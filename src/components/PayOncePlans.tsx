@@ -106,7 +106,7 @@ export function PayOncePlans({
     }
   }
 
-  // Both terms include the same features, so only price and term differ.
+  // All terms include the same features, so only price and term differ.
   return (
     <section aria-labelledby="pay-once-heading">
       <h2 id="pay-once-heading" className="text-base font-semibold text-gray-900">{heading}</h2>
@@ -115,7 +115,7 @@ export function PayOncePlans({
         everything — see{' '}
         <Link to="/pricing" className="font-medium text-brand-700 underline underline-offset-2">what&apos;s included</Link>.
       </p>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
         {PLAN_ORDER.map((planId) => {
           const plan = PLANS[planId];
           const isCurrentPlan = currentPlan === planId;
@@ -125,7 +125,7 @@ export function PayOncePlans({
             <Card key={planId} className={`flex flex-col p-5 ${bestValue ? 'border-brand-300' : ''}`}>
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-sm font-semibold text-gray-900">{plan.label}</h3>
-                {bestValue && <Badge variant="success">Save {formatRupees(YEARLY_SAVING)}</Badge>}
+                {bestValue && <Badge variant="success">Save {formatRupees(YEARLY_SAVING)} vs monthly</Badge>}
                 {isCurrentPlan && <Badge variant="success">Current</Badge>}
               </div>
               <p className="mt-2 text-2xl font-bold tabular-nums text-gray-900">{formatRupees(plan.price)}</p>

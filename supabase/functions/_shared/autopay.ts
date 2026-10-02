@@ -7,6 +7,7 @@
 
 // Keep in step with PLAN_PRICES in create-razorpay-order (a test checks this).
 export const AUTOPAY_PLAN_PRICES: Record<string, number> = {
+  "1_month": 50000, // ₹500 in paise
   "6_months": 199900, // ₹1,999 in paise
   "12_months": 299900, // ₹2,999 in paise
 };

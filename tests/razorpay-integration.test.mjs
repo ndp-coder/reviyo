@@ -193,7 +193,7 @@ test('AutoPay plan prices match the one-time checkout prices', async () => {
     // Client display prices live in one place, shared by Billing, AutoPay setup, and the marketing pages.
     read('src/config/plans.ts'),
   ]);
-  for (const [plan, paise] of [['6_months', 199900], ['12_months', 299900]]) {
+  for (const [plan, paise] of [['1_month', 50000], ['6_months', 199900], ['12_months', 299900]]) {
     assert.match(oneTime, new RegExp(`"${plan}":\\s*\\{\\s*amount:\\s*${paise}`));
     assert.match(autopay, new RegExp(`"${plan}":\\s*${paise}`));
     assert.match(client, new RegExp(`'${plan}':\\s*\\{[^}]*price:\\s*${paise / 100}`));

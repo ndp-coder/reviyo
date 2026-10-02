@@ -36,7 +36,7 @@ export function RefundPolicyPage() {
 
       <Clause id="after" heading="3. After the 7-day window">
         <p>
-          Plans are prepaid for a fixed term of 6 or 12 months. After day 7, we do not give refunds
+          Plans are prepaid for a fixed term of 1, 6 or 12 months. After day 7, we do not give refunds
           for a change of mind or for not using the service — but we do refund in these cases:
         </p>
         <List

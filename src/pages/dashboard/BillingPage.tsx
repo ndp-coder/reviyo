@@ -4,7 +4,7 @@ import { ShieldCheck, Receipt } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { legal, displayValue } from '@/config/legal';
-import { PLANS } from '@/config/plans';
+import { PLANS, billingPeriod } from '@/config/plans';
 import { Alert, Card, Button, Badge, PageHeader, Skeleton } from '@/components/ui';
 import { AutopaySetup } from '@/components/AutopaySetup';
 import { AUTOPAY_PLANS, cancelAutopay, formatRupees } from '@/lib/autopay';
@@ -222,7 +222,7 @@ export function BillingPage() {
                     </Badge>
                   </div>
                   <p className="mt-2 text-sm text-gray-700">
-                    {formatRupees(AUTOPAY_PLANS[mandate.plan].price)} every {AUTOPAY_PLANS[mandate.plan].months} months via{' '}
+                    {formatRupees(AUTOPAY_PLANS[mandate.plan].price)} {billingPeriod(mandate.plan)} via{' '}
                     {mandate.method === 'upi' ? 'UPI AutoPay' : 'card'}.
                     {subscription?.expires_at && mandate.status !== 'paused' && (
                       <>

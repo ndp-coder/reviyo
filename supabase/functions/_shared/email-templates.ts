@@ -16,6 +16,7 @@ export const SENDER = {
 } as const;
 
 export const PLAN_LABELS: Record<string, string> = {
+  "1_month": "Monthly",
   "6_months": "6 months",
   "12_months": "12 months",
 };

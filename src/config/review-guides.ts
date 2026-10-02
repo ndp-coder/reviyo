@@ -1,5 +1,5 @@
 import { legal } from '@/config/legal';
-import { PLANS, formatRupees } from '@/config/plans';
+import { PLAN_SUMMARY } from '@/config/plans';
 
 export interface ReviewGuide {
   slug: string;
@@ -79,15 +79,15 @@ export const reviewGuides: ReviewGuide[] = [
     slug: 'google-review-tools-india',
     title: 'Choosing a Google review tool for a business in India',
     description: 'Compare free review QR codes with paid AI drafting for a single-location Indian business. See Reviyo’s actual rupee pricing, trial terms, features, and limits.',
-    answer: `For a single-location business in India, start by deciding whether you need only a free review QR code or an editable AI drafting page as well. Reviyo provides a free link tool; subscriptions cost ${formatRupees(PLANS['6_months'].price)} for six months or ${formatRupees(PLANS['12_months'].price)} for twelve months, taxes included.`,
+    answer: `For a single-location business in India, start by deciding whether you need only a free review QR code or an editable AI drafting page as well. Reviyo provides a free link tool; subscriptions cost ${PLAN_SUMMARY}, taxes included.`,
     sections: [
       { title: 'Start with what the business needs', paragraphs: ['A café with one counter may need a very different setup from a chain with several branches. List your requirements before comparing products: review-link generation, printable materials, writing assistance, feedback handling, and reporting.', 'Reviyo’s advertised plans cover one business, one location, and one Google Business Profile. Do not assume one plan covers a chain, review platforms other than Google, or agency accounts. Ask about a requirement that is not listed before subscribing.'] },
-      { title: 'Read the full price and renewal terms', paragraphs: [`Both Reviyo plans include the same features. The six-month term is ${formatRupees(PLANS['6_months'].price)}, and the twelve-month term is ${formatRupees(PLANS['12_months'].price)}. Those are term prices, not monthly instalments. Displayed prices include taxes.`, `The ${legal.trialDays}-day trial uses a ₹1 AutoPay authorisation check that is refunded. Cancel before the trial ends to avoid the plan charge. Read the pricing and refund pages for the actual billing, renewal, and cancellation terms rather than relying on a “free trial” label alone.`] },
+      { title: 'Read the full price and renewal terms', paragraphs: [`All Reviyo plans include the same features: ${PLAN_SUMMARY}. The monthly plan renews every month with AutoPay; six- and twelve-month plans are charged for the full term, not in monthly instalments. Displayed prices include taxes.`, `The ${legal.trialDays}-day trial uses a ₹1 AutoPay authorisation check that is refunded. Cancel before the trial ends to avoid the plan charge. Read the pricing and refund pages for the actual billing, renewal, and cancellation terms rather than relying on a “free trial” label alone.`] },
       { title: 'Check the work involved after setup', paragraphs: ['The owner supplies the correct Google review link, prepares the QR materials, and chooses review topics that suit the business. Customers use the page themselves. WhatsApp requests require the owner to select a customer and send the message.', 'Analytics show activity on the review journey, not a verified count of posted Google reviews. Reviyo’s private feedback inbox contains messages submitted through Reviyo; it is not a replacement for reading and replying to Google reviews on the Business Profile.'] },
       { title: 'Try a real customer journey before committing', paragraphs: ['Test on a phone and verify the business destination. Read a draft based on ordinary topics and another based on criticism. Check that both users have the same ability to open Google and that the draft does not invent details.', 'A useful fit is one your staff can explain in a sentence and customers can use without installing an app. No provider should promise a guaranteed rating, a specific volume of reviews, or automatic public posting on a customer’s behalf.'] },
     ],
     faqs: [
-      { q: 'Is there an affordable Google review tool in India?', a: `Reviyo offers a free Google review link and QR generator, plus paid AI-assisted review pages at ${formatRupees(PLANS['6_months'].price)} for six months or ${formatRupees(PLANS['12_months'].price)} for twelve months. Whether it is affordable depends on your requirements and budget.` },
+      { q: 'Is there an affordable Google review tool in India?', a: `Reviyo offers a free Google review link and QR generator, plus paid AI-assisted review pages at ${PLAN_SUMMARY}. Whether it is affordable depends on your requirements and budget.` },
       { q: 'What is the best Google review tool for Indian businesses?', a: 'There is no single best tool for every business. Compare location limits, total term cost, customer effort, reporting, renewal terms, and handling of genuine negative feedback. Reviyo is designed for one business at one location.' },
     ], related: ['choosing-google-review-software', 'google-review-qr-code'],
   },

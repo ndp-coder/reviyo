@@ -21,7 +21,7 @@ test('full annual payment qualifies exactly at 14 days; authorisations, trials, 
   const {paymentQualifies}=helper();
   assert.equal(paymentQualifies(payment,'order_test',old,now),true);
   assert.equal(paymentQualifies(payment,'order_test',old,now-1),false);
-  for(const patch of [{status:'authorized'},{captured:false},{amount:100},{amount:199900},{amount_refunded:1},{refund_status:'partial'},{currency:'USD'},{created_at:undefined}]) {
+  for(const patch of [{status:'authorized'},{captured:false},{amount:100},{amount:50000},{amount:199900},{amount_refunded:1},{refund_status:'partial'},{currency:'USD'},{created_at:undefined}]) {
     assert.equal(paymentQualifies({...payment,...patch},'order_test',old,now),false,JSON.stringify(patch));
   }
   assert.equal(paymentQualifies(payment,'different_order',old,now),false);

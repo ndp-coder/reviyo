@@ -1,19 +1,19 @@
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
-import { BEST_VALUE_PLAN, PLAN_FEATURES, PLAN_ORDER, PLANS, YEARLY_SAVING, formatRupees, perMonth } from '@/config/plans';
+import { BEST_VALUE_PLAN, PLAN_FEATURES, PLAN_ORDER, PLANS, YEARLY_SAVING, formatRupees, perMonth, planTerm } from '@/config/plans';
 import { legal } from '@/config/legal';
 import { buttonClasses } from '@/components/ui/button-styles';
 
 /**
- * The two plans side by side, then one shared list of what every plan
- * includes. Both terms include exactly the same features, so repeating the
+ * The plans side by side, then one shared list of what every plan
+ * includes. All terms include exactly the same features, so repeating the
  * list inside each card only made them look different when they are not.
  */
 export function PlanCards({ headingLevel = 'h3' }: { headingLevel?: 'h2' | 'h3' }) {
   const Heading = headingLevel;
   return (
     <div>
-      <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
+      <div className="grid gap-4 md:grid-cols-3 sm:gap-6">
         {PLAN_ORDER.map((planId) => {
           const plan = PLANS[planId];
           const bestValue = planId === BEST_VALUE_PLAN;
@@ -28,13 +28,13 @@ export function PlanCards({ headingLevel = 'h3' }: { headingLevel?: 'h2' | 'h3' 
                 <Heading className="text-lg font-bold text-gray-900">{plan.label}</Heading>
                 {bestValue && (
                   <span className="rounded-full bg-accent-100 px-2.5 py-0.5 text-xs font-semibold text-accent-800">
-                    Save {formatRupees(YEARLY_SAVING)}
+                    Save {formatRupees(YEARLY_SAVING)} vs monthly
                   </span>
                 )}
               </div>
-              <p className="mt-3 text-5xl font-bold tabular-nums tracking-tight text-gray-900">{formatRupees(plan.price)}</p>
+              <p className="mt-3 text-5xl md:text-4xl lg:text-5xl font-bold tabular-nums tracking-tight text-gray-900">{formatRupees(plan.price)}</p>
               <p className="mt-1 text-sm text-gray-600">
-                for {plan.months} months, which works out to {perMonth(planId)}
+                {plan.months === 1 ? 'for 1 month, billed monthly with AutoPay' : `for ${planTerm(planId)}, which works out to ${perMonth(planId)}`}
               </p>
               <Link
                 to="/signup"

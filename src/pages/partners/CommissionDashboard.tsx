@@ -133,7 +133,7 @@ export function CommissionDashboard({ developer = false }: { developer?: boolean
           </div>
           <Card className="mt-6 p-5">
             <h2 className="font-semibold">How earnings work</h2>
-            <p className="mt-2 text-sm text-gray-600">Register the owner’s signup email before their first payment. One {formatRupees(PLANS['12_months'].price)} annual payment per referred owner qualifies after 14 days without a refund or dispute. You earn ₹1,000 for each qualifying owner and ₹2,000 extra at 10, 20, 30 and every further 10. Renewals and ₹1 trial setup payments don’t earn commission.</p>
+            <p className="mt-2 text-sm text-gray-600">Register the owner’s signup email before their first payment. One {formatRupees(PLANS['12_months'].price)} annual payment per referred owner qualifies after 14 days without a refund or dispute. You earn ₹1,000 for each qualifying owner and ₹2,000 extra at 10, 20, 30 and every further 10. Monthly plan payments earn zero commission and do not count towards bonuses. Renewals and ₹1 trial setup payments don’t earn commission.</p>
             <p className="mt-2 text-sm text-gray-600">Transfers are submitted automatically once bank details are saved. Bank processing and available RazorpayX balance can affect arrival time.</p>
             {!developer && <p className="mt-3 text-sm font-medium text-brand-700">{10 - qualified % 10} more qualifying owners until your next ₹2,000 bonus.</p>}
           </Card>

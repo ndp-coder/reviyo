@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { branding } from '@/config/branding';
 import { legal, displayValue } from '@/config/legal';
+import { PLAN_SUMMARY } from '@/config/plans';
 import { LegalPage, Clause, SubHeading, List } from '@/components/legal/LegalPage';
 
 const N = branding.name;
@@ -83,7 +84,7 @@ export function TermsPage() {
         <List
           items={[
             'New businesses get one 14-day free trial with full access. To start it you set up AutoPay (a UPI AutoPay mandate or a card mandate) with a ₹1 verification payment, which we refund immediately.',
-            'Paid plans are ₹1,999 for 6 months and ₹2,999 for 12 months, inclusive of applicable taxes unless stated otherwise at checkout.',
+            `Paid plans are ${PLAN_SUMMARY}, inclusive of applicable taxes unless stated otherwise at checkout. The monthly plan is billed once per calendar month with AutoPay, not once every 30 days.`,
             'With AutoPay, the plan you chose is charged automatically when your trial ends, and again at the end of every term, until you cancel. The mandate never allows more than the plan price per charge. You are notified by your bank or UPI app at least 24 hours before each charge.',
             'You can cancel AutoPay at any time from Billing, or from your UPI app. Cancelling stops all future charges; you keep access until the end of the trial or term you are in. Cancel before the trial ends and you pay nothing.',
             'You can instead pay once for a fixed term from Billing. One-time payments do not renew.',
