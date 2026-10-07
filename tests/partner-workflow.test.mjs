@@ -15,6 +15,7 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 function component(path, overrides = {}) {
   const slots = []; let cursor = 0; const effects = []; const cache = new Map(); const cleanups = new Map();
   const hooks = {
+    createContext: () => ({ Provider: 'AuthContextProvider' }),
     useState(initial) {
       const index = cursor++;
       if (!(index in slots)) slots[index] = typeof initial === 'function' ? initial() : initial;
@@ -54,6 +55,7 @@ function component(path, overrides = {}) {
   return {
     render(name, props) { cursor = 0; return exported[name](props); },
     async settle() { for (const effect of effects.splice(0)) effect(); for (let i = 0; i < 20; i++) await Promise.resolve(); },
+    unmount() { for (const cleanup of cleanups.values()) cleanup?.(); cleanups.clear(); },
   };
 }
 function nodes(tree) {
@@ -124,18 +126,19 @@ test('the partner dashboard checks server access before loading private data',as
   assert.ok(!nodes(render()).find(n=>n.type==='PartnerWalkthrough'));assert.match(text(render()),/Could not load commissions/);
 });
 
-test('a partner password recovery returns to the private partner dashboard',async()=>{
-  const destinations=[];
+test('password recovery reuses account routing without repeating a successful password change',async()=>{
+  let saves = 0;
   const runner=component('@/pages/auth/ResetPasswordPage',{
-    'react-router-dom':{Link:'Link',useNavigate:()=>path=>destinations.push(path)},
+    'react-router-dom':{Link:'Link'},
     '@/pages/auth/AuthLayout':{AuthLayout:'AuthLayout'},
-    '@/lib/auth-context':{useAuth:()=>({user:{email:'partner@example.in'},loading:false,updatePassword:async()=>({error:null})})},
-    '@/lib/supabase':{supabase:{rpc:async()=>({data:{invited:true,password_set:true}})}},
+    '@/lib/auth-context':{useAuth:()=>({user:{email:'partner@example.in'},loading:false,updatePassword:async()=>{ saves++; return {error:null}; }})},
   });
   const render=()=>runner.render('ResetPasswordPage');
   nodes(render()).find(n=>n.type==='Input').props.onChange({target:{value:'long-enough'}});
   await nodes(render()).find(n=>n.type==='form').props.onSubmit({preventDefault(){}});
-  nodes(render()).find(n=>n.type==='Button').props.onClick();assert.deepEqual(destinations,['/partners']);
+  assert.match(text(render()), /Password changed/);
+  nodes(render()).find(n=>n.type==='Button').props.onClick();
+  assert.equal(render().type, 'AccountRedirect'); assert.equal(saves, 1);
 });
 
 function checkout(verify = async () => ({ success: true })) {
@@ -400,4 +403,152 @@ test('normal password and email-code sign-in both use account routing after auth
     auth.user = { id: 'partner_test' };
     assert.equal(render().type, 'AccountRedirect');
   }
+});
+
+function authProvider(profileRequest = async id => ({ data: { id, role: 'user' } })) {
+  const bootstrap = deferred(); let listener; let cleared = 0;
+  const runner = component('@/lib/auth-context', {
+    'react-router-dom': { useNavigate: () => () => {} },
+    '@/lib/dashboard-stats-cache': { clearDashboardStatsCache() { cleared++; } },
+    '@/lib/supabase': { supabase: {
+      auth: {
+        getSession: () => bootstrap.promise,
+        onAuthStateChange: callback => { listener = callback; return { data: { subscription: { unsubscribe() {} } } }; },
+        signInWithPassword: async () => { throw new Error('Offline'); },
+        signInWithOtp: async () => { throw new Error('Offline'); },
+        verifyOtp: async () => { throw new Error('Offline'); },
+        resetPasswordForEmail: async () => { throw new Error('Offline'); },
+        updateUser: async () => { throw new Error('Offline'); },
+        signUp: async () => { throw new Error('Offline'); },
+      },
+      from: () => ({ select() { return this; }, eq(_, id) { this.id = id; return this; }, maybeSingle() { return profileRequest(this.id); } }),
+    } },
+  });
+  const state = () => runner.render('AuthProvider', { children: null }).props.value;
+  const emit = (event, id = null) => listener(event, id ? { user: { id, email: `${id}@example.in` } } : null);
+  return { runner, bootstrap, state, emit, get cleared() { return cleared; } };
+}
+
+test('auth keeps role-dependent pages loading until the current profile has arrived', async () => {
+  const profile = deferred(); const flow = authProvider(() => profile.promise);
+  flow.state(); await flow.runner.settle();
+  flow.bootstrap.resolve({ data: { session: null } }); await flow.runner.settle();
+  assert.equal(flow.state().loading, false);
+  flow.emit('SIGNED_IN', 'developer');
+  assert.equal(flow.state().loading, true);
+  assert.equal(flow.state().profile, null);
+  profile.resolve({ data: { id: 'developer', role: 'admin' } }); await flow.runner.settle();
+  assert.equal(flow.state().profile.role, 'admin'); assert.equal(flow.state().loading, false);
+});
+
+test('a profile response after logout cannot restore the previous account or role', async () => {
+  const profile = deferred(); const flow = authProvider(() => profile.promise);
+  flow.state(); await flow.runner.settle();
+  flow.bootstrap.resolve({ data: { session: null } }); await flow.runner.settle();
+  flow.emit('SIGNED_IN', 'old_admin'); await flow.runner.settle();
+  flow.emit('SIGNED_OUT');
+  profile.resolve({ data: { id: 'old_admin', role: 'admin' } }); await flow.runner.settle();
+  assert.equal(flow.state().user, null); assert.equal(flow.state().profile, null);
+  assert.equal(flow.state().loading, false); assert.equal(flow.cleared, 1);
+});
+
+test('the startup session cannot overwrite a newer sign-in event', async () => {
+  const flow = authProvider(); flow.state(); await flow.runner.settle();
+  flow.emit('SIGNED_IN', 'current_partner'); await flow.runner.settle();
+  flow.bootstrap.resolve({ data: { session: { user: { id: 'old_owner' } } } }); await flow.runner.settle();
+  assert.equal(flow.state().user.id, 'current_partner'); assert.equal(flow.state().profile.id, 'current_partner');
+});
+
+test('unexpected network errors from auth actions return a retryable error to forms', async () => {
+  const flow = authProvider(); const auth = flow.state();
+  for (const [method, args] of [
+    ['signIn', ['owner@example.in', 'password']], ['sendSignInCode', ['owner@example.in']],
+    ['verifySignInCode', ['owner@example.in', '123456']], ['resetPassword', ['owner@example.in']],
+    ['updatePassword', ['new-password']], ['signUp', ['owner@example.in', 'password', 'terms-version']],
+  ]) {
+    const result = await auth[method](...args);
+    assert.equal(typeof result.error, 'string'); assert.match(result.error, /connection|try again/i);
+  }
+});
+
+test('profile refreshes cannot replace a newer account and unmounted sessions stop updating', async () => {
+  const refresh = deferred(); let reads = 0;
+  const flow = authProvider(async id => {
+    if (id === 'previous_owner' && ++reads === 2) return refresh.promise;
+    return { data: { id, role: 'user' } };
+  });
+  flow.state(); await flow.runner.settle();
+  flow.bootstrap.resolve({ data: { session: null } }); await flow.runner.settle();
+  flow.emit('SIGNED_IN', 'previous_owner'); await flow.runner.settle();
+  const pendingRefresh = flow.state().refreshProfile(); await flow.runner.settle();
+  flow.emit('SIGNED_IN', 'current_partner'); await flow.runner.settle();
+  refresh.resolve({ data: { id: 'previous_owner', role: 'admin' } }); await pendingRefresh;
+  assert.equal(flow.state().profile.id, 'current_partner');
+  const delayed = deferred(); const unmounted = authProvider(() => delayed.promise);
+  unmounted.state(); await unmounted.runner.settle();
+  unmounted.emit('SIGNED_IN', 'owner'); await unmounted.runner.settle();
+  unmounted.runner.unmount();
+  delayed.resolve({ data: { id: 'owner', role: 'admin' } }); await unmounted.runner.settle();
+  assert.equal(unmounted.state().profile, null);
+});
+
+test('profile and startup network failures finish checking instead of leaving a permanent loader', async () => {
+  const flow = authProvider(async () => { throw new Error('Offline'); });
+  flow.state(); await flow.runner.settle();
+  flow.emit('SIGNED_IN', 'owner'); await flow.runner.settle();
+  assert.equal(flow.state().profile, null); assert.equal(flow.state().loading, false);
+  const bootstrap = authProvider(); bootstrap.state(); await bootstrap.runner.settle();
+  bootstrap.bootstrap.resolve({ data: { session: null }, error: { message: 'Offline' } }); await bootstrap.runner.settle();
+  assert.equal(bootstrap.state().user, null); assert.equal(bootstrap.state().loading, false);
+});
+
+test('a lost connection loading saved partner setups exposes retry instead of a permanent skeleton', async () => {
+  let failed = true;
+  const runner = component('@/pages/partners/PartnerBusinessSetup', {
+    '@/lib/supabase': { supabase: { from: () => ({
+      select() { return this; }, order() { return this; },
+      async limit() { if (failed) throw new Error('Offline'); return { data: [], error: null }; },
+    }) } },
+  });
+  const render = () => runner.render('PartnerBusinessSetup');
+  render(); await runner.settle();
+  assert.ok(!nodes(render()).some(n => n.type === 'Skeleton'));
+  const alert = nodes(render()).find(n => n.type === 'Alert' && text(n).includes('Could not load saved setups'));
+  assert.ok(alert); failed = false; await alert.props.action.props.onClick(); await runner.settle();
+  assert.match(text(render()), /No businesses prepared yet/);
+});
+
+test('rapid partner invitation submissions send only one email', async () => {
+  const pending = deferred(); let invites = 0;
+  const runner = component('@/pages/partners/CommissionDashboard', {
+    'react-router-dom': { Link: 'Link' },
+    '@/lib/auth-context': { useAuth: () => ({ user: { id: 'developer', email: 'dev@example.in' }, profile: { role: 'admin' }, loading: false }) },
+    '@/lib/fetch-all-rows': { fetchAllRows: async () => [] },
+    '@/lib/supabase': { supabase: { functions: { invoke: async (_, { body }) => {
+      if (body.action === 'setup') return { data: { emailReady: true, payoutsReady: true, enabled: true, schedulerReady: true } };
+      assert.equal(body.action, 'invite'); invites++; return pending.promise;
+    } } } },
+  });
+  const render = () => runner.render('CommissionDashboard', { developer: true });
+  render(); await runner.settle();
+  const form = nodes(render()).find(n => n.type === 'form');
+  form.props.onSubmit({ preventDefault() {} }); form.props.onSubmit({ preventDefault() {} });
+  assert.equal(invites, 1);
+  pending.resolve({ data: { ok: true }, error: null }); await runner.settle();
+  assert.equal(nodes(render()).find(n => n.type === 'Button' && text(n) === 'Send invitation').props.loading, false);
+});
+
+test('a video source failure can be retried without losing the selected time or written lessons', async () => {
+  const runner = component('@/pages/partners/PartnerTraining');
+  const render = () => runner.render('PartnerTraining');
+  const initial = render(); const player = nodes(initial).find(n => n.type === 'video');
+  let reloads = 0;
+  const media = { currentTime: 120, readyState: 1, load() { reloads++; this.currentTime = 0; } };
+  player.props.ref.current = media;
+  nodes(initial).find(n => n.type === 'source').props.onError();
+  const alert = nodes(render()).find(n => n.type === 'Alert');
+  assert.ok(alert); assert.match(text(render()), /Read the full class/);
+  alert.props.action.props.onClick(); assert.equal(reloads, 1);
+  player.props.onLoadedMetadata(); assert.equal(media.currentTime, 120);
+  player.props.onCanPlay(); assert.ok(!nodes(render()).some(n => n.type === 'Alert'));
 });

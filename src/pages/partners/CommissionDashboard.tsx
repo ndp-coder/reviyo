@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
@@ -44,6 +44,7 @@ export function CommissionDashboard({ developer = false }: { developer?: boolean
   const [earnings, setEarnings] = useState<Earning[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const performing = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [email, setEmail] = useState('');
@@ -90,11 +91,12 @@ export function CommissionDashboard({ developer = false }: { developer?: boolean
   useEffect(() => { if (!authLoading) void load(); }, [authLoading, load]);
 
   async function perform(task: () => Promise<void>, success: string) {
-    if (busy) return;
+    if (performing.current) return;
+    performing.current = true;
     setBusy(true); setError(null); setNotice(null);
     try { await task(); setNotice(success); await load(); }
     catch (err) { setError(err instanceof Error ? err.message : 'Something went wrong. Try again.'); }
-    finally { setBusy(false); }
+    finally { performing.current = false; setBusy(false); }
   }
 
   function submitReferral(event: FormEvent) {

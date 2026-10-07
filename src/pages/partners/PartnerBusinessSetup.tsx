@@ -34,10 +34,15 @@ export function PartnerBusinessSetup() {
 
   async function load() {
     setLoading(true);
-    const { data, error: problem } = await supabase.from('partner_business_drafts').select('id,name,referral_id,category,google_review_url,logo_url,topics,invitation_sent_at,claimed_at,commission_referrals!inner(email)').order('created_at', { ascending: false }).limit(100);
-    setLoading(false); setLoadFailed(Boolean(problem));
-    if (problem) throw new Error('Could not load business setups. Refresh and try again.');
-    setDrafts((data ?? []) as unknown as Draft[]);
+    try {
+      const { data, error: problem } = await supabase.from('partner_business_drafts').select('id,name,referral_id,category,google_review_url,logo_url,topics,invitation_sent_at,claimed_at,commission_referrals!inner(email)').order('created_at', { ascending: false }).limit(100);
+      if (problem) throw problem;
+      setDrafts((data ?? []) as unknown as Draft[]);
+      setLoadFailed(false);
+    } catch {
+      setLoadFailed(true);
+      throw new Error('Could not load business setups. Refresh and try again.');
+    } finally { setLoading(false); }
   }
   useEffect(() => { void load().catch((err: Error) => setError(err.message)); }, []);
 

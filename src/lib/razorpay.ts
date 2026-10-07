@@ -56,22 +56,33 @@ export function loadRazorpayScript(): Promise<boolean> {
   if (scriptLoadingPromise) return scriptLoadingPromise;
 
   scriptLoadingPromise = new Promise<boolean>((resolve) => {
-    const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
-    if (existingScript) {
-      existingScript.addEventListener('load', () => resolve(true));
-      existingScript.addEventListener('error', () => resolve(false));
-      return;
-    }
-
-    const script = document.createElement('script');
+    const existingScript = document.querySelector<HTMLScriptElement>('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    const script = existingScript ?? document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.async = true;
-    script.onload = () => resolve(true);
-    script.onerror = () => {
-      console.error('Failed to load Razorpay SDK checkout script');
-      resolve(false);
+    let finished = false;
+    const finish = (loaded: boolean) => {
+      if (finished) return;
+      finished = true;
+      window.clearTimeout(timeout);
+      script.removeEventListener('load', onLoad);
+      script.removeEventListener('error', onError);
+      if (!loaded) script.remove();
+      resolve(loaded);
     };
-    document.body.appendChild(script);
+    const onLoad = () => finish(Boolean(window.Razorpay));
+    const onError = () => finish(false);
+    const timeout = window.setTimeout(onError, 20_000);
+    script.addEventListener('load', onLoad);
+    script.addEventListener('error', onError);
+    if (!existingScript) {
+      try { document.body.appendChild(script); }
+      catch { finish(false); }
+    }
+  }).then((loaded) => {
+    // Failed promises and failed script tags must not poison later attempts.
+    if (!loaded) scriptLoadingPromise = null;
+    return loaded;
   });
 
   return scriptLoadingPromise;
@@ -153,7 +164,7 @@ export async function startRazorpayCheckout(params: {
 }): Promise<void> {
   const loaded = await loadRazorpayScript();
   if (!loaded || !window.Razorpay) {
-    params.onError('Could not load Razorpay payment SDK. Please check your network connection.');
+    params.onError('Could not open secure checkout. Check your connection and try again.');
     return;
   }
 
@@ -162,7 +173,7 @@ export async function startRazorpayCheckout(params: {
     (import.meta.env.VITE_RAZORPAY_KEY_ID as string | undefined)?.trim();
 
   if (!razorpayKey) {
-    params.onError('Razorpay Key ID is not configured. Please add your key in the environment.');
+    params.onError('Payments are temporarily unavailable. Please contact support.');
     return;
   }
 

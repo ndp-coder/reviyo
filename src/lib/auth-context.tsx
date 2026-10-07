@@ -35,6 +35,14 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 // (dashboard, sign-in, the review page) import it themselves.
 const loadSupabase = () => import('@/lib/supabase').then((module) => module.supabase);
 
+async function attemptAuth(
+  action: () => Promise<{ error: string | null; needsConfirmation?: boolean }>,
+  failure: string,
+) {
+  try { return await action(); }
+  catch { return { error: failure }; }
+}
+
 /** Supabase's password errors, reworded for the person resetting their password. */
 function describePasswordUpdateError(message: string): string {
   if (/should be different|same.*password/i.test(message)) return 'Choose a password different from your current one.';
@@ -53,40 +61,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const sessionRef = useRef<Session | null>(null);
+  const sessionRevision = useRef(0);
+  const mounted = useRef(false);
 
-  async function loadProfile(userId: string) {
-    const supabase = await loadSupabase();
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (error) {
-      console.error('Failed to load profile:', error);
-      return;
+  async function loadProfile(userId: string): Promise<Profile | null> {
+    try {
+      const supabase = await loadSupabase();
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+      if (error) { console.error('Failed to load profile:', error); return null; }
+      return data as Profile | null;
+    } catch {
+      console.error('Could not load the account profile.');
+      return null;
     }
-    setProfile(data as Profile | null);
   }
 
   useEffect(() => {
     let cancelled = false;
     let unsubscribe: (() => void) | undefined;
+    mounted.current = true;
+    sessionRevision.current++;
+
+    async function applySession(nextSession: Session | null) {
+      const revision = ++sessionRevision.current;
+      const changedAccount = sessionRef.current?.user.id !== nextSession?.user.id;
+      sessionRef.current = nextSession;
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      if (!nextSession) { setProfile(null); setLoading(false); return; }
+      if (changedAccount) { setProfile(null); setLoading(true); }
+      const nextProfile = await loadProfile(nextSession.user.id);
+      if (!cancelled && revision === sessionRevision.current) {
+        setProfile(nextProfile);
+        setLoading(false);
+      }
+    }
 
     loadSupabase()
       .then((supabase) => {
         if (cancelled) return;
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          setSession(session);
-          setUser(session?.user ?? null);
-          if (session?.user) {
-            loadProfile(session.user.id).finally(() => setLoading(false));
-          } else {
-            setLoading(false);
-          }
-        });
-
+        const startupRevision = sessionRevision.current;
         const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+          if (cancelled) return;
           // A password-reset link signs the person in for recovery. Wherever it
           // lands, send them to set a new password rather than straight into the app.
           if (event === 'PASSWORD_RECOVERY' && window.location.pathname !== '/reset-password') {
@@ -94,18 +111,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           // Cached dashboard numbers belong to whoever was signed in.
           if (event === 'SIGNED_OUT') clearDashboardStatsCache();
-          (async () => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            if (session?.user) {
-              await loadProfile(session.user.id);
-            } else {
-              setProfile(null);
-            }
-            setLoading(false);
-          })();
+          // Do not await an Auth request inside the Supabase event callback.
+          // The revision also invalidates profile reads belonging to old sessions.
+          void applySession(session);
         });
         unsubscribe = () => authListener.subscription.unsubscribe();
+        void supabase.auth.getSession().then(({ data: { session }, error }) => {
+          if (cancelled || startupRevision !== sessionRevision.current) return;
+          if (error) throw error;
+          void applySession(session);
+        }).catch(() => {
+          if (!cancelled && startupRevision === sessionRevision.current) void applySession(null);
+        });
       })
       .catch((err) => {
         // Without the client nobody can be signed in; public pages still work.
@@ -115,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      mounted.current = false;
       unsubscribe?.();
     };
   }, []);
@@ -157,7 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signIn(email: string, password: string) {
     const supabase = await loadSupabase();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error) {
       return { error: error.message };
     }
@@ -195,9 +213,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
-    const supabase = await loadSupabase();
-    await supabase.auth.signOut();
-    setProfile(null);
+    try {
+      const supabase = await loadSupabase();
+      const { error } = await supabase.auth.signOut();
+      if (error) console.error('Could not sign out:', error);
+      // The SIGNED_OUT event clears the session. Do not change another account's
+      // profile if a delayed sign-out request finishes after a newer sign-in.
+    } catch { console.error('Could not sign out. Check your connection.'); }
   }
 
   async function resetPassword(email: string) {
@@ -224,8 +246,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function refreshProfile() {
-    if (user) {
-      await loadProfile(user.id);
+    const userId = sessionRef.current?.user.id;
+    const revision = sessionRevision.current;
+    if (userId) {
+      const nextProfile = await loadProfile(userId);
+      if (mounted.current && revision === sessionRevision.current) setProfile(nextProfile);
     }
   }
 
@@ -236,13 +261,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         profile,
         loading,
-        signUp,
-        signIn,
-        sendSignInCode,
-        verifySignInCode,
+        signUp: (email, password, consent) => attemptAuth(() => signUp(email, password, consent), 'Could not create your account. Check your connection and try again.'),
+        signIn: (email, password) => attemptAuth(() => signIn(email, password), 'Could not sign in. Check your connection and try again.'),
+        sendSignInCode: email => attemptAuth(() => sendSignInCode(email.trim()), 'Could not send a sign-in code. Check your connection and try again.'),
+        verifySignInCode: (email, code) => attemptAuth(() => verifySignInCode(email, code), 'Could not check your code. Check your connection and try again.'),
         signOut,
-        resetPassword,
-        updatePassword,
+        resetPassword: email => attemptAuth(() => resetPassword(email.trim()), 'Could not send a reset link. Check your connection and try again.'),
+        updatePassword: password => attemptAuth(() => updatePassword(password), 'Could not save your password. Check your connection and try again.'),
         refreshProfile,
       }}
     >

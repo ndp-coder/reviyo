@@ -61,14 +61,18 @@ export function PartnerTraining() {
           video.currentTime = pendingSeek.current;
           pendingSeek.current = null;
         }
-      }} onError={() => setFailed(true)}>
-      <source src="/media/partner-training.mp4" type="video/mp4" />
+      }} onError={() => setFailed(true)} onCanPlay={() => setFailed(false)}>
+      <source src="/media/partner-training.mp4" type="video/mp4" onError={() => setFailed(true)} />
       <track kind="captions" src="/media/partner-training-en.vtt" srcLang="en" label="English" />
       <track kind="chapters" src="/media/partner-training-chapters.vtt" srcLang="en" label="Training chapters" />
       Your browser cannot play this video. Read the full class below.
     </video>
     <div className="space-y-6 p-5 sm:p-7">
-      {failed && <Alert variant="warning">The video could not load. You can still read every lesson below, or <a href="/media/partner-training.mp4" className="underline">open the video directly</a>.</Alert>}
+      {failed && <Alert variant="warning" action={<Button variant="outline" size="sm" onClick={() => {
+        const video = videoRef.current;
+        if (video) { pendingSeek.current = video.currentTime; video.load(); }
+        setPlayNotice(false);
+      }}>Retry video</Button>}>The video could not load. You can still read every lesson below, or <a href="/media/partner-training.mp4" className="underline">open the video directly</a>.</Alert>}
       {playNotice && !failed && <p role="status" className="text-sm text-gray-600">Press play on the video to continue from your selected chapter.</p>}
       <section aria-labelledby="training-chapters-title">
         <h3 id="training-chapters-title" className="font-semibold text-gray-900">Choose a chapter</h3>
