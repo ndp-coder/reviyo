@@ -90,16 +90,40 @@ check('partner business setup preserves ownership, consent and referral attribut
   const biz=(await asUser(SETUP_OWNER,()=>one(claim,[draft,'owner-terms-v1']))).b;
   assert.equal(biz.owner_id,SETUP_OWNER);
   assert.equal(biz.name,'Owner edited salon');
+  assert.equal(biz.trial_eligible,false,'partner-prepared businesses require a paid plan');
+  await asUser(SETUP_OWNER,()=>rejects(`UPDATE businesses SET trial_eligible=true WHERE id=$1`,[biz.id],/permission denied/,'owner cannot restore trial eligibility'));
+  await db.query(`INSERT INTO autopay_mandates(business_id,user_id,plan,amount,method,razorpay_customer_id,auth_order_id,consent_version)
+    VALUES($1,$2,'12_months',299900,'upi','customer_partner','setup-owner-auth','v1')`,[biz.id,SETUP_OWNER]);
+  const authorization=(await one(`SELECT start_autopay_trial('setup-owner-auth','setup-owner-auth-payment','setup-owner-token') AS r`)).r;
+  assert.equal(authorization.trial_started,false,'even a verified authorisation cannot start a partner trial');
+  assert.equal(authorization.subscription,null);
+  assert.equal((await one(`SELECT start_autopay_trial('setup-owner-auth','setup-owner-auth-payment','setup-owner-token') AS r`)).r.trial_started,false,'retry stays ineligible');
+  assert.equal((await one(`SELECT business_has_active_subscription($1) AS ok`,[biz.id])).ok,false,'authorisation does not unlock AI features');
+  await rejects(`INSERT INTO subscriptions(business_id,plan,status,starts_at,expires_at) VALUES($1,'12_months','trial',now(),now()+interval '14 days')`,[biz.id],/requires a paid plan/,'all other trial creation paths are blocked');
   assert.equal((await one(`SELECT terms_consent_version FROM profiles WHERE id=$1`,[SETUP_OWNER])).terms_consent_version,'owner-terms-v1');
   assert.equal((await asUser(SETUP_OWNER,()=>one(`SELECT my_partner_business_draft() AS d`))).d,null);
   await asUser(SETUP_OWNER,()=>rejects(claim,[draft,'v1'],/No pending setup/,'duplicate claim'));
   await asUser(PARTNER,()=>rejects(sql,args,/already has a business/,'partner cannot overwrite claimed setup'));
   assert.equal((await asUser(PARTNER,()=>one(`SELECT count(*)::int AS n FROM businesses WHERE id=$1`,[biz.id]))).n,0,'partner cannot access owner business');
   await db.query(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,'setup-owner-annual','12_months',299900)`,[biz.id,SETUP_OWNER]);
-  await db.exec(`UPDATE payment_orders SET status='paid',payment_id='setup-owner-capture' WHERE order_id='setup-owner-annual'`);
+  await one(`SELECT process_paid_order('setup-owner-annual','setup-owner-capture') AS r`);
+  assert.equal((await one(`SELECT status FROM subscriptions WHERE business_id=$1`,[biz.id])).status,'active','verified full payment activates partner business');
   assert.ok((await one(`SELECT order_id FROM commission_referrals WHERE email='setup-owner@example.in'`)).order_id,'owner payment links automatically');
   // Keep the later commission scenarios independent.
   await db.exec(`DELETE FROM partner_business_drafts WHERE id='${draft}'; DELETE FROM commission_referrals WHERE email='setup-owner@example.in'; DELETE FROM payment_orders WHERE order_id='setup-owner-annual'; DELETE FROM businesses WHERE id='${biz.id}'; DELETE FROM auth.users WHERE id='${SETUP_OWNER}'; DELETE FROM commission_partners WHERE email='setup-partner@example.in'; DELETE FROM auth.users WHERE id='${PARTNER}';`);
+});
+
+check('bypassing the invitation claim still cannot get a partner-prepared trial',async()=>{
+  const owner='88888888-8888-8888-8888-888888888888';
+  await db.exec(`INSERT INTO auth.users(id,email) VALUES('${owner}','bypass-owner@example.in'),('${PARTNER}','bypass-partner@example.in');
+    INSERT INTO commission_partners(email,name) VALUES('bypass-partner@example.in','Partner');`);
+  const draft=(await asUser(PARTNER,()=>one(`SELECT save_partner_business_draft('bypass-owner@example.in','Prepared shop','retail_store',NULL,NULL,ARRAY['Service']) AS id`))).id;
+  const biz=(await asUser(owner,()=>one(`SELECT create_business_with_defaults('Direct shop','direct-shop','retail_store',NULL,NULL,NULL,ARRAY['Service']) AS b`))).b;
+  assert.equal(biz.trial_eligible,false,'eligibility follows the prepared setup even through the ordinary RPC');
+  await rejects(`UPDATE businesses SET trial_eligible=true WHERE id=$1`,[biz.id],/managed automatically/,'eligibility remains fixed');
+  await db.exec(`DELETE FROM partner_business_drafts WHERE id='${draft}'; DELETE FROM commission_referrals WHERE email='bypass-owner@example.in';`);
+  assert.equal((await one(`SELECT trial_eligible FROM businesses WHERE id=$1`,[biz.id])).trial_eligible,false,'deleting a referral does not restore trial eligibility');
+  await db.exec(`DELETE FROM businesses WHERE id='${biz.id}'; DELETE FROM auth.users WHERE id='${owner}'; DELETE FROM commission_partners WHERE email='bypass-partner@example.in'; DELETE FROM auth.users WHERE id='${PARTNER}';`);
 });
 
 // --- scenarios ---------------------------------------------------------------
@@ -108,6 +132,7 @@ check('onboarding creates a business with NO subscription', async () => {
   const biz = await asUser(U1, () =>
     one(`SELECT create_business_with_defaults('Pet Spa','pet-spa','Pet grooming',NULL,NULL,NULL,ARRAY['Staff','Hygiene']) AS b`));
   B = biz.b.id;
+  assert.equal(biz.b.trial_eligible,true,'ordinary signup still has its existing trial eligibility');
   assert.equal((await one(`SELECT count(*)::int AS n FROM subscriptions WHERE business_id=$1`, [B])).n, 0);
   assert.equal((await one(`SELECT business_has_active_subscription($1) AS ok`, [B])).ok, false);
 });

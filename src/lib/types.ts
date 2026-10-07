@@ -36,6 +36,8 @@ export interface Business {
   google_review_url: string | null;
   welcome_message: string | null;
   is_active: boolean;
+  /** Set by the database. Partner-prepared businesses require a paid plan. */
+  trial_eligible?: boolean;
   created_at: string;
   updated_at: string;
 }

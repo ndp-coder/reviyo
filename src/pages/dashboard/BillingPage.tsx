@@ -112,6 +112,7 @@ export function BillingPage() {
   const isExpired = subscription?.status === 'expired' || (daysRemaining !== null && daysRemaining <= 0);
 
   const mandateLive = mandate !== null && ['authorized', 'active', 'paused'].includes(mandate.status);
+  const trialAvailable = !subscription && business?.trial_eligible !== false;
 
   async function handleCancelAutopay() {
     if (!business) return;
@@ -277,7 +278,7 @@ export function BillingPage() {
               ) : (
                 <div>
                   <h2 className="text-base font-semibold text-gray-900">
-                    {subscription ? 'Turn on AutoPay' : `Start your ${legal.trialDays}-day free trial`}
+                    {trialAvailable ? `Start your ${legal.trialDays}-day free trial` : 'Turn on AutoPay'}
                   </h2>
                   {mandate?.status === 'failed' && (
                     <Alert variant="error" className="mt-3">
@@ -290,7 +291,7 @@ export function BillingPage() {
                     </Alert>
                   )}
                   <p className="mt-1 text-sm text-gray-600">
-                    {subscription
+                    {!trialAvailable
                       ? 'Renew automatically so AI drafting and your dashboard never pause.'
                       : 'Set up AutoPay with a ₹1 verification payment, refunded straight away. Nothing more is charged until your trial ends.'}
                   </p>
@@ -299,7 +300,7 @@ export function BillingPage() {
                       businessId={business.id}
                       userName={profile?.full_name || business.name}
                       userEmail={user?.email}
-                      trialAvailable={!subscription}
+                      trialAvailable={trialAvailable}
                       currentAccessEndsAt={subscription?.expires_at}
                       onComplete={handleAutopayComplete}
                     />

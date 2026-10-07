@@ -9,6 +9,7 @@ import {
   getSuggestedTopics,
   MAX_CATEGORY_LENGTH,
   OTHER_CATEGORY,
+  isPresetCategory,
 } from '@/config/categories';
 import { directReviewUrl, validateGoogleReviewUrl } from '@/lib/url-safety';
 import { prepareLogo } from '@/lib/image';
@@ -24,7 +25,9 @@ import { paymentGate } from '@/lib/payment-gate';
 import { hasSubscriptionAccess } from '@/lib/subscription';
 import { legal } from '@/config/legal';
 import { ConsentCheckbox } from '@/components/ConsentCheckbox';
-import { Star, Store, Link2, Image, QrCode, ArrowRight, ArrowLeft, ArrowUp, ArrowDown, Check, Copy, Plus, X, Upload, Gift, Download } from 'lucide-react';
+import { PartnerOwnerReview } from '@/components/PartnerOwnerReview';
+import { parsePartnerTopics, validatePartnerDetails } from '@/lib/partner-setup';
+import { Star, Store, Link2, Image, QrCode, ArrowRight, ArrowLeft, ArrowUp, ArrowDown, Check, Copy, Plus, X, Upload, Gift, CreditCard, Download } from 'lucide-react';
 import QRCode from 'qrcode';
 import type { Business, Subscription } from '@/lib/types';
 
@@ -72,6 +75,7 @@ export function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const [logoPreparing, setLogoPreparing] = useState(false);
   const [copied, setCopied] = useState(false);
   const headingRef = useRef<HTMLDivElement>(null);
 
@@ -144,11 +148,12 @@ export function OnboardingPage() {
         if (draft) {
           setPartnerDraft(draft.id);
           setBusinessName(draft.name);
-          setCategory(OTHER_CATEGORY);
-          setCustomCategory(draft.category);
+          setCategory(isPresetCategory(draft.category) ? draft.category : OTHER_CATEGORY);
+          setCustomCategory(isPresetCategory(draft.category) ? '' : draft.category);
           setGoogleReviewUrl(draft.google_review_url ?? '');
           setLogoUrl(draft.logo_url ?? '');
           setTopics(draft.topics);
+          setStep(STEP.topics);
         }
       }
       setCheckingExisting(false);
@@ -191,8 +196,12 @@ export function OnboardingPage() {
   const effectiveCategory = category === OTHER_CATEGORY ? customCategory.trim() : category;
 
   // An owner whose free trial is used up pays for a plan at the trial step.
-  const trialAvailable = existingSubscription === null;
-  const stepLabel = (i: number) => (i === STEP.trial && !trialAvailable ? 'Payment' : STEPS[i].label);
+  const partnerSetup = Boolean(partnerDraft) || business?.trial_eligible === false;
+  const trialAvailable = !partnerSetup && existingSubscription === null;
+  const visibleSteps = partnerSetup ? [STEP.topics, STEP.trial, STEP.qr] : STEPS.map((_, i) => i);
+  const visibleStep = visibleSteps.indexOf(step);
+  const totalSteps = visibleSteps.length;
+  const stepLabel = (i: number) => (partnerSetup && i === STEP.topics ? 'Review details' : i === STEP.trial && !trialAvailable ? 'Payment' : STEPS[i].label);
   const existingAccessLive = hasSubscriptionAccess(existingSubscription);
 
   const reviewUrl = business ? reviewUrlFor(business.slug) : '';
@@ -219,7 +228,7 @@ export function OnboardingPage() {
       p_google_review_url: googleReviewUrl.trim() ? directReviewUrl(googleReviewUrl) : null,
       p_logo_url: logoUrl || null,
       p_welcome_message: `How was your experience at ${businessName.trim()}?`,
-      p_topics: topics.map((t) => t.trim()).filter(Boolean),
+      p_topics: partnerDraft ? parsePartnerTopics(topics.join('\n')) : topics.map((t) => t.trim()).filter(Boolean),
     });
 
     if (bizError || !bizData) {
@@ -248,6 +257,10 @@ export function OnboardingPage() {
       if (urlProblem) return;
     }
     if (step === STEP.topics) {
+      if (partnerSetup) {
+        const problem = validatePartnerDetails(businessName, effectiveCategory, googleReviewUrl, parsePartnerTopics(topics.join('\n')));
+        if (problem) { setError(problem); return; }
+      }
       const created = await handleCreateBusiness();
       if (!created) return;
     }
@@ -296,13 +309,13 @@ export function OnboardingPage() {
     e.target.value = '';
     if (!file) return;
     // Scaled down in the browser: the logo is loaded on every customer scan.
-    const result = await prepareLogo(file);
-    if ('error' in result) {
-      setLogoError(result.error);
-      return;
-    }
-    setLogoError(null);
-    setLogoUrl(result.dataUrl);
+    setLogoPreparing(true);
+    try {
+      const result = await prepareLogo(file);
+      if ('error' in result) setLogoError(result.error);
+      else { setLogoError(null); setLogoUrl(result.dataUrl); }
+    } catch { setLogoError('Could not prepare this logo. Try another image.'); }
+    finally { setLogoPreparing(false); }
   };
 
   const copyReviewUrl = () => {
@@ -320,12 +333,18 @@ export function OnboardingPage() {
     }
     if (step === STEP.google) return true; // Google URL is optional
     if (step === STEP.logo) return true; // Logo is optional
-    if (step === STEP.topics) return topics.length > 0;
+    if (step === STEP.topics) return partnerSetup ? acceptedTerms && Boolean(businessName.trim()) && Boolean(effectiveCategory) && parsePartnerTopics(topics.join('\n')).length > 0 : topics.length > 0;
     return true;
   };
 
   // Says why Continue is disabled, instead of leaving a greyed-out button.
   const blockedReason = (() => {
+    if (partnerSetup && step === STEP.topics) {
+      if (!businessName.trim()) return 'Enter your business name to continue.';
+      if (!effectiveCategory) return 'Enter your business category to continue.';
+      if (!parsePartnerTopics(topics.join('\n')).length) return 'Add at least one review topic to continue.';
+      if (!acceptedTerms) return 'Read and accept the terms and privacy notice to continue.';
+    }
     if (step === STEP.business) {
       if (!businessName.trim()) return 'Enter your business name to continue.';
       if (!category) return 'Choose a business type to continue.';
@@ -366,7 +385,7 @@ export function OnboardingPage() {
       <header className="flex items-center justify-between px-4 py-4 sm:px-6 sm:py-5">
         <BrandLogo className="h-10 w-auto sm:h-11" />
         <div role="status" aria-live="polite" className="text-sm text-gray-700">
-          Step {step + 1} of {TOTAL_STEPS}
+          Step {visibleStep + 1} of {totalSteps}
           <span className="sr-only">: {stepLabel(step)}</span>
         </div>
       </header>
@@ -378,13 +397,15 @@ export function OnboardingPage() {
           <div className="h-1.5 rounded-full bg-gray-200">
             <div
               className="h-full rounded-full bg-brand-900 transition-[width] duration-300"
-              style={{ width: `${((step + 1) / TOTAL_STEPS) * 100}%` }}
+              style={{ width: `${((visibleStep + 1) / totalSteps) * 100}%` }}
             />
           </div>
           <p className="mt-2 text-xs font-medium text-gray-700">{stepLabel(step)}</p>
         </div>
         <ol aria-label="Setup progress" className="mx-auto hidden max-w-2xl list-none items-center gap-2 p-0 sm:flex">
-          {STEPS.map(({ label, icon: Icon }, i) => {
+          {visibleSteps.map((i, position) => {
+            const { label, icon } = STEPS[i];
+            const Icon = partnerSetup && i === STEP.trial ? CreditCard : icon;
             const isActive = i === step;
             const isDone = i < step;
             return (
@@ -409,7 +430,7 @@ export function OnboardingPage() {
                   <span className="whitespace-nowrap text-xs font-medium">{stepLabel(i)}</span>
                   <span className="sr-only">{isDone ? 'completed' : isActive ? 'current step' : 'not started'}</span>
                 </div>
-                {i < STEPS.length - 1 && (
+                {position < totalSteps - 1 && (
                   <div
                     aria-hidden="true"
                     className={`mx-2 mb-5 h-0.5 flex-1 rounded-full ${i < step ? 'bg-green-600' : 'bg-gray-300'}`}
@@ -558,7 +579,16 @@ export function OnboardingPage() {
             </Card>
           )}
 
-          {step === STEP.topics && (
+          {step === STEP.topics && partnerSetup && <PartnerOwnerReview
+            email={user?.email ?? ''} name={businessName} category={getCategoryLabel(effectiveCategory)} google={googleReviewUrl} logo={logoUrl} topics={topics}
+            accepted={acceptedTerms} busy={saving || logoPreparing} urlError={urlError} logoError={logoError}
+            onName={setBusinessName} onCategory={(value) => { setCategory(OTHER_CATEGORY); setCustomCategory(value); }}
+            onGoogle={(value) => { setGoogleReviewUrl(value); setUrlError(null); }}
+            onLogo={(event) => void handleLogoUpload(event)} onRemoveLogo={() => setLogoUrl('')}
+            onTopics={setTopics} onAccepted={setAcceptedTerms}
+          />}
+
+          {step === STEP.topics && !partnerSetup && (
             <Card className="p-5 sm:p-8">
               <h1 className="text-xl font-bold text-gray-900">Choose review topics</h1>
               <p className="mt-1.5 text-sm text-gray-600">
@@ -651,7 +681,20 @@ export function OnboardingPage() {
             </Card>
           )}
 
-          {step === STEP.trial && business && !trialAvailable && (
+          {step === STEP.trial && business && partnerSetup && <div className="space-y-5">
+            <Card className="p-5 sm:p-8">
+              <h1 className="text-xl font-bold text-gray-900">Activate {business.name}</h1>
+              <p className="mt-2 text-sm text-gray-600">Your business details are saved. Choose a plan below and pay securely with UPI, card or netbanking. Once payment is confirmed, you can download your QR code and use your dashboard.</p>
+              <p className="mt-2 text-sm font-medium text-gray-800">Pay once to activate your business. Renewal is your choice.</p>
+            </Card>
+            {payFeedback && <Alert variant={payFeedback.type}>{payFeedback.message}</Alert>}
+            <PayOncePlans businessId={business.id} userName={profile?.full_name || businessName} userEmail={user?.email || ''}
+              heading="Choose your plan" onFeedback={setPayFeedback} onFinished={(paid) => {
+                if (paid) { setPayFeedback(null); setStep(STEP.qr); }
+              }} />
+          </div>}
+
+          {step === STEP.trial && business && !trialAvailable && !partnerSetup && (
             <div className="space-y-6">
               <Card className="p-5 sm:p-8">
                 <h1 className="text-xl font-bold text-gray-900">
@@ -744,9 +787,9 @@ export function OnboardingPage() {
         {step < STEP.trial && (
           <div className="mt-6">
             <div className="flex items-center justify-between gap-3">
-              <Button variant="ghost" onClick={prevStep} disabled={step === 0 || saving}>
+              {!partnerSetup && <Button variant="ghost" onClick={prevStep} disabled={step === 0 || saving || logoPreparing}>
                 <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
-              </Button>
+              </Button>}
               <div className="flex items-center gap-2">
                 {/* Offered only while the optional field is empty, so it can
                     never throw away something the owner has entered. */}
@@ -761,8 +804,8 @@ export function OnboardingPage() {
                     Skip for now
                   </Button>
                 )}
-                <Button onClick={nextStep} disabled={!canProceed() || saving} loading={saving} aria-describedby={blockedReason ? 'onboarding-blocked' : undefined}>
-                  {step === STEP.topics ? 'Create business' : `Next: ${stepLabel(step + 1)}`}{' '}
+                <Button onClick={nextStep} disabled={!canProceed() || saving || logoPreparing} loading={saving} aria-describedby={blockedReason ? 'onboarding-blocked' : undefined}>
+                  {step === STEP.topics ? partnerSetup ? 'Save and choose a plan' : 'Create business' : `Next: ${stepLabel(step + 1)}`}{' '}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
