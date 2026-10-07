@@ -126,6 +126,35 @@ check('bypassing the invitation claim still cannot get a partner-prepared trial'
   await db.exec(`DELETE FROM businesses WHERE id='${biz.id}'; DELETE FROM auth.users WHERE id='${owner}'; DELETE FROM commission_partners WHERE email='bypass-partner@example.in'; DELETE FROM auth.users WHERE id='${PARTNER}';`);
 });
 
+check('partner monthly and six-month purchases activate exactly once without a commission',async()=>{
+  await db.exec(`INSERT INTO auth.users(id,email) VALUES('${PARTNER}','short-plan-partner@example.in');
+    INSERT INTO commission_partners(email,name) VALUES('short-plan-partner@example.in','Partner');`);
+  for(const [index,plan,amount] of [[1,'1_month',50000],[2,'6_months',199900]]) {
+    const owner=`99999999-9999-4999-8999-00000000000${index}`;
+    const email=`short-plan-owner-${index}@example.in`;
+    await db.query(`INSERT INTO auth.users(id,email) VALUES($1,$2)`,[owner,email]);
+    const draft=(await asUser(PARTNER,()=>one(`SELECT save_partner_business_draft($1,'Shop','retail_store',NULL,NULL,ARRAY['Service']) AS id`,[email]))).id;
+    const business=(await asUser(owner,()=>one(`SELECT claim_partner_business($1,'owner-terms-v1','Shop',$2,'retail_store',NULL,NULL,NULL,ARRAY['Service']) AS b`,[draft,`short-plan-shop-${index}`]))).b;
+    const order=`short-plan-order-${index}`,payment=`short-plan-payment-${index}`;
+    assert.equal(business.trial_eligible,false);
+    assert.equal((await one(`SELECT business_has_active_subscription($1) AS ok`,[business.id])).ok,false);
+    await db.query(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,$3,$4,$5)`,[business.id,owner,order,plan,amount]);
+    const first=(await one(`SELECT process_paid_order($1,$2) AS r`,[order,payment])).r;
+    const retry=(await one(`SELECT process_paid_order($1,$2) AS r`,[order,payment])).r;
+    assert.equal(first.subscription.status,'active');assert.equal(first.subscription.plan,plan);
+    assert.equal(retry.subscription.expires_at,first.subscription.expires_at);
+    assert.equal((await one(`SELECT count(*)::int AS n FROM subscriptions WHERE business_id=$1`,[business.id])).n,1);
+    assert.equal((await one(`SELECT business_has_active_subscription($1) AS ok`,[business.id])).ok,true);
+    assert.equal((await one(`SELECT order_id FROM commission_referrals WHERE email=$1`,[email])).order_id,null);
+    await db.query(`DELETE FROM partner_business_drafts WHERE id=$1`,[draft]);
+    await db.query(`DELETE FROM commission_referrals WHERE email=$1`,[email]);
+    await db.query(`DELETE FROM payment_orders WHERE order_id=$1`,[order]);
+    await db.query(`DELETE FROM businesses WHERE id=$1`,[business.id]);
+    await db.query(`DELETE FROM auth.users WHERE id=$1`,[owner]);
+  }
+  await db.exec(`DELETE FROM commission_partners WHERE email='short-plan-partner@example.in'; DELETE FROM auth.users WHERE id='${PARTNER}';`);
+});
+
 // --- scenarios ---------------------------------------------------------------
 let B;
 check('onboarding creates a business with NO subscription', async () => {

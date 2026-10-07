@@ -72,6 +72,7 @@ export function OnboardingPage() {
   const [checkFailed, setCheckFailed] = useState(false);
   const [step, setStep] = useState<number>(STEP.business);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
@@ -158,7 +159,9 @@ export function OnboardingPage() {
       }
       setCheckingExisting(false);
     }
-    checkExistingBusiness();
+    void checkExistingBusiness().catch(() => {
+      if (!cancelled) { setCheckFailed(true); setCheckingExisting(false); }
+    });
     return () => {
       cancelled = true;
     };
@@ -215,37 +218,43 @@ export function OnboardingPage() {
   }, [reviewUrl]);
 
   const handleCreateBusiness = useCallback(async (): Promise<boolean> => {
-    if (!user) return false;
+    if (!user || savingRef.current) return false;
     if (partnerDraft && !acceptedTerms) { setError('Accept the terms and privacy notice to create your business.'); return false; }
+    savingRef.current = true;
     setSaving(true);
     setError(null);
+    try {
+      const { data: bizData, error: bizError } = await supabase.rpc(partnerDraft ? 'claim_partner_business' : 'create_business_with_defaults', {
+        ...(partnerDraft ? { p_draft: partnerDraft, p_consent_version: legal.consentVersion } : {}),
+        p_name: businessName.trim(),
+        p_slug: slugify(businessName),
+        p_category: effectiveCategory,
+        p_google_review_url: googleReviewUrl.trim() ? directReviewUrl(googleReviewUrl) : null,
+        p_logo_url: logoUrl || null,
+        p_welcome_message: `How was your experience at ${businessName.trim()}?`,
+        p_topics: partnerDraft ? parsePartnerTopics(topics.join('\n')) : topics.map((t) => t.trim()).filter(Boolean),
+      });
 
-    const { data: bizData, error: bizError } = await supabase.rpc(partnerDraft ? 'claim_partner_business' : 'create_business_with_defaults', {
-      ...(partnerDraft ? { p_draft: partnerDraft, p_consent_version: legal.consentVersion } : {}),
-      p_name: businessName.trim(),
-      p_slug: slugify(businessName),
-      p_category: effectiveCategory,
-      p_google_review_url: googleReviewUrl.trim() ? directReviewUrl(googleReviewUrl) : null,
-      p_logo_url: logoUrl || null,
-      p_welcome_message: `How was your experience at ${businessName.trim()}?`,
-      p_topics: partnerDraft ? parsePartnerTopics(topics.join('\n')) : topics.map((t) => t.trim()).filter(Boolean),
-    });
+      if (bizError || !bizData) {
+        // Database messages are not written for owners; say what to do instead.
+        console.error('create_business_with_defaults failed:', bizError?.message);
+        setError(
+          bizError?.code === '23514'
+            ? 'That Google link or logo isn’t accepted. Go back and check the link starts with https://, then try again.'
+            : 'We couldn’t create your business. Check your connection and try again — nothing you entered has been lost.'
+        );
+        return false;
+      }
 
-    if (bizError || !bizData) {
-      // Database messages are not written for owners; say what to do instead.
-      console.error('create_business_with_defaults failed:', bizError?.message);
-      setError(
-        bizError?.code === '23514'
-          ? 'That Google link or logo isn’t accepted. Go back and check the link starts with https://, then try again.'
-          : 'We couldn’t create your business. Check your connection and try again — nothing you entered has been lost.'
-      );
-      setSaving(false);
+      setBusiness(bizData as Business);
+      return true;
+    } catch {
+      setError('We couldn’t save your business. Check your connection and try again. Your details are still here; if the setup was saved, refreshing will take you to payment.');
       return false;
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
     }
-
-    setBusiness(bizData as Business);
-    setSaving(false);
-    return true;
   }, [user, businessName, effectiveCategory, googleReviewUrl, logoUrl, topics, partnerDraft, acceptedTerms]);
 
   const nextStep = async () => {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BEST_VALUE_PLAN, PLAN_ORDER, PLANS, YEARLY_SAVING, perMonth } from '@/config/plans';
 import { Badge, Button, Card } from '@/components/ui';
@@ -23,6 +23,8 @@ interface PayOncePlansProps {
   onFinished: (paid: boolean) => void | Promise<void>;
 }
 
+type PendingPayment = { plan: SubscriptionPlan; response: RazorpayCheckoutSuccessResponse };
+
 /** One-time purchase of a fixed term through Razorpay Checkout. Used on Billing and in onboarding. */
 export function PayOncePlans({
   businessId,
@@ -34,8 +36,39 @@ export function PayOncePlans({
   onFinished,
 }: PayOncePlansProps) {
   const [processingPlan, setProcessingPlan] = useState<SubscriptionPlan | null>(null);
+  const [pendingPayment, setPendingPayment] = useState<PendingPayment | null>(null);
+  const checkoutBusy = useRef(false);
+  const confirming = useRef(false);
+  const receivedPayment = useRef(false);
+
+  async function confirmPayment(payment: PendingPayment) {
+    if (confirming.current) return;
+    confirming.current = true;
+    setProcessingPlan(payment.plan);
+    onFeedback({ type: 'info', message: 'Confirming your payment with Razorpay…' });
+    try {
+      const result = await verifyRazorpayPayment({
+        business_id: businessId,
+        plan: payment.plan,
+        ...payment.response,
+      });
+      onFeedback(result.success
+        ? { type: 'success', message: 'Payment received. Your plan is active.' }
+        : { type: 'error', message: result.error || 'Your payment is awaiting confirmation. Check its status below; you do not need to pay again.' });
+      await onFinished(result.success);
+      if (result.success) { setPendingPayment(null); checkoutBusy.current = false; }
+    } catch {
+      onFeedback({ type: 'error', message: 'We could not finish confirming your payment. Check its status below; you do not need to pay again.' });
+    } finally {
+      confirming.current = false;
+      setProcessingPlan(null);
+    }
+  }
 
   async function handleCheckout(planId: SubscriptionPlan) {
+    if (checkoutBusy.current) return;
+    checkoutBusy.current = true;
+    receivedPayment.current = false;
     onFeedback(null);
     setProcessingPlan(planId);
 
@@ -47,6 +80,7 @@ export function PayOncePlans({
           type: 'error',
           message: orderError || 'We couldn’t start the payment. Please try again.',
         });
+        checkoutBusy.current = false;
         setProcessingPlan(null);
         return;
       }
@@ -56,52 +90,35 @@ export function PayOncePlans({
         userName,
         userEmail,
         onSuccess: async (paymentResponse: RazorpayCheckoutSuccessResponse) => {
-          onFeedback({
-            type: 'info',
-            message: 'Confirming your payment with Razorpay…',
-          });
-
-          const verifyRes = await verifyRazorpayPayment({
-            business_id: businessId,
-            plan: planId,
-            razorpay_order_id: paymentResponse.razorpay_order_id,
-            razorpay_payment_id: paymentResponse.razorpay_payment_id,
-            razorpay_signature: paymentResponse.razorpay_signature,
-          });
-
-          if (verifyRes.success) {
-            onFeedback({
-              type: 'success',
-              message: 'Payment received. Your plan is active.',
-            });
-          } else {
-            onFeedback({
-              type: 'error',
-              message:
-                verifyRes.error ||
-                'We couldn’t confirm the payment yet. If money was debited, your plan activates automatically within a few minutes — no need to pay again.',
-            });
-          }
-          await onFinished(Boolean(verifyRes.success));
-          setProcessingPlan(null);
+          if (receivedPayment.current) return;
+          receivedPayment.current = true;
+          const payment = { plan: planId, response: paymentResponse };
+          setPendingPayment(payment);
+          await confirmPayment(payment);
         },
         onError: (errMsg: string) => {
+          if (receivedPayment.current) return;
           onFeedback({
             type: 'error',
             message: errMsg || 'The payment wasn’t completed, and you haven’t been charged. Please try again.',
           });
+          checkoutBusy.current = false;
           setProcessingPlan(null);
         },
         onDismiss: () => {
+          if (receivedPayment.current) return;
+          checkoutBusy.current = false;
           setProcessingPlan(null);
         },
       });
     } catch (err) {
+      if (receivedPayment.current) return;
       console.error('Checkout error:', err);
       onFeedback({
         type: 'error',
         message: 'We couldn’t open the payment window. Check your connection and try again.',
       });
+      checkoutBusy.current = false;
       setProcessingPlan(null);
     }
   }
@@ -134,7 +151,7 @@ export function PayOncePlans({
                 className="mt-4 w-full"
                 variant={bestValue ? 'primary' : 'outline'}
                 loading={isProcessing}
-                disabled={processingPlan !== null && !isProcessing}
+                disabled={pendingPayment !== null || (processingPlan !== null && !isProcessing)}
                 onClick={() => handleCheckout(planId)}
               >
                 {isProcessing ? 'Opening payment…' : `${isCurrentPlan ? 'Extend' : 'Pay'} ${formatRupees(plan.price)}`}
@@ -143,6 +160,10 @@ export function PayOncePlans({
           );
         })}
       </div>
+      {pendingPayment && <div className="mt-4 space-y-2">
+        <p className="text-sm text-gray-700">Your payment was submitted. Check its status before making another payment.</p>
+        <Button variant="outline" loading={processingPlan !== null} onClick={() => void confirmPayment(pendingPayment)}>Check payment status</Button>
+      </div>}
       <p className="mt-2 text-xs text-gray-600">
         Pay by UPI, card, or netbanking. Your plan activates once Razorpay confirms the payment.
       </p>

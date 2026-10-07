@@ -121,3 +121,49 @@ test('Auth SMTP invitations send only to the invited owner and fail closed on de
   failure={code:'unexpected_failure'};
   await assert.rejects(()=>send(admin,'owner@example.in','/onboarding',build),/Could not send invitation/);
 });
+
+test('owner invitations enforce draft ownership, resend limits and successful delivery before marking sent', async () => {
+  const source=readFileSync(new URL('../supabase/functions/commission-access/index.ts',import.meta.url),'utf8').replace(/^import .*;\r?\n/gm,'');
+  async function run({claimed=false, wrongPartner=false, recent=false, returning=false, deliveryFailed=false}={}) {
+    const emails=[], updates=[]; let handler;
+    const admin={auth:{
+      getUser:async()=>({data:{user:{id:'partner-user',email:'partner@example.in',email_confirmed_at:'2026-10-01'}}}),
+      admin:{inviteUserByEmail:async(email,options)=>{emails.push({email,options});return {error:returning?{code:'email_exists'}:deliveryFailed?{code:'smtp_failed'}:null};}},
+      signInWithOtp:async(options)=>{emails.push(options);return {error:deliveryFailed?{code:'smtp_failed'}:null};},
+    },from(table) {
+      const filters={}; let patch;
+      return {select(){return this;}, update(value){patch=value;return this;}, eq(field,value){filters[field]=value; if(patch){updates.push({table,patch,filters});return Promise.resolve({error:null});}return this;},
+        async maybeSingle(){
+          if(table==='commission_partners')return {data:{id:'partner'}};
+          if(table==='partner_business_drafts')return {data:{id:'draft',referral_id:'referral',claimed_at:claimed?'2026-10-01':null,invitation_sent_at:recent?new Date().toISOString():null}};
+          assert.equal(table,'commission_referrals');
+          assert.equal(filters.partner_id,'partner');
+          return {data:wrongPartner?null:{email:'owner@example.in'}};
+        },
+      };
+    }};
+    vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{
+      Deno:{serve:fn=>{handler=fn},env:{get:key=>key==='AUTH_EMAIL_INVITATIONS_ENABLED'?'true':undefined}},
+      createAdminClient:async()=>admin,getCorsHeaders:()=>({}),isAllowedBrowserOrigin:()=>true,
+      SENDER:{siteUrl:'https://reviyo.in'},Response,Request,Date,JSON,String,
+    });
+    const response=await handler(new Request('https://test.invalid',{method:'POST',headers:{Authorization:'Bearer test','Content-Type':'application/json'},body:JSON.stringify({action:'invite-owner',id:'draft'})}));
+    return {response,emails,updates};
+  }
+  for(const options of [{claimed:true},{wrongPartner:true},{recent:true}]) {
+    const result=await run(options);
+    assert.equal(result.response.status,options.recent?429:404);
+    assert.equal(result.emails.length,0);assert.equal(result.updates.length,0);
+  }
+  for(const returning of [false,true]) {
+    const sent=await run({returning});
+    assert.equal(sent.response.status,200);
+    assert.ok(sent.emails.every(call=>call.email==='owner@example.in'));
+    assert.equal(sent.emails[0].options.redirectTo,'https://reviyo.in/onboarding');
+    if(returning)assert.equal(sent.emails[1].options.shouldCreateUser,false);
+    assert.equal(sent.updates.length,1);assert.equal(sent.updates[0].filters.id,'draft');
+    assert.ok(sent.updates[0].patch.invitation_sent_at);
+    const failed=await run({returning,deliveryFailed:true});
+    assert.equal(failed.response.status,500);assert.equal(failed.updates.length,0);
+  }
+});
