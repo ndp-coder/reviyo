@@ -18,7 +18,7 @@ await db.exec(`
   CREATE ROLE service_role NOLOGIN BYPASSRLS;
   GRANT anon, authenticated, service_role TO postgres;
   CREATE SCHEMA auth;
-  CREATE TABLE auth.users (id uuid PRIMARY KEY, email text, raw_user_meta_data jsonb DEFAULT '{}'::jsonb);
+  CREATE TABLE auth.users (id uuid PRIMARY KEY, email text, raw_user_meta_data jsonb DEFAULT '{}'::jsonb, encrypted_password text DEFAULT 'fixture-password-hash');
   CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
     $$ SELECT nullif(current_setting('app.uid', true), '')::uuid $$;
   GRANT USAGE ON SCHEMA auth TO anon, authenticated, service_role;
@@ -67,6 +67,38 @@ before(async () => {
 await db.exec(`INSERT INTO auth.users (id, email) VALUES ('${U1}', 'a@x.in'), ('${U2}', 'b@x.in');`);
 // handle_new_user may insert profiles via trigger; make sure they exist.
 await db.exec(`INSERT INTO profiles (id, email) VALUES ('${U1}','a@x.in'), ('${U2}','b@x.in') ON CONFLICT DO NOTHING;`);
+});
+
+check('partner invitations require an Auth password before private access or business creation', async () => {
+  const uid = '70707070-7070-7070-7070-707070707070';
+  await db.query(`INSERT INTO auth.users(id,email,encrypted_password,raw_user_meta_data) VALUES($1,'passwordless@example.in',NULL,'{"password_set":true}')`,[uid]);
+  const partner=(await one(`INSERT INTO commission_partners(email,name) VALUES('passwordless@example.in','Invited partner') RETURNING id`)).id;
+  for(const value of [null,'']) {
+    await db.query(`UPDATE auth.users SET encrypted_password=$2 WHERE id=$1`,[uid,value]);
+    await asUser(uid,async()=>{
+      assert.deepEqual((await one(`SELECT my_partner_access() AS a`)).a,{invited:true,password_set:false});
+      assert.equal((await one(`SELECT my_commission_partner() AS id`)).id,null);
+      assert.equal((await one(`SELECT count(*)::int AS n FROM commission_partners`)).n,0);
+      await rejects(`SELECT register_commission_referral('next-owner@example.in')`,[],/Invitation required/,'passwordless referral');
+      await rejects(`SELECT save_partner_business_draft('next-owner@example.in','New salon','Salon',NULL,NULL,ARRAY['Staff'])`,[],/Invitation required/,'passwordless setup');
+      await rejects(`SELECT partner_has_password($1)`,[uid],/permission denied/,'server-only password lookup');
+    });
+  }
+  await asUser(U1,async()=>assert.equal((await one(`SELECT my_partner_access() AS a`)).a.invited,false));
+  await db.exec(`SET ROLE anon`);
+  try { await rejects(`SELECT my_partner_access()`,[],/permission denied/,'anonymous access state'); }
+  finally { await db.exec(`RESET ROLE`); }
+  await db.query(`UPDATE auth.users SET encrypted_password='actual-auth-password-hash' WHERE id=$1`,[uid]);
+  await asUser(uid,async()=>{
+    assert.deepEqual((await one(`SELECT my_partner_access() AS a`)).a,{invited:true,password_set:true});
+    assert.equal((await one(`SELECT my_commission_partner() AS id`)).id,partner);
+    assert.ok((await one(`SELECT save_partner_business_draft('next-owner@example.in','New salon','Salon',NULL,NULL,ARRAY['Staff']) AS id`)).id);
+  });
+  await db.query(`UPDATE commission_partners SET active=false WHERE id=$1`,[partner]);
+  await asUser(uid,async()=>{
+    assert.equal((await one(`SELECT my_partner_access() AS a`)).a.invited,false);
+    assert.equal((await one(`SELECT my_commission_partner() AS id`)).id,null);
+  });
 });
 
 check('partner business setup preserves ownership, consent and referral attribution', async () => {

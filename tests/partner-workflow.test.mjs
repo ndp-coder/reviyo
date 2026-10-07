@@ -44,7 +44,7 @@ function component(path, overrides = {}) {
     } }).outputText;
     vm.runInNewContext(source, { exports, require: load, console: { error() {} },
       window: { scrollTo() {}, setTimeout, clearTimeout, location: { reload() {} } },
-      document: { activeElement: null }, URL, Set, Date, Response, String, Number }, { filename: file });
+      document: { activeElement: null }, URL, Set, Date, Response, String, Number, Error }, { filename: file });
     return exports;
   }
   const exported = load(path);
@@ -64,6 +64,76 @@ function text(tree) {
 }
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; };
 const payment = { razorpay_order_id: 'order_test', razorpay_payment_id: 'pay_test', razorpay_signature: 'signed_test' };
+
+function passwordSetup(updatePassword) {
+  let completed=0;
+  const runner=component('@/pages/partners/PartnerPasswordSetup',{
+    '@/lib/auth-context':{useAuth:()=>({updatePassword,signOut(){}})},
+  });
+  const render=()=>runner.render('PartnerPasswordSetup',{email:'partner@example.in',onComplete:async()=>{completed++;}});
+  const set=(label,value)=>nodes(render()).find(n=>n.type==='Input' && n.props.label===label).props.onChange({target:{value}});
+  const submit=()=>nodes(render()).find(n=>n.type==='form').props.onSubmit({preventDefault(){}});
+  return {render,set,submit,get completed(){return completed;}};
+}
+
+test('partner password creation validates both entries and cannot be submitted twice',async()=>{
+  const pending=deferred();let calls=0;
+  const form=passwordSetup(async()=>{calls++;return pending.promise;});
+  form.set('New password','short');form.set('Confirm password','short');await form.submit();
+  assert.equal(calls,0);assert.match(text(form.render()),/at least 8/);
+  form.set('New password','long-enough');form.set('Confirm password','different');await form.submit();
+  assert.equal(calls,0);assert.match(text(form.render()),/do not match/);
+  form.set('Confirm password','long-enough');
+  const first=form.submit();const second=form.submit();
+  assert.equal(calls,1);assert.equal(form.completed,0);
+  pending.resolve({error:null});await Promise.all([first,second]);assert.equal(form.completed,1);
+});
+
+test('password failures keep partners on setup and allow a safe retry',async()=>{
+  let fail=true;
+  const form=passwordSetup(async()=>{if(fail) throw new Error('Connection lost');return {error:null};});
+  form.set('New password','long-enough');form.set('Confirm password','long-enough');
+  await form.submit();assert.equal(form.completed,0);assert.match(text(form.render()),/Connection lost/);
+  assert.equal(nodes(form.render()).find(n=>n.type==='Button').props.loading,false);
+  fail=false;await form.submit();assert.equal(form.completed,1);
+  const rejected=passwordSetup(async()=>({error:'Choose a stronger password.'}));
+  rejected.set('New password','long-enough');rejected.set('Confirm password','long-enough');await rejected.submit();
+  assert.equal(rejected.completed,0);assert.match(text(rejected.render()),/stronger password/);
+});
+
+test('the partner dashboard checks server access before loading private data',async()=>{
+  let passwordSet=false, lookupFails=false, reads=0;
+  const runner=component('@/pages/partners/CommissionDashboard',{
+    'react-router-dom':{Link:'Link'},
+    '@/pages/partners/PartnerBusinessSetup':{PartnerBusinessSetup:'PartnerBusinessSetup'},
+    '@/pages/partners/PartnerPasswordSetup':{PartnerPasswordSetup:'PartnerPasswordSetup'},
+    '@/pages/partners/PartnerWalkthrough':{PartnerWalkthrough:'PartnerWalkthrough'},
+    '@/lib/auth-context':{useAuth:()=>({user:{id:'partner-user',email:'partner@example.in'},profile:null,loading:false})},
+    '@/lib/supabase':{supabase:{rpc:async name=>{assert.equal(name,'my_partner_access');return lookupFails?{error:{message:'offline'}}:{data:{invited:true,password_set:passwordSet}};}}},
+    '@/lib/fetch-all-rows':{fetchAllRows:async()=>{reads++;return [{id:'partner',email:'partner@example.in',active:true}];}},
+  });
+  const render=()=>runner.render('CommissionDashboard',{});
+  render();await runner.settle();
+  const setup=nodes(render()).find(n=>n.type==='PartnerPasswordSetup');assert.ok(setup);assert.equal(reads,0);
+  passwordSet=true;await setup.props.onComplete();
+  assert.ok(nodes(render()).find(n=>n.type==='PartnerWalkthrough'));assert.equal(reads,3);
+  lookupFails=true;nodes(render()).find(n=>n.type==='Button' && text(n)==='Refresh commissions').props.onClick();await runner.settle();
+  assert.ok(!nodes(render()).find(n=>n.type==='PartnerWalkthrough'));assert.match(text(render()),/Could not load commissions/);
+});
+
+test('a partner password recovery returns to the private partner dashboard',async()=>{
+  const destinations=[];
+  const runner=component('@/pages/auth/ResetPasswordPage',{
+    'react-router-dom':{Link:'Link',useNavigate:()=>path=>destinations.push(path)},
+    '@/pages/auth/AuthLayout':{AuthLayout:'AuthLayout'},
+    '@/lib/auth-context':{useAuth:()=>({user:{email:'partner@example.in'},loading:false,updatePassword:async()=>({error:null})})},
+    '@/lib/supabase':{supabase:{rpc:async()=>({data:{invited:true,password_set:true}})}},
+  });
+  const render=()=>runner.render('ResetPasswordPage');
+  nodes(render()).find(n=>n.type==='Input').props.onChange({target:{value:'long-enough'}});
+  await nodes(render()).find(n=>n.type==='form').props.onSubmit({preventDefault(){}});
+  nodes(render()).find(n=>n.type==='Button').props.onClick();assert.deepEqual(destinations,['/partners']);
+});
 
 function checkout(verify = async () => ({ success: true })) {
   const calls = []; const completed = []; let callbacks;

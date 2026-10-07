@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, CheckCircle, Lock } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
-import { AuthLayout } from './AuthLayout';
+import { supabase } from '@/lib/supabase';
+import { AuthLayout } from '@/pages/auth/AuthLayout';
 import { Button, Input, Spinner } from '@/components/ui';
 
 /**
@@ -17,23 +18,34 @@ export function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [destination, setDestination] = useState('/dashboard');
+  const saving = useRef(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (submitting) return;
+    if (saving.current) return;
     if (password.length < 8) {
       setError('Use at least 8 characters.');
       return;
     }
     setError(null);
     setSubmitting(true);
-    const { error: updateError } = await updatePassword(password);
-    setSubmitting(false);
-    if (updateError) {
-      setError(updateError);
-      return;
+    saving.current = true;
+    try {
+      const { error: updateError } = await updatePassword(password);
+      if (updateError) throw new Error(updateError);
+      // Password saving already succeeded. A temporary access lookup failure
+      // must not send the person back to repeat the password change.
+      try {
+        const { data: access } = await supabase.rpc('my_partner_access');
+        if (access?.invited) setDestination('/partners');
+      } catch { /* The general dashboard remains a safe fallback. */ }
+      setDone(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save your password. Please try again.');
+    } finally {
+      saving.current = false; setSubmitting(false);
     }
-    setDone(true);
   }
 
   if (loading) {
@@ -58,7 +70,7 @@ export function ResetPasswordPage() {
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Password changed</h1>
           <p className="mt-2 text-sm text-gray-600">Use your new password next time you sign in.</p>
-          <Button size="lg" className="mt-6 w-full" onClick={() => navigate('/dashboard', { replace: true })}>
+          <Button size="lg" className="mt-6 w-full" onClick={() => navigate(destination, { replace: true })}>
             Go to your dashboard <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Button>
         </div>

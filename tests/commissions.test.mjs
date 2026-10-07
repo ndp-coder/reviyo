@@ -69,10 +69,10 @@ test('a delayed payout response cannot overwrite a completed transfer; reversals
   assert.equal(record.status,'reversed');
 });
 
-function accessHandler(user,role='user',partner=null) {
+function accessHandler(user,role='user',partner=null,passwordSet=true) {
   const source=readFileSync(new URL('../supabase/functions/commission-access/index.ts',import.meta.url),'utf8').replace(/^import .*;\r?\n/gm,'');
   let handler;
-  const admin={auth:{getUser:async()=>({data:{user},error:null})},from:()=>({select:()=>({eq:()=>({
+  const admin={rpc:async(name,args)=>{assert.equal(name,'partner_has_password');assert.equal(args.p_user,user.id);return {data:passwordSet,error:null};},auth:{getUser:async()=>({data:{user},error:null})},from:()=>({select:()=>({eq:()=>({
     single:async()=>({data:{role}}),eq:()=>({maybeSingle:async()=>({data:partner})}),
   })})})};
   const context={Deno:{serve:fn=>{handler=fn},env:{get:()=>undefined}},createAdminClient:async()=>admin,
@@ -92,6 +92,11 @@ test('the access endpoint itself rejects unauthenticated and non-developer invit
   assert.equal((await accessHandler(user)({action:'bank',consent:false})).status,400);
   assert.equal((await accessHandler(user)({action:'invite-owner',id:'someone-elses-draft'})).status,403);
   assert.equal((await accessHandler(user,'user',{id:'partner'})({action:'invite-owner',id:'draft'})).status,503);
+  for (const action of ['invite-owner','bank']) {
+    const blocked=await accessHandler(user,'user',{id:'partner'},false)({action,id:'draft',consent:true});
+    assert.equal(blocked.status,403);
+    assert.equal((await blocked.json()).error,'Create your partner password first');
+  }
   const config=await accessHandler(user,'admin')({action:'setup'});
   assert.equal(config.status,200);
   assert.deepEqual(await config.json(),{emailReady:false,payoutsReady:false,enabled:false,schedulerReady:false});
@@ -126,7 +131,7 @@ test('owner invitations enforce draft ownership, resend limits and successful de
   const source=readFileSync(new URL('../supabase/functions/commission-access/index.ts',import.meta.url),'utf8').replace(/^import .*;\r?\n/gm,'');
   async function run({claimed=false, wrongPartner=false, recent=false, returning=false, deliveryFailed=false}={}) {
     const emails=[], updates=[]; let handler;
-    const admin={auth:{
+    const admin={rpc:async()=>({data:true,error:null}),auth:{
       getUser:async()=>({data:{user:{id:'partner-user',email:'partner@example.in',email_confirmed_at:'2026-10-01'}}}),
       admin:{inviteUserByEmail:async(email,options)=>{emails.push({email,options});return {error:returning?{code:'email_exists'}:deliveryFailed?{code:'smtp_failed'}:null};}},
       signInWithOtp:async(options)=>{emails.push(options);return {error:deliveryFailed?{code:'smtp_failed'}:null};},

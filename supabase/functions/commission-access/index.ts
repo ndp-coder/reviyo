@@ -84,6 +84,9 @@ Deno.serve(async (req: Request) => {
     if (body.action === "invite-owner") {
       const { data: partner } = await admin.from("commission_partners").select("id").eq("email", user.email!.toLowerCase()).eq("active", true).maybeSingle();
       if (!partner) return json({ error: "Invitation required" }, 403);
+      const { data: passwordSet, error: passwordError } = await admin.rpc("partner_has_password", { p_user: user.id });
+      if (passwordError) throw passwordError;
+      if (!passwordSet) return json({ error: "Create your partner password first" }, 403);
       if (!invitationEmailReady()) return json({ error: "Invitation email is not configured. Your saved setup is safe; resend once email is configured." }, 503);
       const { data: draft } = await admin.from("partner_business_drafts").select("id,referral_id,claimed_at,invitation_sent_at").eq("id", String(body.id ?? "")).maybeSingle();
       if (!draft || draft.claimed_at) return json({ error: "Pending business setup not found" }, 404);
@@ -103,6 +106,9 @@ Deno.serve(async (req: Request) => {
       const { data: partner } = await admin.from("commission_partners").select("id,name,email,fund_account_id,contact_id")
         .eq("email", user.email!.toLowerCase()).eq("active", true).maybeSingle();
       if (!partner) return json({ error: "Invitation required" }, 403);
+      const { data: passwordSet, error: passwordError } = await admin.rpc("partner_has_password", { p_user: user.id });
+      if (passwordError) throw passwordError;
+      if (!passwordSet) return json({ error: "Create your partner password first" }, 403);
       if (partner.fund_account_id) return json({ error: "Bank details are already registered. Contact the developer to change them." }, 409);
       const name = String(body.name ?? "").trim();
       const account = String(body.account ?? "").trim();

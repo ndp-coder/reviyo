@@ -8,6 +8,8 @@ import { BrandLogo } from '@/components/BrandLogo';
 import { ConsentCheckbox } from '@/components/ConsentCheckbox';
 import { formatRupees, PLANS } from '@/config/plans';
 import { PartnerBusinessSetup } from '@/pages/partners/PartnerBusinessSetup';
+import { PartnerPasswordSetup } from '@/pages/partners/PartnerPasswordSetup';
+import { PartnerWalkthrough } from '@/pages/partners/PartnerWalkthrough';
 
 type Partner = { id: string; name: string; email: string; active: boolean; invitation_sent_at: string | null; bank_last4: string | null; fund_account_id: string | null };
 type Referral = { id: string; partner_id: string; email: string; paid_at: string | null; capture_verified_at: string | null; qualified_at: string | null; created_at: string };
@@ -31,7 +33,11 @@ function statusText(status: string) {
 }
 
 export function CommissionDashboard({ developer = false }: { developer?: boolean }) {
-  const { user, profile, loading: authLoading, signOut, sendSignInCode, verifySignInCode } = useAuth();
+  const { user, profile, loading: authLoading, signOut, signIn, sendSignInCode, verifySignInCode } = useAuth();
+  const [passwordRequired, setPasswordRequired] = useState(false);
+  const [accessChecked, setAccessChecked] = useState(false);
+  const [signInMode, setSignInMode] = useState<'password' | 'code'>('password');
+  const [signInPassword, setSignInPassword] = useState('');
   const [partners, setPartners] = useState<Partner[]>([]);
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [earnings, setEarnings] = useState<Earning[]>([]);
@@ -53,7 +59,19 @@ export function CommissionDashboard({ developer = false }: { developer?: boolean
 
   const load = useCallback(async () => {
     if (!user || (developer && profile?.role !== 'admin')) { setLoading(false); return; }
+    setLoading(true);
     try {
+      if (!developer) {
+        setAccessChecked(false);
+        const { data: access, error: accessError } = await supabase.rpc('my_partner_access');
+        if (accessError || typeof access?.invited !== 'boolean' || typeof access?.password_set !== 'boolean') throw new Error('Could not check partner access. Please try again.');
+        setAccessChecked(true);
+        setPasswordRequired(access.invited && !access.password_set);
+        if (access.invited && !access.password_set) {
+          setPartners([]); setReferrals([]); setEarnings([]); setError(null);
+          return;
+        }
+      }
       const [p, r, e] = await Promise.all([
         fetchAllRows<Partner>((from, to) => supabase.from('commission_partners').select('id,name,email,active,invitation_sent_at,bank_last4,fund_account_id').order('id').range(from, to)),
         fetchAllRows<Referral>((from, to) => supabase.from('commission_referrals').select('id,partner_id,email,paid_at,capture_verified_at,qualified_at,created_at').order('id').range(from, to)),
@@ -102,19 +120,26 @@ export function CommissionDashboard({ developer = false }: { developer?: boolean
       <form className="mt-6 space-y-4" onSubmit={(event) => {
         event.preventDefault();
         void perform(async () => {
-          const result = sentTo ? await verifySignInCode(sentTo, code.trim()) : await sendSignInCode(signInEmail.trim());
+          const result = signInMode === 'password' ? await signIn(signInEmail.trim(), signInPassword) : sentTo ? await verifySignInCode(sentTo, code.trim()) : await sendSignInCode(signInEmail.trim());
           if (result.error) throw new Error(result.error);
-          if (!sentTo) setSentTo(signInEmail.trim());
-        }, sentTo ? 'Signed in.' : 'Check your email for a sign-in code.');
+          if (signInMode === 'code' && !sentTo) setSentTo(signInEmail.trim());
+        }, signInMode === 'password' || sentTo ? 'Signed in.' : 'Check your email for a sign-in code.');
       }}>
         <Input label="Invited email" type="email" required value={signInEmail} onChange={(e) => setSignInEmail(e.target.value)} disabled={!!sentTo} autoComplete="email" />
-        {sentTo && <Input label="Sign-in code" required value={code} onChange={(e) => setCode(e.target.value)} autoComplete="one-time-code" inputMode="numeric" />}
-        <Button type="submit" loading={busy}>{sentTo ? 'Sign in' : 'Send sign-in code'}</Button>
+        {signInMode === 'password' && <Input label="Password" type="password" required revealable autoComplete="current-password" value={signInPassword} onChange={e => setSignInPassword(e.target.value)} />}
+        {signInMode === 'code' && sentTo && <Input label="Sign-in code" required value={code} onChange={(e) => setCode(e.target.value)} autoComplete="one-time-code" inputMode="numeric" />}
+        <Button type="submit" loading={busy}>{signInMode === 'password' || sentTo ? 'Sign in' : 'Send sign-in code'}</Button>
         {sentTo && <Button type="button" variant="ghost" onClick={() => { setSentTo(null); setCode(''); }}>Use another email</Button>}
       </form>
+      <div className="mt-5 flex flex-wrap items-center gap-4">
+        <Button variant="ghost" disabled={busy} onClick={() => { setSignInMode(signInMode === 'password' ? 'code' : 'password'); setSentTo(null); setCode(''); setSignInPassword(''); setError(null); setNotice(null); }}>{signInMode === 'password' ? 'Use an email code instead' : 'Use your password instead'}</Button>
+        {signInMode === 'password' && <Link to="/forgot-password" className="text-sm text-brand-700 underline">Forgot password?</Link>}
+      </div>
     </main>
   );
   if (developer && profile?.role !== 'admin') return <Alert variant="error">Developer access required.</Alert>;
+  if (!developer && !accessChecked) return <main className="mx-auto max-w-md space-y-4 px-4 py-12"><Alert variant="error">{error || 'Could not check partner access.'}</Alert><Button onClick={() => void load()}>Try again</Button><Button variant="ghost" onClick={() => void signOut()}>Sign out</Button></main>;
+  if (!developer && passwordRequired) return <PartnerPasswordSetup email={user.email ?? ''} onComplete={load} />;
 
   const content = (
     <>
@@ -147,6 +172,7 @@ export function CommissionDashboard({ developer = false }: { developer?: boolean
               <Button type="submit" loading={busy} className="shrink-0">{developer ? 'Send invitation' : 'Register referral'}</Button>
             </form>
           </Card>
+          {!developer && <PartnerWalkthrough />}
           {!developer && <PartnerBusinessSetup />}
           {!developer && <Card className="mt-6 p-5">
             <h2 className="font-semibold">Payout bank account</h2>
