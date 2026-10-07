@@ -44,7 +44,7 @@ function component(path, overrides = {}) {
     } }).outputText;
     vm.runInNewContext(source, { exports, require: load, console: { error() {} },
       window: { scrollTo() {}, setTimeout, clearTimeout, location: { reload() {} } },
-      document: { activeElement: null }, URL, Set, Date, Response, String, Number, Error }, { filename: file });
+      document: { activeElement: null }, URL, Set, Date, Response, String, Number, Error, DOMException }, { filename: file });
     return exports;
   }
   const exported = load(path);
@@ -258,4 +258,47 @@ test('a lost connection while claiming a business restores the save button and p
   assert.equal(review.props.busy, false);
   assert.equal(review.props.name, 'Prepared cafe');
   assert.ok(text(flow.render()).includes('connection'));
+});
+
+test('training keeps the latest chapter request before metadata and follows manual seeking', async () => {
+  const runner = component('@/pages/partners/PartnerTraining');
+  const render = () => runner.render('PartnerTraining');
+  const initial = render();
+  const player = nodes(initial).find(n => n.type === 'video');
+  const media = { readyState: 0, currentTime: 0, play: async () => {} };
+  player.props.ref.current = media;
+  const buttons = nodes(initial).filter(n => n.type === 'Button');
+  buttons[3].props.onClick();
+  buttons[10].props.onClick();
+  assert.equal(media.currentTime, 0, 'do not seek an unloaded media resource');
+  media.readyState = 1;
+  player.props.onLoadedMetadata();
+  const chapterTimes = nodes(initial).filter(n => n.type === 'Button').map(n => text(n));
+  assert.ok(chapterTimes[10].includes('Guide the invitation'));
+  // The chapter track ships with the video; compare seeking with its timestamps.
+  const vtt = readFileSync(resolve(root, 'public/media/partner-training-chapters.vtt'), 'utf8');
+  const starts = [...vtt.matchAll(/^(\d{2}):(\d{2}):(\d{2})\.(\d{3}) -->/gm)]
+    .map(m => Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]) + Number(m[4]) / 1000);
+  assert.equal(media.currentTime, starts[10]);
+  media.currentTime = starts[2] + 1;
+  player.props.onSeeked();
+  assert.equal(nodes(render()).filter(n => n.type === 'Button')[2].props['aria-current'], 'true');
+  nodes(render()).filter(n => n.type === 'Button')[4].props.onClick();
+  assert.equal(media.currentTime, starts[4]);
+});
+
+test('training playback failures preserve the complete written class and show recovery', async () => {
+  const runner = component('@/pages/partners/PartnerTraining');
+  const render = () => runner.render('PartnerTraining');
+  const initial = render();
+  const player = nodes(initial).find(n => n.type === 'video');
+  player.props.ref.current = { readyState: 1, currentTime: 0, play: async () => { throw new DOMException('Blocked', 'NotAllowedError'); } };
+  nodes(initial).find(n => n.type === 'Button').props.onClick();
+  await Promise.resolve(); await Promise.resolve();
+  assert.match(text(render()), /Press play on the video/);
+  player.props.onError();
+  assert.match(text(render()), /video could not load/);
+  assert.match(text(render()), /Read the full class and practice scripts/);
+  assert.match(text(render()), /What if payment is delayed/);
+  assert.ok(nodes(render()).find(n => n.type === 'a' && n.props.href === '/media/partner-training.mp4'));
 });

@@ -10,6 +10,7 @@ import { formatRupees, PLANS } from '@/config/plans';
 import { PartnerBusinessSetup } from '@/pages/partners/PartnerBusinessSetup';
 import { InvitationPasswordSetup } from '@/components/InvitationPasswordSetup';
 import { PartnerWalkthrough } from '@/pages/partners/PartnerWalkthrough';
+import { PartnerTraining } from '@/pages/partners/PartnerTraining';
 
 type Partner = { id: string; name: string; email: string; active: boolean; invitation_sent_at: string | null; bank_last4: string | null; fund_account_id: string | null };
 type Referral = { id: string; partner_id: string; email: string; paid_at: string | null; capture_verified_at: string | null; qualified_at: string | null; created_at: string };
@@ -153,6 +154,7 @@ export function CommissionDashboard({ developer = false }: { developer?: boolean
         <Card className="mt-6 p-6"><h2 className="font-semibold">Invitation required</h2><p className="mt-2 text-sm text-gray-600">Ask the developer to invite this email. If your access was revoked, contact them to restore it.</p></Card>
       ) : (
         <>
+          {!developer && <PartnerTraining />}
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             {[['Qualifying owners', String(qualified)], ['Waiting for transfer', formatRupees(pending / 100)], ['Paid to bank', formatRupees(paid / 100)]].map(([label, value]) => <Card key={label} className="p-5"><p className="text-sm text-gray-600">{label}</p><p className="mt-2 text-2xl font-semibold">{value}</p></Card>)}
           </div>
