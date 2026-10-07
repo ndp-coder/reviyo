@@ -26,6 +26,7 @@ import { hasSubscriptionAccess } from '@/lib/subscription';
 import { legal } from '@/config/legal';
 import { ConsentCheckbox } from '@/components/ConsentCheckbox';
 import { PartnerOwnerReview } from '@/components/PartnerOwnerReview';
+import { InvitationPasswordSetup } from '@/components/InvitationPasswordSetup';
 import { parsePartnerTopics, validatePartnerDetails } from '@/lib/partner-setup';
 import { Star, Store, Link2, Image, QrCode, ArrowRight, ArrowLeft, ArrowUp, ArrowDown, Check, Copy, Plus, X, Upload, Gift, CreditCard, Download } from 'lucide-react';
 import QRCode from 'qrcode';
@@ -67,6 +68,8 @@ export function OnboardingPage() {
   // on to the dashboard. Hold the page until that is known, so they don't see
   // the first setup question flash past.
   const [checkingExisting, setCheckingExisting] = useState(true);
+  const [passwordRequired, setPasswordRequired] = useState(false);
+  const [passwordCheck, setPasswordCheck] = useState(0);
   const [partnerDraft, setPartnerDraft] = useState<string | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [checkFailed, setCheckFailed] = useState(false);
@@ -104,6 +107,12 @@ export function OnboardingPage() {
     let cancelled = false;
     async function checkExistingBusiness() {
       if (!user) return;
+      setCheckingExisting(true); setCheckFailed(false);
+      const { data: needsPassword, error: passwordError } = await supabase.rpc('owner_setup_password_required');
+      if (cancelled) return;
+      if (passwordError || typeof needsPassword !== 'boolean') throw new Error('Could not check invitation access');
+      setPasswordRequired(needsPassword);
+      if (needsPassword) { setCheckingExisting(false); return; }
       const { data, error: businessError } = await supabase
         .from('businesses')
         .select('*')
@@ -165,7 +174,7 @@ export function OnboardingPage() {
     return () => {
       cancelled = true;
     };
-  }, [user, navigate]);
+  }, [user, navigate, passwordCheck]);
 
   // Auto-suggest topics when category changes
   useEffect(() => {
@@ -362,6 +371,10 @@ export function OnboardingPage() {
     if (step === STEP.topics && topics.length === 0) return 'Add at least one topic to continue.';
     return null;
   })();
+
+  if (!checkingExisting && !checkFailed && passwordRequired) return <InvitationPasswordSetup account="owner" email={user?.email ?? ''} onComplete={async () => {
+    setCheckingExisting(true); setPasswordCheck(value => value + 1);
+  }} />;
 
   if (checkingExisting) {
     return (

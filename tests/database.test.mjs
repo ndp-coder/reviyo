@@ -101,6 +101,39 @@ check('partner invitations require an Auth password before private access or bus
   });
 });
 
+check('invited owners set a password before either business creation path and keep their own consent', async () => {
+  const partnerUser='51515151-5151-5151-5151-515151515151';
+  const ownerUser='61616161-6161-6161-6161-616161616161';
+  await db.query(`INSERT INTO auth.users(id,email) VALUES($1,'password-owner-partner@example.in')`,[partnerUser]);
+  await db.query(`INSERT INTO auth.users(id,email,encrypted_password,raw_user_meta_data) VALUES($1,'invited-owner@example.in',NULL,'{"password_set":true}')`,[ownerUser]);
+  await db.exec(`INSERT INTO commission_partners(email,name) VALUES('password-owner-partner@example.in','Partner');`);
+  const draft=(await asUser(partnerUser,()=>one(`SELECT save_partner_business_draft('invited-owner@example.in','Prepared cafe','Cafe',NULL,NULL,ARRAY['Service']) AS id`))).id;
+  const claim=`SELECT claim_partner_business($1,'owner-terms','Owner cafe','password-owner-cafe','Cafe',NULL,NULL,'Welcome',ARRAY['Service']) AS b`;
+  for(const password of [null,'']) {
+    await db.query(`UPDATE auth.users SET encrypted_password=$2 WHERE id=$1`,[ownerUser,password]);
+    await asUser(ownerUser,async()=>{
+      assert.equal((await one(`SELECT owner_setup_password_required() AS needed`)).needed,true);
+      await rejects(claim,[draft],/Create your account password/,'passwordless invitation claim');
+      await rejects(`SELECT create_business_with_defaults('Bypass cafe','password-owner-cafe','Cafe',NULL,NULL,NULL,ARRAY['Service'])`,[],/Create your account password/,'ordinary creation bypass');
+      await rejects(`SELECT require_invited_owner_password()`,[],/permission denied/,'trigger is server-only');
+    });
+  }
+  assert.equal((await one(`SELECT terms_consented_at FROM profiles WHERE id=$1`,[ownerUser])).terms_consented_at,null);
+  assert.equal((await one(`SELECT claimed_at FROM partner_business_drafts WHERE id=$1`,[draft])).claimed_at,null);
+  await asUser(U1,async()=>assert.equal((await one(`SELECT owner_setup_password_required() AS needed`)).needed,false,'another account does not inherit this invitation'));
+  await db.exec(`SET ROLE anon`);
+  try { await rejects(`SELECT owner_setup_password_required()`,[],/permission denied/,'anonymous password status'); }
+  finally { await db.exec(`RESET ROLE`); }
+  await db.query(`UPDATE auth.users SET encrypted_password='actual-auth-hash' WHERE id=$1`,[ownerUser]);
+  const business=await asUser(ownerUser,async()=>{
+    assert.equal((await one(`SELECT owner_setup_password_required() AS needed`)).needed,false);
+    return (await one(claim,[draft])).b;
+  });
+  assert.equal(business.owner_id,ownerUser);assert.equal(business.trial_eligible,false);
+  assert.equal((await one(`SELECT terms_consent_version FROM profiles WHERE id=$1`,[ownerUser])).terms_consent_version,'owner-terms');
+  await db.exec(`DELETE FROM businesses WHERE id='${business.id}'; DELETE FROM partner_business_drafts WHERE id='${draft}'; DELETE FROM commission_referrals WHERE email='invited-owner@example.in'; DELETE FROM commission_partners WHERE email='password-owner-partner@example.in'; DELETE FROM auth.users WHERE id IN ('${ownerUser}','${partnerUser}');`);
+});
+
 check('partner business setup preserves ownership, consent and referral attribution', async () => {
   await db.exec(`INSERT INTO auth.users(id,email) VALUES('${SETUP_OWNER}','setup-owner@example.in');`);
   await db.exec(`INSERT INTO auth.users(id,email) VALUES('${PARTNER}','setup-partner@example.in') ON CONFLICT DO NOTHING;`);

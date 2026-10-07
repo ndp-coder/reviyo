@@ -65,12 +65,12 @@ function text(tree) {
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; };
 const payment = { razorpay_order_id: 'order_test', razorpay_payment_id: 'pay_test', razorpay_signature: 'signed_test' };
 
-function passwordSetup(updatePassword) {
+function passwordSetup(updatePassword, account = 'partner') {
   let completed=0;
-  const runner=component('@/pages/partners/PartnerPasswordSetup',{
+  const runner=component('@/components/InvitationPasswordSetup',{
     '@/lib/auth-context':{useAuth:()=>({updatePassword,signOut(){}})},
   });
-  const render=()=>runner.render('PartnerPasswordSetup',{email:'partner@example.in',onComplete:async()=>{completed++;}});
+  const render=()=>runner.render('InvitationPasswordSetup',{email:'partner@example.in',account,onComplete:async()=>{completed++;}});
   const set=(label,value)=>nodes(render()).find(n=>n.type==='Input' && n.props.label===label).props.onChange({target:{value}});
   const submit=()=>nodes(render()).find(n=>n.type==='form').props.onSubmit({preventDefault(){}});
   return {render,set,submit,get completed(){return completed;}};
@@ -106,7 +106,7 @@ test('the partner dashboard checks server access before loading private data',as
   const runner=component('@/pages/partners/CommissionDashboard',{
     'react-router-dom':{Link:'Link'},
     '@/pages/partners/PartnerBusinessSetup':{PartnerBusinessSetup:'PartnerBusinessSetup'},
-    '@/pages/partners/PartnerPasswordSetup':{PartnerPasswordSetup:'PartnerPasswordSetup'},
+    '@/components/InvitationPasswordSetup':{InvitationPasswordSetup:'InvitationPasswordSetup'},
     '@/pages/partners/PartnerWalkthrough':{PartnerWalkthrough:'PartnerWalkthrough'},
     '@/lib/auth-context':{useAuth:()=>({user:{id:'partner-user',email:'partner@example.in'},profile:null,loading:false})},
     '@/lib/supabase':{supabase:{rpc:async name=>{assert.equal(name,'my_partner_access');return lookupFails?{error:{message:'offline'}}:{data:{invited:true,password_set:passwordSet}};}}},
@@ -114,7 +114,7 @@ test('the partner dashboard checks server access before loading private data',as
   });
   const render=()=>runner.render('CommissionDashboard',{});
   render();await runner.settle();
-  const setup=nodes(render()).find(n=>n.type==='PartnerPasswordSetup');assert.ok(setup);assert.equal(reads,0);
+  const setup=nodes(render()).find(n=>n.type==='InvitationPasswordSetup');assert.ok(setup);assert.equal(reads,0);
   passwordSet=true;await setup.props.onComplete();
   assert.ok(nodes(render()).find(n=>n.type==='PartnerWalkthrough'));assert.equal(reads,3);
   lookupFails=true;nodes(render()).find(n=>n.type==='Button' && text(n)==='Refresh commissions').props.onClick();await runner.settle();
@@ -186,7 +186,8 @@ test('delayed confirmation retries the same payment without charging again', asy
   assert.deepEqual(flow.completed, [false, true]);
 });
 
-function owner(claim) {
+function owner(claim, access = async () => ({data:false})) {
+  const requests=[];
   const user = { id: 'owner_test', email: 'owner@example.in' };
   const navigate = () => {};
   const runner = component('@/pages/onboarding/OnboardingPage', {
@@ -196,14 +197,41 @@ function owner(claim) {
     '@/lib/payment-gate': { paymentGate: async () => 'not_paid' },
     '@/lib/supabase': { supabase: {
       from: () => ({ select() { return this; }, eq() { return this; }, maybeSingle: async () => ({ data: null }) }),
-      rpc: async (name, args) => name === 'my_partner_business_draft'
-        ? { data: { id: 'draft_test', name: 'Prepared cafe', category: 'cafe', topics: ['Coffee'], google_review_url: null } }
-        : claim(args),
+      rpc: async (name, args) => {
+        requests.push(name);
+        return name === 'owner_setup_password_required' ? access() : name === 'my_partner_business_draft'
+          ? { data: { id: 'draft_test', name: 'Prepared cafe', category: 'cafe', topics: ['Coffee'], google_review_url: null } }
+          : claim(args);
+      },
     } },
   });
   const render = () => runner.render('OnboardingPage');
-  return { runner, render, async ready() { render(); await runner.settle(); render(); await runner.settle(); } };
+  return { runner, render, requests, async ready() { render(); await runner.settle(); render(); await runner.settle(); } };
 }
+
+test('an owner invitation shows password creation before business review and rechecks after saving',async()=>{
+  let needsPassword=true;
+  const flow=owner(async()=>{throw new Error('Unexpected claim');},async()=>({data:needsPassword}));
+  await flow.ready();
+  const setup=nodes(flow.render()).find(n=>n.type==='InvitationPasswordSetup');
+  assert.equal(setup.props.account,'owner');assert.equal(setup.props.email,'owner@example.in');
+  assert.ok(!flow.requests.includes('my_partner_business_draft'));
+  await setup.props.onComplete();await flow.ready();
+  assert.ok(nodes(flow.render()).find(n=>n.type==='InvitationPasswordSetup'),'a refresh cannot pretend that a password was saved');
+  needsPassword=false;await setup.props.onComplete();await flow.ready();
+  assert.ok(flow.requests.includes('my_partner_business_draft'));
+  const review=nodes(flow.render()).find(n=>n.type==='PartnerOwnerReview');assert.ok(review);assert.equal(review.props.accepted,false);
+  const form=passwordSetup(async()=>({error:null}),'owner');
+  assert.equal(nodes(form.render()).find(n=>n.type==='PageHeader').props.title,'Create your account password');
+});
+
+test('an owner password access lookup failure cannot expose business review or payment',async()=>{
+  const flow=owner(async()=>{throw new Error('Unexpected claim');},async()=>({error:{message:'offline'}}));
+  await flow.ready();
+  assert.ok(!nodes(flow.render()).find(n=>n.type==='PartnerOwnerReview'));
+  assert.ok(!flow.requests.includes('my_partner_business_draft'));
+  assert.match(text(flow.render()),/Try again/);
+});
 
 test('partner owner consent stays unticked and rapid saves claim only once', async () => {
   const pending = deferred(); let calls = 0;

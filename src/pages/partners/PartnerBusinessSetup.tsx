@@ -81,7 +81,7 @@ export function PartnerBusinessSetup() {
 
   return <Card className="mt-6 p-5">
     <h2 className="font-semibold">Set up a business for an owner</h2>
-    <p className="mt-2 text-sm text-gray-600">Prepare the review page here and invite the owner using their own email. They check the details in one screen, accept the terms, pay for a plan and download their QR code.</p>
+    <p className="mt-2 text-sm text-gray-600">Prepare the review page here and invite the owner using their own email. New owners create their password first, then check the details, accept the terms, pay for a plan and download their QR code.</p>
     <p className="mt-2 text-sm font-medium text-gray-800">Paid plans only: {PLAN_SUMMARY}. Partner setups do not include a free trial.</p>
     {error && <Alert variant="error" className="mt-4">{error}</Alert>}
     {notice && <Alert variant="success" className="mt-4">{notice}</Alert>}

@@ -163,9 +163,10 @@ def frame(t, poster=False):
         button(d,'Save without sending',(650,402),510,True)
         button(d,'Save and invite owner',(650,475),510)
     elif kind=='payment':
-        tick(d,'Review and edit business details',229,local>1)
-        tick(d,'Owner accepts the terms',296,local>3)
-        tick(d,'Choose a plan and pay via Razorpay',363,local>5)
+        tick(d,'Create your own account password',218,local>0.5)
+        tick(d,'Review and edit business details',275,local>1)
+        tick(d,'Owner accepts the terms',332,local>3)
+        tick(d,'Choose a plan and pay via Razorpay',389,local>5)
         card(d,(650,465,1160,526),'#eff8f6',TEAL)
         d.text((673,477),'Paid plan required · No free trial',font=font(23,True),fill=TEAL)
     elif kind=='qr':

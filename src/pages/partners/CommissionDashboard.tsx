@@ -8,7 +8,7 @@ import { BrandLogo } from '@/components/BrandLogo';
 import { ConsentCheckbox } from '@/components/ConsentCheckbox';
 import { formatRupees, PLANS } from '@/config/plans';
 import { PartnerBusinessSetup } from '@/pages/partners/PartnerBusinessSetup';
-import { PartnerPasswordSetup } from '@/pages/partners/PartnerPasswordSetup';
+import { InvitationPasswordSetup } from '@/components/InvitationPasswordSetup';
 import { PartnerWalkthrough } from '@/pages/partners/PartnerWalkthrough';
 
 type Partner = { id: string; name: string; email: string; active: boolean; invitation_sent_at: string | null; bank_last4: string | null; fund_account_id: string | null };
@@ -139,7 +139,7 @@ export function CommissionDashboard({ developer = false }: { developer?: boolean
   );
   if (developer && profile?.role !== 'admin') return <Alert variant="error">Developer access required.</Alert>;
   if (!developer && !accessChecked) return <main className="mx-auto max-w-md space-y-4 px-4 py-12"><Alert variant="error">{error || 'Could not check partner access.'}</Alert><Button onClick={() => void load()}>Try again</Button><Button variant="ghost" onClick={() => void signOut()}>Sign out</Button></main>;
-  if (!developer && passwordRequired) return <PartnerPasswordSetup email={user.email ?? ''} onComplete={load} />;
+  if (!developer && passwordRequired) return <InvitationPasswordSetup email={user.email ?? ''} onComplete={load} />;
 
   const content = (
     <>

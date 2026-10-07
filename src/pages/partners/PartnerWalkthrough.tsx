@@ -4,7 +4,7 @@ const steps = [
   'Accept your developer invitation and create your partner password.',
   'Use the owner’s own email. Enter the business name and category, then prepare the Google review link, logo and review topics.',
   'Save without sending, or save and invite the owner. You can edit and resend a pending setup.',
-  'The owner checks the details, accepts the terms and pays through Razorpay. Partner-prepared businesses have no free trial.',
+  'The owner opens their email invitation and creates their own password. They then check the details, accept the terms and pay through Razorpay. Owners with an existing password keep it. Partner-prepared businesses have no free trial.',
   'Once payment is confirmed, the owner downloads their QR code. If confirmation is delayed, check payment status instead of paying again.',
   'Customers describe their real experience, edit the draft and post their own review on Google.',
   'Save your bank details for automatic payouts. Only qualifying annual payments earn commission after the 14-day payment check; monthly and six-month payments earn none.',

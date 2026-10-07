@@ -3,7 +3,7 @@ import { useAuth } from '@/lib/auth-context';
 import { Alert, Button, Card, Input, PageHeader } from '@/components/ui';
 import { BrandLogo } from '@/components/BrandLogo';
 
-export function PartnerPasswordSetup({ email, onComplete }: { email: string; onComplete: () => Promise<void> }) {
+export function InvitationPasswordSetup({ email, onComplete, account = 'partner' }: { email: string; onComplete: () => Promise<void>; account?: 'partner' | 'owner' }) {
   const { updatePassword, signOut } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
@@ -28,7 +28,7 @@ export function PartnerPasswordSetup({ email, onComplete }: { email: string; onC
 
   return <main id="main-content" className="mx-auto max-w-md px-4 py-12">
     <BrandLogo className="h-10 w-auto" />
-    <PageHeader title="Create your partner password" description="Your invitation verified your email. Set a password to finish joining the private partner dashboard." />
+    <PageHeader title={account === 'owner' ? 'Create your account password' : 'Create your partner password'} description={account === 'owner' ? 'Your invitation verified your email. Create a password, then check your business details and choose your plan.' : 'Your invitation verified your email. Set a password to finish joining the private partner dashboard.'} />
     <Card className="mt-6 p-6">
       <p className="break-all text-sm text-gray-600">Invited email: <strong>{email}</strong></p>
       {error && <Alert variant="error" className="mt-4">{error}</Alert>}
