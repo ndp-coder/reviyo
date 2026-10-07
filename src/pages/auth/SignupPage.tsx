@@ -1,16 +1,16 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate, Navigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { branding } from '@/config/branding';
 import { legal } from '@/config/legal';
-import { AuthLayout } from './AuthLayout';
+import { AuthLayout } from '@/pages/auth/AuthLayout';
 import { Alert, Button, Input } from '@/components/ui';
 import { ConsentCheckbox } from '@/components/ConsentCheckbox';
+import { AccountRedirect } from '@/components/AccountRedirect';
 
 export function SignupPage() {
-  const { signUp, user, loading } = useAuth();
-  const navigate = useNavigate();
+  const { signUp, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export function SignupPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [consentError, setConsentError] = useState<string | null>(null);
 
-  if (user && !loading) return <Navigate to="/onboarding" replace />;
+  if (user) return <AccountRedirect />;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -63,8 +63,6 @@ export function SignupPage() {
       } else {
         setError(error);
       }
-    } else {
-      navigate('/onboarding');
     }
   }
 

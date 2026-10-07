@@ -1,17 +1,17 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate, Navigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, KeyRound } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { branding } from '@/config/branding';
 import { legal } from '@/config/legal';
-import { AuthLayout } from './AuthLayout';
+import { AuthLayout } from '@/pages/auth/AuthLayout';
 import { Alert, Button, Input } from '@/components/ui';
+import { AccountRedirect } from '@/components/AccountRedirect';
 
 type Mode = 'password' | 'code';
 
 export function LoginPage() {
-  const { signIn, sendSignInCode, verifySignInCode, user, loading } = useAuth();
-  const navigate = useNavigate();
+  const { signIn, sendSignInCode, verifySignInCode, user } = useAuth();
   const [mode, setMode] = useState<Mode>('password');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,7 +21,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  if (user && !loading) return <Navigate to="/onboarding" replace />;
+  if (user) return <AccountRedirect />;
 
   function switchMode(next: Mode) {
     setMode(next);
@@ -39,8 +39,6 @@ export function LoginPage() {
     setSubmitting(false);
     if (error) {
       setError(error === 'Invalid login credentials' ? 'Incorrect email or password.' : error);
-    } else {
-      navigate('/onboarding');
     }
   }
 
@@ -69,8 +67,6 @@ export function LoginPage() {
     setSubmitting(false);
     if (error) {
       setError(error);
-    } else {
-      navigate('/onboarding');
     }
   }
 

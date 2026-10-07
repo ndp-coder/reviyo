@@ -13,7 +13,7 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 // Execute the actual component event handlers with deterministic hooks and
 // service doubles. No requests, emails, checkouts or payouts leave these tests.
 function component(path, overrides = {}) {
-  const slots = []; let cursor = 0; const effects = []; const cache = new Map();
+  const slots = []; let cursor = 0; const effects = []; const cache = new Map(); const cleanups = new Map();
   const hooks = {
     useState(initial) {
       const index = cursor++;
@@ -24,7 +24,10 @@ function component(path, overrides = {}) {
     useCallback(fn) { return fn; },
     useEffect(fn, deps) {
       const index = cursor++;
-      if (!slots[index] || deps.some((value, i) => value !== slots[index][i])) { slots[index] = deps; effects.push(fn); }
+      if (!slots[index] || deps.some((value, i) => value !== slots[index][i])) {
+        slots[index] = deps;
+        effects.push(() => { cleanups.get(index)?.(); cleanups.set(index, fn()); });
+      }
     },
   };
   const jsx = (type, props) => ({ type, props: props ?? {} });
@@ -301,4 +304,100 @@ test('training playback failures preserve the complete written class and show re
   assert.match(text(render()), /Read the full class and practice scripts/);
   assert.match(text(render()), /What if payment is delayed/);
   assert.ok(nodes(render()).find(n => n.type === 'a' && n.props.href === '/media/partner-training.mp4'));
+});
+
+function accountRedirect(access, state = { user: { id: 'account_test' }, profile: { id: 'account_test', role: 'user' }, loading: false }) {
+  const calls = [];
+  const runner = component('@/components/AccountRedirect', {
+    'react-router-dom': { Navigate: 'Navigate' },
+    '@/lib/auth-context': { useAuth: () => ({ ...state, signOut() {} }) },
+    '@/lib/supabase': { supabase: { rpc: async name => { calls.push(name); return access(); } } },
+  });
+  return { runner, state, calls, render: () => runner.render('AccountRedirect') };
+}
+
+test('generic account entry sends active partners to their dashboard, including passwordless invitations', async () => {
+  for (const password_set of [true, false]) {
+    const flow = accountRedirect(async () => ({ data: { invited: true, password_set } }));
+    assert.equal(flow.render().props.role, 'status');
+    await flow.runner.settle();
+    assert.equal(flow.render().props.to, '/partners');
+    assert.equal(flow.render().props.replace, true);
+    assert.deepEqual(flow.calls, ['my_partner_access']);
+  }
+});
+
+test('owners and inactive partners keep business setup; developers go directly to admin', async () => {
+  const owner = accountRedirect(async () => ({ data: { invited: false, password_set: true } }));
+  owner.render(); await owner.runner.settle();
+  assert.equal(owner.render().props.to, '/onboarding');
+  const admin = accountRedirect(async () => { throw new Error('Unneeded lookup'); }, {
+    user: { id: 'developer' }, profile: { id: 'developer', role: 'admin' }, loading: false,
+  });
+  assert.equal(admin.render().props.to, '/admin'); await admin.runner.settle();
+  assert.deepEqual(admin.calls, []);
+});
+
+test('account access errors never misroute partners into owner signup and can be retried', async () => {
+  let attempts = 0;
+  const flow = accountRedirect(async () => {
+    attempts++;
+    if (attempts === 1) return { error: { message: 'offline' } };
+    if (attempts === 2) return { data: {} };
+    if (attempts === 3) throw new Error('Connection lost');
+    return { data: { invited: true, password_set: true } };
+  });
+  flow.render(); await flow.runner.settle();
+  for (let i = 0; i < 3; i++) {
+    assert.ok(!nodes(flow.render()).some(n => n.type === 'Navigate'));
+    assert.match(text(flow.render()), /could not find your dashboard/);
+    nodes(flow.render()).find(n => n.type === 'Button' && text(n) === 'Try again').props.onClick();
+    flow.render(); await flow.runner.settle();
+  }
+  assert.equal(flow.render().props.to, '/partners');
+});
+
+test('account routing waits for auth and ignores responses belonging to a previous account', async () => {
+  const pending = deferred(); let checks = 0;
+  const flow = accountRedirect(() => ++checks === 1 ? pending.promise : Promise.resolve({ data: { invited: false } }));
+  flow.state.loading = true;
+  flow.render(); await flow.runner.settle();
+  assert.deepEqual(flow.calls, []);
+  flow.state.loading = false;
+  flow.render(); await flow.runner.settle();
+  flow.state.user = { id: 'another_owner' };
+  flow.state.profile = { id: 'another_owner', role: 'user' };
+  flow.render(); await flow.runner.settle();
+  assert.equal(flow.render().props.to, '/onboarding');
+  pending.resolve({ data: { invited: true } });
+  await flow.runner.settle();
+  assert.equal(flow.render().props.to, '/onboarding');
+  flow.state.user = null;
+  flow.state.profile = null;
+  assert.equal(flow.render().props.to, '/login');
+});
+
+test('normal password and email-code sign-in both use account routing after authentication', async () => {
+  for (const mode of ['password', 'code']) {
+    const calls = [];
+    const auth = { user: null, signIn: async (...args) => { calls.push(['password', ...args]); return { error: null }; },
+      sendSignInCode: async address => { calls.push(['send', address]); return { error: null }; },
+      verifySignInCode: async (...args) => { calls.push(['code', ...args]); return { error: null }; } };
+    const runner = component('@/pages/auth/LoginPage', {
+      'react-router-dom': { Link: 'Link', useNavigate: () => () => { throw new Error('Do not hardcode owner onboarding'); } },
+      '@/lib/auth-context': { useAuth: () => auth },
+    });
+    const render = () => runner.render('LoginPage');
+    if (mode === 'code') nodes(render()).find(n => n.type === 'button' && text(n).includes('email code instead')).props.onClick();
+    nodes(render()).find(n => n.type === 'Input' && n.props.label === 'Email').props.onChange({ target: { value: 'partner@example.in' } });
+    if (mode === 'password') nodes(render()).find(n => n.type === 'Input' && n.props.label === 'Password').props.onChange({ target: { value: 'partner-password' } });
+    await nodes(render()).find(n => n.type === 'form').props.onSubmit({ preventDefault() {} });
+    if (mode === 'code') {
+      nodes(render()).find(n => n.type === 'Input' && n.props.label === 'Sign-in code').props.onChange({ target: { value: '123456' } });
+      await nodes(render()).find(n => n.type === 'form').props.onSubmit({ preventDefault() {} });
+    }
+    assert.ok(calls.some(c => c[0] === mode));
+    auth.user = { id: 'partner_test' };
+    assert.equal(render().type, 'AccountRedirect');
+  }
 });
