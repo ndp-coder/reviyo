@@ -1,184 +1,83 @@
 import { Link } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
-import { Card } from '@/components/ui';
 import '@/pages/landing-page.css';
 import { MarketingHeader } from '@/components/MarketingHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SkipLink } from '@/components/SkipLink';
-import { ProductPreview } from '@/components/ProductPreview';
+import { HomeProductFilm } from '@/components/HomeProductFilm';
 import { landingFaqs } from '@/config/faq';
 import { industries } from '@/config/industries';
 import { TOOL_PATH } from '@/config/seo';
 import { legal } from '@/config/legal';
+import { PLANS, formatRupees } from '@/config/plans';
 import { PlanCards } from '@/components/PlanCards';
 import { buttonClasses } from '@/components/ui/button-styles';
 
 const steps = [
-  {
-    where: 'At your counter',
-    title: 'They scan your QR code',
-    text: 'Any phone camera opens your review page. There is no app to install and no account to create.',
-  },
-  {
-    where: 'On their phone',
-    title: 'They tap what they liked',
-    text: 'A few topics like “service” or “pricing”, and a line of their own if they want. AI turns that into a draft. No star rating to give twice: they choose stars on Google.',
-  },
-  {
-    where: 'On Google',
-    title: 'They post it themselves',
-    text: 'They read the draft, change anything that isn’t right, then copy it and paste it on your Google profile.',
-  },
+  { title: 'A scan starts the conversation.', image: 'scan.svg', alt: 'Illustrated café counter card with a QR and the invitation: How was your visit?', text: 'Put your QR code where customers can see it. Their phone camera opens your review page. No app. No customer signup.' },
+  { title: 'Their experience finds its words.', image: 'draft.svg', alt: 'Example review page with Coffee and Service topics and the customer’s own comment, ready to create a draft.', text: 'Customers choose relevant topics and describe their visit. With their consent, AI helps turn their input into an editable draft.' },
+  { title: 'They choose what to share.', image: 'share.svg', alt: 'An editable example draft with a Copy and open Google button. The customer chooses whether to post.', text: 'They read it, make changes and copy it to Google. Their rating, their words and their decision to post. Always.' },
 ];
-
 const features = [
-  {
-    title: 'A QR code and a counter card, ready to print',
-    text: 'Download your code as PNG or SVG, or print the ready-made card. Add separate codes for tables, bills, or a second counter and see which one gets scanned.',
-  },
-  {
-    title: 'Review requests on WhatsApp',
-    text: 'Send your review link after a visit with a message you write once. WhatsApp opens on your phone and you pick the customer; no numbers pass through Reviyo.',
-  },
-  {
-    title: 'Help with the words, not the opinion',
-    text: 'The AI uses only the topics and comment the customer gives. It adds no experiences, staff names, or prices they didn’t mention.',
-  },
-  {
-    title: 'A private feedback inbox',
-    text: 'Anyone can send you a private note as well as, or instead of, a review. Mark each one new, seen, or resolved.',
-  },
-  {
-    title: 'Numbers you can act on',
-    text: 'See how many people opened your page, started, got a draft, and went on to Google, so you know where people drop off.',
-  },
-  {
-    title: 'Topics that fit your trade',
-    text: 'Start from suggested topics for your kind of business, then rename, reorder, or add your own at any time.',
-  },
+  { title: 'A QR that belongs at your counter', text: 'Download PNG or SVG files and a printable counter card. Use source codes to see whether people scan from a table, bill or counter.' },
+  { title: 'A link that goes where you go', text: 'Share your review page after a visit on WhatsApp. You choose the customer and send the message yourself.' },
+  { title: 'Topics that fit your business', text: 'Coffee, service, a haircut, a repair. Start with suggestions, then edit the topics to match what you actually do.' },
+  { title: 'Room for private feedback, too', text: 'Every customer can send a private note, with the same option to write a Google review. Keep track of what needs a reply.' },
 ];
-
 const rules = [
-  {
-    title: 'Everyone is asked the same way',
-    text: 'However their visit went, every customer sees the same option to post on Google. We never hide it from someone who had a bad day with you.',
-  },
-  {
-    title: 'Nothing is offered in return',
-    text: 'No discounts, no freebies, no lucky draws for reviews. Google forbids it, so our Terms do too.',
-  },
-  {
-    title: 'The customer posts, not us',
-    text: 'Reviyo never posts on anyone’s behalf. The review goes up under the customer’s own Google account, in words they have checked.',
-  },
+  { title: 'Every customer is welcome.', text: 'The same review options, however the visit went. No filtering customers by their experience.' },
+  { title: 'No rewards for reviews.', text: 'No discounts, freebies or gifts in return. Just an invitation to share an honest experience.' },
+  { title: 'They have the final say.', text: 'Customers check the draft and post it from their own Google account. Reviyo never posts for them.' },
 ];
-
-const capitalise = (text: string) => text.replace(/^\w/, (c) => c.toUpperCase());
 
 export function LandingPage() {
-  return (
-    <div className="landing-page min-h-screen bg-white">
-      <SkipLink />
-      <MarketingHeader links={[
-        { href: '#how-it-works', label: 'How it works' },
-        { href: '#features', label: 'Features' },
-        { to: '/for', label: 'Industries' },
-        { href: '#pricing', label: 'Pricing' },
-        { href: '#faq', label: 'FAQ' },
-      ]} />
-      <main id="main-content" tabIndex={-1}>
-        <section className="landing-hero">
-          <div className="landing-container landing-hero-grid">
-            <div className="landing-hero-copy">
-              <p className="landing-context">Made for local businesses in India</p>
-              <h1>A simple scan.<br />A review in their<br className="hidden xl:block" /> own words.</h1>
-              <p className="landing-hero-description">Make it easier for customers to share their experience on Google. One QR code, a little help with the words, and a review they edit and post themselves.</p>
-              <div className="landing-hero-actions">
-                <Link to="/signup" className={`${buttonClasses({ size: 'lg' })} landing-primary`}>Start {legal.trialDays}-day free trial </Link>
-                <a href="#how-it-works" className={`${buttonClasses({ variant: 'outline', size: 'lg' })}`}>See how it works</a>
-              </div>
-              <p className="landing-trial-note">₹1 AutoPay check, refunded. Cancel before the trial ends and pay nothing.</p>
-              <p className="landing-hero-promises">No customer app. Their words, their choice.</p>
-            </div>
-            <div className="landing-demo-wrap"><ProductPreview /></div>
-          </div>
-          <div className="landing-container landing-tool-strip">
-            <div><p><strong>Just need a Google review link?</strong><span>Create your link and a printable QR code for free.</span></p></div>
-            <Link to={TOOL_PATH}>Try the free tool </Link>
-          </div>
-        </section>
+  return <div className="landing-page min-h-screen">
+    <SkipLink />
+    <MarketingHeader links={[
+      { href: '#how-it-works', label: 'How it works' }, { href: '#product-film', label: 'Watch the demo' },
+      { href: '#pricing', label: 'Pricing' }, { href: '#faq', label: 'FAQs' },
+    ]} />
+    <main id="main-content" tabIndex={-1}>
+      <section className="landing-hero"><div className="landing-container landing-hero-grid">
+        <div className="landing-hero-copy">
+          <p className="landing-context"><span aria-hidden="true" />Google reviews, with a little help from Reviyo</p>
+          <h1>Make room for<br />your next<br />Google review.</h1>
+          <p className="landing-hero-description">You take care of the experience. We help customers find the words to share it. One scan, an editable draft, and a review they post themselves.</p>
+          <div className="landing-hero-actions"><Link to="/signup" className={`${buttonClasses({ size: 'lg' })} landing-primary`}>Start {legal.trialDays}-day free trial</Link><a href="#product-film" className="landing-watch-link"><span className="landing-play-small" aria-hidden="true">▶</span>Watch how it works</a></div>
+          <p className="landing-trial-note">₹1 AutoPay check, refunded. Cancel before your trial ends to avoid the plan charge.</p>
+          <div className="landing-start-price"><span>Made for local businesses in India.</span><a href="#pricing">Plans from {formatRupees(PLANS['1_month'].price)}/month</a></div>
+        </div>
+        <figure className="landing-hero-scene">
+          <picture><source srcSet="/images/home/cafe-counter-900.webp 900w, /images/home/cafe-counter.webp 1536w" sizes="(max-width: 760px) 100vw, 52vw" type="image/webp" /><img src="/images/home/cafe-counter.webp" alt="Illustrative café scene: an owner welcoming a customer at the counter." width="1536" height="1024" {...{ fetchpriority: 'high' }} /></picture>
+          <div className="landing-counter-label"><span className="landing-status-dot" aria-hidden="true" />A small moment. A real connection.</div>
+          <div className="landing-hero-draft" aria-hidden="true"><div className="landing-draft-top"><span className="landing-business-letter">K</span><div><strong>Kaveri Café</strong><span>Example review draft</span></div><span className="landing-draft-tag">Yours to edit</span></div><p>“I stopped in for a coffee after work. The staff helped me choose something to order.”</p><div className="landing-draft-bottom"><span>Real experience. Their own words.</span><span className="landing-edit-mark">Edit draft</span></div></div>
+          <figcaption className="sr-only">Illustration of a local business and an editable example, not a customer review.</figcaption>
+        </figure>
+      </div><div className="landing-container landing-principles"><p>No app for customers</p><p>Ready-to-print QR codes</p><p>Customers edit and post</p><p>One location. Every feature.</p></div></section>
 
-        <section id="how-it-works" className="landing-section">
-          <div className="landing-container">
-            <div className="landing-section-heading"><div><h2>A small moment at your counter.<br />A simpler way to share it.</h2><p>From scanning your code to sharing a review. The customer stays in control at every step.</p></div><span className="landing-process-tag">How it works</span></div>
-            <ol className="landing-steps">{steps.map((step, index) => {
-              return <li key={step.title}><div className="landing-step-top"><span className="landing-step-number">Step {index + 1}</span></div><p className="landing-step-location">{step.where}</p><h3>{step.title}</h3><p>{step.text}</p></li>;
-            })}</ol>
-          </div>
-        </section>
+      <section id="how-it-works" className="landing-section landing-process-section"><div className="landing-container">
+        <div className="landing-section-heading"><div><p className="landing-section-kicker">How it works</p><h2>From “what do I write?”<br />to words of their own.</h2></div><p className="landing-section-description">Three simple steps. No complicated apps or blank-page hesitation. The customer stays in control.</p></div>
+        <ol className="landing-steps">{steps.map((step, index) => <li key={step.image}><div className="landing-step-image"><img src={`/images/home/${step.image}`} alt={step.alt} width="720" height="540" loading="lazy" decoding="async" /><span className="landing-step-number">0{index + 1}</span></div><h3>{step.title}</h3><p>{step.text}</p></li>)}</ol>
+        <p className="landing-example-note">Illustrative screens. Customers use their real experience and choose their stars on Google.</p>
+      </div></section>
 
-        <section id="features" className="landing-section landing-features-section">
-          <div className="landing-container">
-            <div className="landing-section-heading"><div><h2>Ready for your everyday business.</h2><p>From the first scan to the follow-up. Everything is included in every plan.</p></div></div>
-            <div className="landing-feature-layout">
-              <Card className="landing-feature-lead">
-                <h3>One link. Wherever your customers are.</h3>
-                <p>Put your QR code on the counter, on a table, or with a bill. Share the same review page after a visit on WhatsApp.</p>
-                <Link to={TOOL_PATH} className="landing-text-link">Make your first QR code </Link>
-              </Card>
-              <dl className="landing-feature-list">{features.map((feature) => {
-                return <div key={feature.title}><div><dt>{feature.title}</dt><dd>{feature.text}</dd></div></div>;
-              })}</dl>
-            </div>
-          </div>
-        </section>
+      <HomeProductFilm />
 
-        <section className="landing-section landing-trust-section">
-          <div className="landing-container">
-            <div className="landing-trust-heading"><h2>Real experiences.<br />Always the customer’s voice.</h2><p>Three rules built into Reviyo. No shortcuts that put your Google Business Profile at risk.</p></div>
-            <ul className="landing-rules">{rules.map((rule) => { return <li key={rule.title}><h3>{rule.title}</h3><p>{rule.text}</p></li>; })}</ul>
-          </div>
-        </section>
+      <section id="features" className="landing-section landing-features-section"><div className="landing-container">
+        <div className="landing-section-heading"><div><p className="landing-section-kicker">For the everyday work of running a business</p><h2>Less explaining.<br />More getting on with your day.</h2></div><p className="landing-section-description">Set up your page, put out your QR, and give your team one simple way to ask for a review.</p></div>
+        <div className="landing-feature-layout"><div className="landing-counter-card-panel"><div className="landing-print-card"><span className="landing-print-business">Your business</span><h3>How was<br />your visit?</h3><img src="/images/home/review-qr.svg" alt="Example QR code linking to the Reviyo website." width="160" height="160" loading="lazy" /><p>Scan to share your experience.</p><span>Powered by Reviyo</span></div><p>On the counter. With the bill.<br />Wherever your customers are.</p></div><dl className="landing-feature-list">{features.map(feature => <div key={feature.title}><dt>{feature.title}</dt><dd>{feature.text}</dd></div>)}</dl></div>
+        <div className="landing-tool-strip"><div><h3>Not ready for an account? Start with a free QR.</h3><p>Create a direct Google review link and printable QR code. No signup needed.</p></div><Link to={TOOL_PATH} className={buttonClasses({ variant: 'outline', size: 'lg' })}>Create my free QR code</Link></div>
+      </div></section>
 
-        <section className="landing-section">
-          <div className="landing-container landing-industry-layout">
-            <div><h2>For the places<br />people come back to.</h2><p className="landing-section-description">Cafés, clinics, salons, shops. Built for small, single-location businesses and the customers who walk through their doors.</p><Link to="/for" className="landing-text-link">Explore your industry </Link></div>
-            <ul className="landing-industries">{industries.map((industry) => { return <li key={industry.slug}><Link to={`/for/${industry.slug}`}><span>{capitalise(industry.plural)}</span></Link></li>; })}</ul>
-          </div>
-        </section>
+      <section className="landing-section landing-trust-section"><div className="landing-container"><div className="landing-trust-heading"><h2>Your reputation is personal.<br />We treat it that way.</h2><p>A useful starting point for a review.<br />The opinion always belongs to the customer.</p></div><ul className="landing-rules">{rules.map(rule => <li key={rule.title}><h3>{rule.title}</h3><p>{rule.text}</p></li>)}</ul></div></section>
 
-        <section id="pricing" className="landing-section landing-pricing-section">
-          <div className="landing-container">
-            <div className="landing-pricing-heading"><h2>Simple plans. Everything included.</h2><p>One business, one location. Every feature on every plan, taxes included.<br />No add-ons. No per-review charges.</p></div>
-            <div className="landing-plans"><PlanCards /></div>
-            <p className="landing-pricing-note">Start with a {legal.trialDays}-day trial. ₹1 AutoPay check, refunded straight away. Cancel before the trial ends to avoid the plan charge.</p>
-          </div>
-        </section>
+      <section className="landing-section landing-industries-section"><div className="landing-container landing-industry-layout"><div><p className="landing-section-kicker">Built for the businesses around us</p><h2>Behind every counter,<br />there’s a story.</h2><p className="landing-section-description">Cafés and clinics. Salons and shops. One business, one location, and the people who walk through your door.</p><Link to="/for" className="landing-text-link">Find your industry</Link></div><ul className="landing-industries">{industries.map(industry => <li key={industry.slug}><Link to={`/for/${industry.slug}`}>{industry.plural.replace(/^\w/, c => c.toUpperCase())}</Link></li>)}</ul></div></section>
 
-        <section id="faq" className="landing-section">
-          <div className="landing-container landing-faq-layout">
-            <div><h2>A few things<br />you might be wondering.</h2><p className="landing-section-description">Straight answers before you get started.</p><Link to="/contact" className="landing-text-link">Talk to us </Link></div>
-            <div className="landing-faqs">{landingFaqs.map((item, index) => <details key={item.q} open={index === 0}><summary>{item.q}<ChevronDown size={19} aria-hidden="true" /></summary><p>{item.a}</p></details>)}</div>
-          </div>
-        </section>
+      <section id="pricing" className="landing-section landing-pricing-section"><div className="landing-container"><div className="landing-pricing-heading"><p className="landing-section-kicker">Simple from the start</p><h2>Your business. Your pace.</h2><p>Every feature, on every plan. One business and one location.<br />Taxes included. No per-review charges.</p></div><div className="landing-plans"><PlanCards /></div><p className="landing-pricing-note">Start with a {legal.trialDays}-day trial. ₹1 AutoPay check, refunded straight away. Cancel before the trial ends to avoid the plan charge.</p></div></section>
 
-        <section className="landing-final-section">
-          <div className="landing-container mb-12 border-t border-gray-200 pt-8">
-            <h2>Start with a practical guide.</h2>
-            <p className="landing-section-description">Set up your review QR code, understand AI writing help, or compare tools for your business.</p>
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-x-8">
-              <Link to="/guides/google-review-qr-code" className="landing-text-link">Create a Google review QR code</Link>
-              <Link to="/guides/ai-google-review-assistant" className="landing-text-link">How AI review writing works</Link>
-              <Link to="/guides" className="landing-text-link">All review guides</Link>
-            </div>
-          </div>
-          <div className="landing-container landing-final-panel">
-            <div><h2>Your next review<br />starts with a simple scan.</h2><p>Try Reviyo at your counter for {legal.trialDays} days.</p><p className="landing-final-note">₹1 AutoPay check, refunded. Cancel any time before the trial ends.</p></div>
-            <div className="landing-final-actions"><Link to="/signup" className={`${buttonClasses({ size: 'lg' })} landing-light-button`}>Start your free trial </Link><Link to={TOOL_PATH}>Or create a free review link</Link></div>
-          </div>
-        </section>
-      </main>
-      <SiteFooter />
-    </div>
-  );
+      <section id="faq" className="landing-section"><div className="landing-container landing-faq-layout"><div><p className="landing-section-kicker">A little clarity</p><h2>Good questions.<br />Straight answers.</h2><p className="landing-section-description">Everything else you might want to know before putting a QR on your counter.</p><Link to="/contact" className="landing-text-link">Ask us a question</Link></div><div className="landing-faqs">{landingFaqs.map((item, index) => <details key={item.q} open={index === 0}><summary>{item.q}<ChevronDown size={18} aria-hidden="true" /></summary><p>{item.a}</p></details>)}</div></div></section>
+
+      <section className="landing-final-section"><div className="landing-container"><div className="landing-guides"><h2>A little help getting started.</h2><div><Link to="/guides/google-review-qr-code" className="landing-text-link">Set up your Google review QR</Link><Link to="/guides/ai-google-review-assistant" className="landing-text-link">Understand AI review writing</Link><Link to="/guides" className="landing-text-link">Explore all guides</Link></div></div><div className="landing-final-panel"><div><h2>Your counter.<br />Their next conversation.</h2><p>Give your customers a simpler way to share their experience.</p><p className="landing-final-note">Try Reviyo for {legal.trialDays} days. ₹1 AutoPay check, refunded. Cancel before the trial ends.</p></div><div className="landing-final-actions"><Link to="/signup" className={`${buttonClasses({ size: 'lg' })} landing-light-button`}>Start my free trial</Link><Link to={TOOL_PATH}>Or make a free review QR</Link></div></div></div></section>
+    </main><SiteFooter />
+  </div>;
 }

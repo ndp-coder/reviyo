@@ -1,5 +1,6 @@
 # Run in Windows PowerShell: powershell -File scripts/speak-partner-training.ps1
 # Uses only the installed default Windows English voice; no service or key.
+param([string]$WorkDirectory = 'output/partner-training')
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Speech
 Add-Type -ReferencedAssemblies System.Speech -TypeDefinition @'
@@ -34,7 +35,7 @@ public class ReviyoLocalSpeech {
 }
 '@
 $taskRoot = Split-Path -Parent $PSScriptRoot
-$taskWork = Join-Path $taskRoot 'output/partner-training'
+$taskWork = Join-Path $taskRoot $WorkDirectory
 $taskContent = Get-Content -LiteralPath (Join-Path $taskWork 'content.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $taskIndex = 0
 $taskResults = @()
