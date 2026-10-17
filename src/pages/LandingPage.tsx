@@ -14,9 +14,9 @@ import { PlanCards } from '@/components/PlanCards';
 import { buttonClasses } from '@/components/ui/button-styles';
 
 const steps = [
-  { title: 'A scan starts the conversation.', image: 'scan.svg', alt: 'Illustrated café counter card with a QR and the invitation: How was your visit?', text: 'Put your QR code where customers can see it. Their phone camera opens your review page. No app. No customer signup.' },
-  { title: 'Their experience finds its words.', image: 'draft.svg', alt: 'Example review page with Coffee and Service topics and the customer’s own comment, ready to create a draft.', text: 'Customers choose relevant topics and describe their visit. With their consent, AI helps turn their input into an editable draft.' },
-  { title: 'They choose what to share.', image: 'share.svg', alt: 'An editable example draft with a Copy and open Google button. The customer chooses whether to post.', text: 'They read it, make changes and copy it to Google. Their rating, their words and their decision to post. Always.' },
+  { title: 'A scan starts the conversation.', image: 'process-scan', alt: 'Illustrative café scene: a customer scans a tabletop review QR code with their phone.', text: 'Put your QR code where customers can see it. Their phone camera opens your review page. No app. No customer signup.' },
+  { title: 'Their experience finds its words.', image: 'process-draft', alt: 'Illustrative café scene: a customer chooses review topics and adds their own comment on a phone.', text: 'Customers choose relevant topics and describe their visit. With their consent, AI helps turn their input into an editable draft.' },
+  { title: 'They choose what to share.', image: 'process-share', alt: 'Illustrative café scene: a customer reads their editable draft before choosing to open Google.', text: 'They read it, make changes and copy it to Google. Their rating, their words and their decision to post. Always.' },
 ];
 const features = [
   { title: 'A QR that belongs at your counter', text: 'Download PNG or SVG files and a printable counter card. Use source codes to see whether people scan from a table, bill or counter.' },
@@ -57,8 +57,8 @@ export function LandingPage() {
 
       <section id="how-it-works" className="landing-section landing-process-section"><div className="landing-container">
         <div className="landing-section-heading"><div><p className="landing-section-kicker">How it works</p><h2>From “what do I write?”<br />to words of their own.</h2></div><p className="landing-section-description">Three simple steps. No complicated apps or blank-page hesitation. The customer stays in control.</p></div>
-        <ol className="landing-steps">{steps.map((step, index) => <li key={step.image}><div className="landing-step-image"><img src={`/images/home/${step.image}`} alt={step.alt} width="720" height="540" loading="lazy" decoding="async" /><span className="landing-step-number">0{index + 1}</span></div><h3>{step.title}</h3><p>{step.text}</p></li>)}</ol>
-        <p className="landing-example-note">Illustrative screens. Customers use their real experience and choose their stars on Google.</p>
+        <ol className="landing-steps">{steps.map((step, index) => <li key={step.image}><div className="landing-step-image"><img src={`/images/home/${step.image}-720.webp`} srcSet={`/images/home/${step.image}-720.webp 720w, /images/home/${step.image}-1080.webp 1080w`} sizes="(max-width: 760px) calc(100vw - 40px), (max-width: 1320px) 31vw, 395px" alt={step.alt} width="720" height="540" loading="lazy" decoding="async" /><span className="landing-step-number">0{index + 1}</span></div><h3>{step.title}</h3><p>{step.text}</p></li>)}</ol>
+        <p className="landing-example-note">Illustrative scenes and example screens. Customers use their real experience and choose their stars on Google.</p>
       </div></section>
 
       <HomeProductFilm />

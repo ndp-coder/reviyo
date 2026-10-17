@@ -18,8 +18,16 @@ materials, editorial photography. No corporate handshake or glossy 3D styling.
 
 ## Product illustrations
 
-Run `node scripts/create-homepage-visuals.mjs` to regenerate the three SVG screen
-illustrations, counter QR and the local QR matrix used by the film. The example
+The “How it works” section now uses three matching, illustrative café photos:
+`process-scan`, `process-draft` and `process-share`, each exported at 720px and
+1080px wide as WebP. They show scanning the counter QR, entering real input and
+reading an editable draft before opening Google. They are generated scenes,
+not real customers, published reviews or exact product screenshots. The images
+load lazily and use responsive sources. Prompt details are in
+`scripts/homepage-process-image-prompts.json`.
+
+Run `node scripts/create-homepage-visuals.mjs` to regenerate the original SVG
+illustrations, the counter QR and the local QR matrix used by the film. The example
 business is fictional. The QR resolves to the Reviyo homepage, not a customer's
 review page. Screens describe the flow rather than reproducing Google's UI.
 

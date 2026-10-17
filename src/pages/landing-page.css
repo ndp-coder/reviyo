@@ -44,7 +44,7 @@
 .landing-section-heading > .landing-section-description { max-width:340px; margin:0 0 4px; }
 .landing-steps { display:grid; grid-template-columns:repeat(3,1fr); gap:28px; }
 .landing-step-image { position:relative; border-radius:14px; overflow:hidden; }
-.landing-step-image img { width:100%; height:auto; display:block; }
+.landing-step-image img { width:100%; height:auto; aspect-ratio:4 / 3; object-fit:cover; display:block; }
 .landing-step-number { position:absolute; left:17px; top:17px; width:36px; height:36px; display:grid; place-items:center; font-size:13px; font-weight:600; background:#ffffffc9; border-radius:50%; }
 .landing-steps h3 { font-size:17px; line-height:1.5; font-weight:600; letter-spacing:-.025em; margin:22px 0 10px; }
 .landing-steps li > p { font-size:12px; line-height:1.9; color:var(--home-muted); max-width:360px; }
