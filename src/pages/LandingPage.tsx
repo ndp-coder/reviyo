@@ -19,10 +19,10 @@ const steps = [
   { title: 'They choose what to share.', image: 'process-share', alt: 'Illustrative café scene: a customer reads their editable draft before choosing to open Google.', text: 'They read it, make changes and copy it to Google. Their rating, their words and their decision to post. Always.' },
 ];
 const features = [
-  { title: 'A QR that belongs at your counter', text: 'Download PNG or SVG files and a printable counter card. Use source codes to see whether people scan from a table, bill or counter.' },
-  { title: 'A link that goes where you go', text: 'Share your review page after a visit on WhatsApp. You choose the customer and send the message yourself.' },
-  { title: 'Topics that fit your business', text: 'Coffee, service, a haircut, a repair. Start with suggestions, then edit the topics to match what you actually do.' },
-  { title: 'Room for private feedback, too', text: 'Every customer can send a private note, with the same option to write a Google review. Keep track of what needs a reply.' },
+  { title: 'A counter card, ready to print.', text: 'Download your QR as PNG or SVG, or print the counter card. Add source codes for tables and bills to see where scans start.' },
+  { title: 'Follow up on WhatsApp.', text: 'Share your review link after a visit. You pick the customer and send the message yourself; Reviyo does not store their phone number.' },
+  { title: 'Topics that fit your business.', text: 'Coffee, a haircut, a repair. Choose the prompts that match your services, then change them whenever you need to.' },
+  { title: 'An inbox for honest feedback.', text: 'Give every customer space to send a private note, alongside the same Google review option. Mark notes new, seen or resolved.' },
 ];
 const rules = [
   { title: 'Every customer is welcome.', text: 'The same review options, however the visit went. No filtering customers by their experience.' },
@@ -64,8 +64,11 @@ export function LandingPage() {
       <HomeProductFilm />
 
       <section id="features" className="landing-section landing-features-section"><div className="landing-container">
-        <div className="landing-section-heading"><div><p className="landing-section-kicker">For the everyday work of running a business</p><h2>Less explaining.<br />More getting on with your day.</h2></div><p className="landing-section-description">Set up your page, put out your QR, and give your team one simple way to ask for a review.</p></div>
-        <div className="landing-feature-layout"><div className="landing-counter-card-panel"><div className="landing-print-card"><span className="landing-print-business">Your business</span><h3>How was<br />your visit?</h3><img src="/images/home/review-qr.svg" alt="Example QR code linking to the Reviyo website." width="160" height="160" loading="lazy" /><p>Scan to share your experience.</p><span>Powered by Reviyo</span></div><p>On the counter. With the bill.<br />Wherever your customers are.</p></div><dl className="landing-feature-list">{features.map(feature => <div key={feature.title}><dt>{feature.title}</dt><dd>{feature.text}</dd></div>)}</dl></div>
+        <div className="landing-section-heading"><div><p className="landing-section-kicker">Built around your working day</p><h2>Less explaining.<br />More getting on with your day.</h2></div><p className="landing-section-description">Your page, your topics, your counter card. A simple setup your team can use, wherever the next conversation happens.</p></div>
+        <div className="landing-feature-layout">
+          <figure className="landing-owner-visual"><img src="/images/home/owner-setup-800.webp" srcSet="/images/home/owner-setup-800.webp 800w, /images/home/owner-setup-1200.webp 1200w" sizes="(max-width: 760px) calc(100vw - 40px), (max-width: 1320px) 45vw, 530px" alt="Illustrative café scene: an owner places a Reviyo review QR card on the counter before welcoming customers." width="800" height="1000" loading="lazy" decoding="async" /><figcaption><strong>A small part of your counter.<br />A natural part of your day.</strong><span>Illustrative business scene</span></figcaption></figure>
+          <div className="landing-feature-content"><p className="landing-feature-intro">Set up the essentials.<br />Let customers take it from there.</p><dl className="landing-feature-list">{features.map(feature => <div key={feature.title}><dt>{feature.title}</dt><dd>{feature.text}</dd></div>)}</dl><div className="landing-feature-plan-note"><p>Every feature. Every plan.<br /><span>One business, one location, no add-ons.</span></p><a href="#pricing" className="landing-text-link">See the plans</a></div></div>
+        </div>
         <div className="landing-tool-strip"><div><h3>Not ready for an account? Start with a free QR.</h3><p>Create a direct Google review link and printable QR code. No signup needed.</p></div><Link to={TOOL_PATH} className={buttonClasses({ variant: 'outline', size: 'lg' })}>Create my free QR code</Link></div>
       </div></section>
 

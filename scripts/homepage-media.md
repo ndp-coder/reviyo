@@ -31,6 +31,14 @@ illustrations, the counter QR and the local QR matrix used by the film. The exam
 business is fictional. The QR resolves to the Reviyo homepage, not a customer's
 review page. Screens describe the flow rather than reproducing Google's UI.
 
+## Owner setup photo
+
+The features section uses an illustrative owner setting up the counter card,
+exported as `owner-setup-800.webp` and `owner-setup-1200.webp` in the same home
+image directory. Its caption labels it as an illustrative scene. The source
+prompt is recorded in `scripts/homepage-owner-image-prompt.json`. It is a
+generated scene rather than a customer endorsement or a product screenshot.
+
 ## Product film
 
 Run `python scripts/render-home-film.py` after generating the illustrations.
