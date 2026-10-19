@@ -1,30 +1,18 @@
 # Homepage presentation
 
-The homepage uses a white/navy palette, system sans-serif typography and a
-restrained yellow accent. The QR card, customer input and editable draft are
-built in HTML/CSS, so the product is visible without generated people photos,
-remote image downloads or additional UI/animation libraries.
+The homepage layout is restored from commit `464519f`, including the cafe
+hero, three review-step images and owner setup photo. These are illustrative
+scenes, not customer endorsements. Responsive WebP sources, lazy loading for
+lower images, shared plan prices and legal configuration remain in use.
 
-`HomeReviewDemo` is an interactive, local example with a fictional business and
-prewritten text. Visitors can step through the flow and edit the sample. It
-never requests an AI draft, records customer input or opens a Google posting
-session. Its QR code explicitly opens reviyo.in rather than a business page.
-The accompanying three illustrations explain the same customer flow.
+The Telugu walkthrough and its current player are preserved. Later
+interactive demo components remain available in source but are not rendered
+on this restored homepage.
 
-The owner section describes available tools without inventing live account
-statistics. Pricing uses `src/config/plans.ts`; trial length uses the legal
-configuration. The FAQ remains shared with the search structured data.
+## Images
 
-## Existing media
-
-Earlier illustrative café/owner photos remain in `public/images/home` for
-history but are no longer rendered by the homepage. Their source prompts are
-recorded in `homepage-process-image-prompts.json` and
-`homepage-owner-image-prompt.json`. They are generated illustrations, not
-customer photos or endorsements.
-
-Run `node scripts/create-homepage-visuals.mjs` to regenerate the original SVG
-illustrations, the counter QR and local QR matrix used by the film.
+The images live in `public/images/home`. Their prompts are recorded in
+`homepage-process-image-prompts.json` and `homepage-owner-image-prompt.json`.
 
 ## Product film
 
@@ -57,23 +45,3 @@ H.264/AAC with metadata at the start for streaming.
 Running the renderer without `--telugu` still builds the original local Windows
 English voice version. It overwrites the active film configuration, so use the
 Telugu command for the current production website.
-## Demo and setup journey
-
-The customer example opens on the editable draft, including its source note,
-so visitors see the product's writing assistance immediately. Edits survive
-step changes; Reset sample restores the original text. Nothing is posted or
-sent from the example.
-
-`HomeCounterCardPreview` renders `ReviewCounterCard`, the same component used
-by QR Management in the authenticated dashboard. The public example excludes
-the dashboard's print-only class and labels its QR destination. Business-name
-edits remain in component state and are not submitted or stored.
-
-`SetupSupportLinks` reads phone and email destinations from the legal config.
-The homepage's help actions jump directly to these choices. The page explains
-account creation, business setup, the refundable AutoPay check, trial billing
-and cancellation before signup. Signup repeats the same explanation and offers
-support without changing authentication, consent or payment behavior.
-
-Public marketing navigation can supply its account action label while existing
-pages retain their default. Pricing and FAQ data still come from shared config.
