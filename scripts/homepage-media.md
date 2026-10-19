@@ -57,3 +57,23 @@ H.264/AAC with metadata at the start for streaming.
 Running the renderer without `--telugu` still builds the original local Windows
 English voice version. It overwrites the active film configuration, so use the
 Telugu command for the current production website.
+## Demo and setup journey
+
+The customer example opens on the editable draft, including its source note,
+so visitors see the product's writing assistance immediately. Edits survive
+step changes; Reset sample restores the original text. Nothing is posted or
+sent from the example.
+
+`HomeCounterCardPreview` renders `ReviewCounterCard`, the same component used
+by QR Management in the authenticated dashboard. The public example excludes
+the dashboard's print-only class and labels its QR destination. Business-name
+edits remain in component state and are not submitted or stored.
+
+`SetupSupportLinks` reads phone and email destinations from the legal config.
+The homepage's help actions jump directly to these choices. The page explains
+account creation, business setup, the refundable AutoPay check, trial billing
+and cancellation before signup. Signup repeats the same explanation and offers
+support without changing authentication, consent or payment behavior.
+
+Public marketing navigation can supply its account action label while existing
+pages retain their default. Pricing and FAQ data still come from shared config.

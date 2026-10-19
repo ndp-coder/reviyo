@@ -8,6 +8,7 @@ import { AuthLayout } from '@/pages/auth/AuthLayout';
 import { Alert, Button, Input } from '@/components/ui';
 import { ConsentCheckbox } from '@/components/ConsentCheckbox';
 import { AccountRedirect } from '@/components/AccountRedirect';
+import { SetupSupportLinks } from '@/components/SetupSupportLinks';
 
 export function SignupPage() {
   const { signUp, user } = useAuth();
@@ -100,19 +101,25 @@ export function SignupPage() {
   return (
     <AuthLayout>
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-gray-900">Start your {legal.trialDays}-day free trial</h1>
-        <p className="mt-1.5 text-sm text-gray-600">Create your {branding.name} account with your email.</p>
+        <h1 className="text-2xl font-bold text-gray-900">Create your {branding.name} account</h1>
+        <p className="mt-1.5 text-sm text-gray-600">Step 1: create your {branding.name} account. No payment details at this step.</p>
 
         {/* What happens after this form, including when money is involved, so
             nothing later comes as a surprise. */}
         <div className="mt-6 rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-950">
           <p className="font-medium">What happens next</p>
           <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-brand-900">
-            <li>Add your business name, Google link, and review topics — about 3 minutes.</li>
+            <li>Add your business name, Google review link, and review topics.</li>
             <li>Verify UPI or a card with ₹1, refunded straight away. Your {legal.trialDays}-day trial starts.</li>
             <li>Print your QR code. Nothing more is charged until the trial ends; cancel any time before.</li>
           </ol>
         </div>
+
+        <details className="mt-4 text-sm text-gray-700">
+          <summary className="min-h-11 cursor-pointer py-3 font-medium text-brand-900">Need help setting up?</summary>
+          <SetupSupportLinks />
+          <p className="mt-2 text-xs leading-relaxed">{legal.supportHours}. Email response target: {legal.supportResponseTarget}.</p>
+        </details>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
           <Input

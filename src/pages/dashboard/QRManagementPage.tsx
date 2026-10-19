@@ -7,6 +7,7 @@ import { Alert, Card, Button, PageHeader } from '@/components/ui';
 import { buttonClasses } from '@/components/ui/button-styles';
 import { WhatsAppRequest } from '@/components/dashboard/WhatsAppRequest';
 import { ExtraQrCodes } from '@/components/dashboard/ExtraQrCodes';
+import { ReviewCounterCard } from '@/components/ReviewCounterCard';
 import type { Business } from '@/lib/types';
 
 export function QRManagementPage() {
@@ -131,15 +132,7 @@ export function QRManagementPage() {
               <Printer className="h-4 w-4" aria-hidden="true" /> Print card
             </Button>
           </div>
-          <div className="print-area rounded-xl border-2 border-gray-200 bg-white p-6 text-center sm:p-8 print:mx-auto print:max-w-md print:border-gray-400 print:p-10">
-            {business.logo_url && (
-              <img src={business.logo_url} alt="" className="mx-auto mb-3 h-16 w-16 rounded-lg object-cover print:h-20 print:w-20" />
-            )}
-            <h3 className="text-lg font-bold text-gray-900 print:text-2xl">{business.name}</h3>
-            <p className="mt-1 text-sm text-gray-600 print:text-base">How was your visit? Tell us about it.</p>
-            {qrDataUrl && <img src={qrDataUrl} alt={`QR code for ${business.name}'s review page`} className="mx-auto mt-4 h-40 w-40 rounded-lg print:h-64 print:w-64" />}
-            <p className="mt-3 text-xs text-gray-700 print:text-sm">Scan with your phone camera to write a review</p>
-          </div>
+          <ReviewCounterCard businessName={business.name} logoUrl={business.logo_url} qrImage={qrDataUrl} />
           <p className="mt-4 text-xs text-gray-600">
             Print it and place it at your cash counter, reception desk, or billing area — anywhere customers wait a
             moment.
