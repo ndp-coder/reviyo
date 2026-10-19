@@ -19,9 +19,7 @@ export function HomeReviewDemo() {
     setStep(next);
   }
   return <div className="review-demo" aria-label="Interactive customer journey example">
-    <div className="review-demo-label"><span className="review-demo-address">reviyo.in / customer experience</span><span>Prewritten demo</span></div>
-    <div className="review-demo-workspace">
-      <aside className="review-demo-counter-aside"><div className="review-demo-stand"><span className="review-demo-stand-brand">Kaveri Café</span><p>How was your visit?</p><img src="/images/home/review-qr.svg" alt="Example counter QR code that opens reviyo.in" width="150" height="150" /><span>Scan. Share your experience.</span></div><p>A QR on your counter.<br />Their words on Google.</p><span className="review-demo-aside-note">Example business · QR opens reviyo.in</span></aside>
+    <div className="review-demo-label"><span>Try editing a review</span><span>Prewritten demo</span></div>
     <div className={`review-demo-stage review-demo-stage-${step}`}>
       {step === 0 ? <div className="review-demo-counter">
         <div className="review-demo-print"><p className="review-demo-business">Kaveri Café</p><h2 ref={heading} tabIndex={-1}>How was your visit?</h2><p>Tell us about it.</p><img src="/images/home/review-qr.svg" width="180" height="180" alt="Example QR code that opens the Reviyo homepage" /><p>Scan to write a review</p><span>Powered by Reviyo</span></div>
@@ -41,7 +39,6 @@ export function HomeReviewDemo() {
           <p className="review-demo-posting">Edit this sample. On the real page, customers copy their words and post on Google themselves.</p>
         </>}
       </div>}
-    </div>
     </div>
     <div className="review-demo-action"><p>{step === 0 ? 'No extra app or Reviyo signup.' : step === 1 ? 'Their experience is the starting point.' : 'Nothing is sent or posted here.'}</p>
       {step < 2 ? <Button onClick={() => goTo(step + 1)} size="sm">{step === 0 ? 'Preview the review page' : 'See the sample draft'}<ArrowRight size={16} aria-hidden="true" /></Button> : <Button variant="outline" size="sm" onClick={() => { setDraft(exampleDraft); goTo(2); }}>Reset sample</Button>}

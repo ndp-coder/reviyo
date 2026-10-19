@@ -1,31 +1,19 @@
 # Homepage presentation
 
-The homepage opens on a deep navy canvas (`#0c2545`) with white text and a
-mint action colour (`#68e1cb`). White sections, ink (`#10284b`), muted body text
-(`#52647b`) and pale blue surfaces (`#f3f7fa`) complete the palette. Typography
-uses the existing self-hosted Poppins family; no additional font or UI library
-is loaded.
+The homepage uses a white/navy palette, system sans-serif typography and a
+restrained yellow accent. The QR card, customer input and editable draft are
+built in HTML/CSS, so the product is visible without generated people photos,
+remote image downloads or additional UI/animation libraries.
 
-The centred opening leads into one wide product canvas: a QR stand beside an
-editable customer review. On phones, the stand is available in the Scan step
-and the editable review occupies the full panel width. The locally built scene
-is labelled as an example and never submits a review or requests an AI draft.
-The QR explicitly opens reviyo.in. Edits survive step changes and can be reset.
+`HomeReviewDemo` is an interactive, local example with a fictional business and
+prewritten text. Visitors can step through the flow and edit the sample. It
+never requests an AI draft, records customer input or opens a Google posting
+session. Its QR code explicitly opens reviyo.in rather than a business page.
+The accompanying three illustrations explain the same customer flow.
 
-The customer process is explained once, followed by the Telugu walkthrough,
-the counter-card preview, pricing, setup help and FAQs. Industry and guide
-links are grouped into a compact resource section. No customer endorsements,
-review statistics or live dashboard figures are invented.
-
-`HomeCounterCardPreview` renders the same `ReviewCounterCard` used by the owner
-dashboard, with the print-only class excluded. Pricing and business details
-remain sourced from their shared configuration. FAQ content stays shared with
-the search structured data. Existing setup assistance and signup disclosures
-remain available.
-
-The QR stand has one brief scan sweep that stops after two passes.
-All controls remain keyboard accessible, focus is visible, motion is disabled
-for reduced-motion preferences, and the product film loads only on request.
+The owner section describes available tools without inventing live account
+statistics. Pricing uses `src/config/plans.ts`; trial length uses the legal
+configuration. The FAQ remains shared with the search structured data.
 
 ## Existing media
 
