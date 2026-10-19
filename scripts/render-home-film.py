@@ -1,11 +1,13 @@
 """Render the homepage walkthrough with Pillow, Windows voice and ffmpeg.
 
 Run: python scripts/render-home-film.py
-No service, plugin, API key or additional app dependency is used. The narration
-is spoken by the installed Windows voice. All business examples are fictional.
+Use --telugu to render the user-supplied Telugu narration with timed captions.
+The default English narration uses the installed Windows voice. No service,
+plugin or API key is called by this renderer. All business examples are fictional.
 """
 from pathlib import Path
 from functools import lru_cache
+import argparse
 import json
 import math
 import shutil
@@ -123,33 +125,73 @@ def stamp(value, srt=False):
 
 def main():
     WORK.mkdir(parents=True, exist_ok=True); DEST.mkdir(exist_ok=True)
-    (WORK / 'content.json').write_text(json.dumps({'chapters': [{'scenes': SCENES}]}), encoding='utf-8')
-    subprocess.run(['powershell', '-NoProfile', '-File', str(ROOT / 'scripts/speak-partner-training.ps1'), '-WorkDirectory', 'output/home-film'], check=True)
-    marks = json.loads((WORK / 'speech-marks.json').read_text(encoding='utf-8-sig'))
-    durations, starts, cues, elapsed = [], [], [], 0.0
-    with wave.open(str(WORK / 'narration.wav'), 'wb') as combined:
-        combined.setparams((1, 2, 16000, 0, 'NONE', 'not compressed'))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--telugu', action='store_true', help='Use the supplied Telugu MP3 and sentence timing file')
+    args = parser.parse_args()
+    stem = 'reviyo-product-film-te' if args.telugu else 'reviyo-product-film'
+    audio_path = WORK / ('narration-te.wav' if args.telugu else 'narration.wav')
+    audio_language = 'Telugu' if args.telugu else 'English'
+    if args.telugu:
+        timing = json.loads((ROOT / 'scripts/home-film-telugu.json').read_text(encoding='utf-8'))
+        supplied_audio = DEST / 'reviyo-product-narration-te.mp3'
+        probe = subprocess.run([shutil.which('ffprobe'), '-v', 'error', '-show_entries', 'format=duration', '-of', 'json', str(supplied_audio)], check=True, capture_output=True, text=True)
+        elapsed = float(json.loads(probe.stdout)['format']['duration'])
+        starts = timing['sceneStarts']
+        assert len(starts) == len(SCENES) and starts[0] == 0
+        assert all(a < b for a, b in zip(starts, starts[1:] + [elapsed]))
+        durations = [b - a for a, b in zip(starts, starts[1:] + [elapsed])]
+        previous_end = 0
+        for cue in timing['cues']:
+            assert previous_end <= cue['start'] < cue['end'] <= elapsed
+            assert 0 <= cue['scene'] < len(SCENES)
+            assert starts[cue['scene']] <= cue['start'] < cue['end'] <= starts[cue['scene']] + durations[cue['scene']]
+            assert cue['en'].strip() and cue['te'].strip()
+            previous_end = cue['end']
+        cues = [(c['start'], c['end'], c['en']) for c in timing['cues']]
         for i, scene in enumerate(SCENES):
-            starts.append(elapsed)
-            with wave.open(str(WORK / f'{i:03}.wav')) as audio:
-                duration = audio.getnframes() / audio.getframerate()
-                combined.writeframes(audio.readframes(audio.getnframes()))
-            silence = .6
-            combined.writeframes(b'\x00\x00' * round(silence * 16000))
-            durations.append(duration + silence)
-            words = marks[i]['marks']; group = []
-            assert all(0 <= w['start'] < duration for w in words)
-            for wi, word in enumerate(words):
-                end_position = words[wi + 1]['position'] if wi + 1 < len(words) else len(scene['narration'])
-                value = scene['narration'][word['position']:end_position].strip()
-                group.append((word['start'], value))
-                if len(group) >= 10 or value.endswith(('.', '?', '!')) or wi == len(words) - 1:
-                    end = words[wi + 1]['start'] if wi + 1 < len(words) else duration
-                    cues.append((elapsed + group[0][0], elapsed + end, ' '.join(w[1] for w in group)))
-                    group = []
-            elapsed += duration + silence
-    (DEST / 'reviyo-product-film-en.vtt').write_text('WEBVTT\n\n' + '\n\n'.join(f'{stamp(a)} --> {stamp(b)}\n{s}' for a, b, s in cues) + '\n', encoding='utf-8')
-    (ROOT / 'src/config/home-film.ts').write_text('// Generated with scripts/render-home-film.py. Keep the transcript and video together.\nexport const homeFilm = ' + json.dumps({'duration': round(elapsed, 3), 'scenes': [{'title': s['title'], 'narration': s['narration']} for s in SCENES]}, ensure_ascii=False, indent=2) + ' as const;\n', encoding='utf-8')
+            scene_cues = [c for c in timing['cues'] if c['scene'] == i]
+            assert scene_cues
+            scene['narration'] = ' '.join(c['en'] for c in scene_cues)
+            scene['narrationTelugu'] = ' '.join(c['te'] for c in scene_cues)
+        subprocess.run([shutil.which('ffmpeg'), '-hide_banner', '-loglevel', 'error', '-y', '-i', str(supplied_audio), '-ac', '1', '-ar', '44100', str(audio_path)], check=True)
+        (DEST / f'{stem}-te.vtt').write_text('WEBVTT\n\n' + '\n\n'.join(f"{stamp(c['start'])} --> {stamp(c['end'])}\n{c['te']}" for c in timing['cues']) + '\n', encoding='utf-8')
+    else:
+        (WORK / 'content.json').write_text(json.dumps({'chapters': [{'scenes': SCENES}]}), encoding='utf-8')
+        subprocess.run(['powershell', '-NoProfile', '-File', str(ROOT / 'scripts/speak-partner-training.ps1'), '-WorkDirectory', 'output/home-film'], check=True)
+        marks = json.loads((WORK / 'speech-marks.json').read_text(encoding='utf-8-sig'))
+        durations, starts, cues, elapsed = [], [], [], 0.0
+        with wave.open(str(WORK / 'narration.wav'), 'wb') as combined:
+            combined.setparams((1, 2, 16000, 0, 'NONE', 'not compressed'))
+            for i, scene in enumerate(SCENES):
+                starts.append(elapsed)
+                with wave.open(str(WORK / f'{i:03}.wav')) as audio:
+                    duration = audio.getnframes() / audio.getframerate()
+                    combined.writeframes(audio.readframes(audio.getnframes()))
+                silence = .6
+                combined.writeframes(b'\x00\x00' * round(silence * 16000))
+                durations.append(duration + silence)
+                words = marks[i]['marks']; group = []
+                assert all(0 <= w['start'] < duration for w in words)
+                for wi, word in enumerate(words):
+                    end_position = words[wi + 1]['position'] if wi + 1 < len(words) else len(scene['narration'])
+                    value = scene['narration'][word['position']:end_position].strip()
+                    group.append((word['start'], value))
+                    if len(group) >= 10 or value.endswith(('.', '?', '!')) or wi == len(words) - 1:
+                        end = words[wi + 1]['start'] if wi + 1 < len(words) else duration
+                        cues.append((elapsed + group[0][0], elapsed + end, ' '.join(w[1] for w in group)))
+                        group = []
+                elapsed += duration + silence
+    (DEST / f'{stem}-en.vtt').write_text('WEBVTT\n\n' + '\n\n'.join(f'{stamp(a)} --> {stamp(b)}\n{s}' for a, b, s in cues) + '\n', encoding='utf-8')
+    tracks = [{'src': f'/media/{stem}-en.vtt', 'lang': 'en', 'label': 'English'}]
+    if args.telugu:
+        tracks.append({'src': f'/media/{stem}-te.vtt', 'lang': 'te', 'label': 'తెలుగు'})
+    config = {
+        'duration': round(elapsed, 3), 'audioLanguage': audio_language,
+        'videoSrc': f'/media/{stem}.mp4', 'posterSrc': f'/media/{stem}-poster.jpg',
+        'captions': tracks,
+        'scenes': [{'title': scene['title'], 'narration': scene['narration'], 'narrationTelugu': scene.get('narrationTelugu', '')} for scene in SCENES],
+    }
+    (ROOT / 'src/config/home-film.ts').write_text('// Generated with scripts/render-home-film.py. Keep the transcript and video together.\nexport const homeFilm = ' + json.dumps(config, ensure_ascii=False, indent=2) + ' as const;\n', encoding='utf-8')
     bases = [base(i) for i in range(len(SCENES))]
     def frame(t, poster=False):
         index = max(i for i, start in enumerate(starts) if start <= t)
@@ -169,20 +211,20 @@ def main():
                 text(d, value, 787, y + 2, 23, NAVY)
         elif kind == 'topics':
             text(d, 'What would you like to mention?', 735, 267, 22, NAVY, True, width=430)
-            for j, value in enumerate(['Coffee', 'Service', 'Atmosphere']):
+            for j, value in enumerate(['Coffee', 'Service', 'Waiting time']):
                 x = 735 + j * 144
                 selected = j < 2 and progress > j * .2
                 rounded(d, (x, 313, x + 132, 355), NAVY if selected else '#f1f4f7', 21)
                 text(d, value, x + 16, 322, 17, 'white' if selected else MUTED)
             rounded(d, (735, 377, 1163, 440), '#f6f7fa', 10)
-            comment = 'I stopped in for coffee after work.'
+            comment = 'Coffee arrived late; the service was friendly.'
             text(d, comment[:int(len(comment) * min(1, progress * 1.9))], 751, 391, 20, NAVY, width=390)
             button(d, 'Create my draft')
             text(d, 'With the customer’s consent.', 814, 549, 16, MUTED)
         elif kind == 'draft':
             text(d, 'Make it sound like you', 735, 267, 27, NAVY, True)
             rounded(d, (735, 317, 1163, 457), '#f6f7fa', 12)
-            example = 'I stopped in for coffee after work. The staff helped me choose something to order.'
+            example = 'I visited for a coffee. The service was friendly, although my order took a while to arrive.'
             typed = example[:int(len(example) * min(1, progress * 2))]
             text(d, typed, 753, 334, 23, NAVY, width=385, gap=10)
             button(d, 'Copy & open Google')
@@ -196,7 +238,7 @@ def main():
                 text(d, label, 785, y + 4, 21, NAVY, width=380)
             text(d, 'You post. Reviyo never posts for you.', 765, 543, 17, MUTED)
         d.rectangle((0, 620, round(W * min(1, t / elapsed)), 624), fill='#58bfa4')
-        if not poster:
+        if not poster and not args.telugu:
             cue = next((line for a, b, line in cues if a <= t < b), '')
             wrapped = lines(cue, 25, 1170)
             for j, line in enumerate(wrapped):
@@ -204,9 +246,9 @@ def main():
                 d.text(((W - length) / 2, 649 + j * 31), line, font=font(25), fill='white')
         return im
     poster = frame(starts[3] + durations[3] * .65, True)
-    poster.save(DEST / 'reviyo-product-film-poster.jpg', quality=90)
-    ffmpeg = [shutil.which('ffmpeg'), '-hide_banner', '-loglevel', 'error', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{W}x{H}', '-r', str(FPS), '-i', '-', '-i', str(WORK / 'narration.wav'), '-c:v', 'libx264', '-preset', 'fast', '-crf', '24', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '80k', '-movflags', '+faststart', '-t', str(elapsed), str(DEST / 'reviyo-product-film.mp4')]
-    print(f'Rendering {elapsed:.1f}s with the default local voice, 6 animated scenes and {len(cues)} captions.', flush=True)
+    poster.save(DEST / f'{stem}-poster.jpg', quality=90)
+    ffmpeg = [shutil.which('ffmpeg'), '-hide_banner', '-loglevel', 'error', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{W}x{H}', '-r', str(FPS), '-i', '-', '-i', str(audio_path), '-c:v', 'libx264', '-preset', 'fast', '-crf', '24', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', '-t', str(elapsed), str(DEST / f'{stem}.mp4')]
+    print(f'Rendering {elapsed:.1f}s with {audio_language} audio, 6 animated scenes and {len(cues)} captions.', flush=True)
     process = subprocess.Popen(ffmpeg, stdin=subprocess.PIPE)
     try:
         for i in range(math.ceil(elapsed * FPS)):

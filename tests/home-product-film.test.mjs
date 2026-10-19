@@ -25,7 +25,7 @@ function player(play = async () => {}) {
     if (id === 'react') return hooks;
     if (id === 'react/jsx-runtime') return { jsx, jsxs: jsx };
     if (id === '@/components/ui') return { Alert: 'Alert', Button: 'Button' };
-    if (id === '@/config/home-film') return { homeFilm: { duration: 78.3, scenes: [{ title: 'Scan', narration: 'Scan your QR.' }] } };
+    if (id === '@/config/home-film') return { homeFilm: { duration: 75.9, audioLanguage: 'Telugu', videoSrc: '/media/reviyo-product-film-te.mp4', posterSrc: '/media/reviyo-product-film-te-poster.jpg', captions: [{ lang: 'en', label: 'English', src: '/media/reviyo-product-film-te-en.vtt' }, { lang: 'te', label: 'తెలుగు', src: '/media/reviyo-product-film-te-te.vtt' }], scenes: [{ title: 'Scan', narration: 'Scan your QR.', narrationTelugu: 'క్యూ ఆర్ కోడ్ స్కాన్ చేయండి.' }] } };
     throw new Error(`Unexpected import: ${id}`);
   } });
   const render = () => { cursor = 0; return exports.HomeProductFilm(); };
@@ -50,6 +50,13 @@ test('the homepage film loads only after play and exposes native controls with a
   assert.equal(video.props.preload, 'none'); assert.ok(!video.props.autoPlay);
   assert.equal(flow.loads, 0); assert.equal(flow.plays, 0);
   assert.ok(nodes(initial).find(n => n.type === 'track' && n.props.kind === 'captions'));
+  assert.match(text(initial), /Telugu audio/);
+  assert.equal(nodes(initial).find(n => n.type === 'source').props.src, '/media/reviyo-product-film-te.mp4');
+  const tracks = nodes(initial).filter(n => n.type === 'track');
+  assert.equal(tracks.length, 2);
+  assert.ok(tracks.find(n => n.props.srcLang === 'en' && n.props.default));
+  assert.ok(tracks.find(n => n.props.srcLang === 'te' && !n.props.default));
+  assert.ok(nodes(initial).find(n => n.type === 'p' && n.props.lang === 'te'));
   assert.match(text(initial), /Scan your QR/);
   nodes(initial).find(n => n.type === 'button').props.onClick();
   assert.equal(flow.loads, 1); assert.equal(flow.plays, 1);

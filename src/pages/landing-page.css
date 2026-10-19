@@ -109,7 +109,7 @@
 .landing-film-play > span:last-child { background:var(--home-ink); padding:12px 16px; font-size:14px; text-align:left; }
 .landing-film-play small { display:block; color:#d1dcec; font-size:11px; margin-top:4px; }
 .landing-film-footer { grid-column:2; font-size:12px; color:var(--home-muted); }
-.landing-film-footer > p { display:none; }
+.landing-film-language-note { font-size:12px; line-height:1.7; margin-bottom:12px; }
 .landing-film-footer summary { cursor:pointer; font-weight:600; min-height:36px; color:var(--home-ink); }
 .landing-film-footer ol { display:grid; gap:16px; margin-top:12px; line-height:1.75; }
 .landing-film-footer strong { display:block; color:var(--home-ink); }

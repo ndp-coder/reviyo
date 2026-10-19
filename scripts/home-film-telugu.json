@@ -1,0 +1,27 @@
+{
+  "sceneStarts": [0, 9.75, 23.55, 33.62, 43.1, 55.15],
+  "cues": [
+    {"start": 0.05, "end": 3.01, "scene": 0, "te": "మీ కస్టమర్లు గూగుల్‌లో రివ్యూ రాయాలనుకున్నా…", "en": "Do your customers want to write a Google review…"},
+    {"start": 3.31, "end": 5.36, "scene": 0, "te": "ఏం రాయాలో తెలియక ఆగిపోతున్నారా?", "en": "but stop because they don’t know what to write?"},
+    {"start": 5.75, "end": 9.52, "scene": 0, "te": "వాళ్ల అనుభవాన్ని మాటల్లో చెప్పడానికి సహాయం చేస్తుంది… రెవియో.", "en": "Reviyo helps them put their experience into words."},
+    {"start": 9.99, "end": 14.24, "scene": 1, "te": "మీ కౌంటర్ దగ్గర, టేబుల్ మీద, లేదా బిల్లుపై రెవియో క్యూ ఆర్ కోడ్ పెట్టండి.", "en": "Place your Reviyo QR at the counter, on a table or on a bill."},
+    {"start": 14.64, "end": 19.25, "scene": 1, "te": "కస్టమర్లు తమ ఫోన్ కెమెరాతో స్కాన్ చేస్తే, మీ బిజినెస్ రివ్యూ పేజీ ఓపెన్ అవుతుంది.", "en": "Customers scan with their phone camera to open your business’s review page."},
+    {"start": 19.66, "end": 21.29, "scene": 1, "te": "యాప్ డౌన్‌లోడ్ చేయాల్సిన అవసరం లేదు.", "en": "No app download is needed."},
+    {"start": 21.66, "end": 23.34, "scene": 1, "te": "అకౌంట్ క్రియేట్ చేయాల్సిన పనీ లేదు.", "en": "No customer account is needed either."},
+    {"start": 23.75, "end": 27.82, "scene": 2, "te": "వాళ్లు తమ అనుభవానికి సంబంధించిన టాపిక్స్ ఎంచుకుని, కొన్ని మాటలు రాస్తారు.", "en": "They choose topics about their experience and add a few words."},
+    {"start": 28.16, "end": 33.41, "scene": 2, "te": "వాళ్ల అనుమతితో, ఆ వివరాల ఆధారంగా రెవియో ఏఐ ఒక రివ్యూ డ్రాఫ్ట్ తయారు చేస్తుంది.", "en": "With their consent, Reviyo AI uses those details to prepare a review draft."},
+    {"start": 33.83, "end": 35.56, "scene": 3, "te": "కస్టమర్లు ఆ డ్రాఫ్ట్ చదవొచ్చు.", "en": "Customers can read the draft."},
+    {"start": 35.91, "end": 37.9, "scene": 3, "te": "ఏదైనా సరిగ్గా లేకపోతే మార్చుకోవచ్చు.", "en": "They can correct anything that isn’t right."},
+    {"start": 38.23, "end": 40.65, "scene": 3, "te": "తమకు నచ్చినట్టు, తమ మాటల్లో రాసుకోవచ్చు.", "en": "They can make it sound like themselves."},
+    {"start": 41.09, "end": 42.89, "scene": 3, "te": "అభిప్రాయం ఎప్పుడూ వాళ్లదే.", "en": "The opinion always stays theirs."},
+    {"start": 43.33, "end": 47.09, "scene": 4, "te": "ఆ తర్వాత టెక్స్ట్ కాపీ చేసుకుని, మీ గూగుల్ రివ్యూ పేజీకి వెళ్తారు.", "en": "Then they copy the text and open your Google review page."},
+    {"start": 47.5, "end": 51.77, "scene": 4, "te": "అక్కడ స్టార్ రేటింగ్ ఎంచుకుని, తమ గూగుల్ అకౌంట్ నుంచి రివ్యూ పోస్ట్ చేస్తారు.", "en": "They choose their stars and post from their own Google account."},
+    {"start": 52.17, "end": 54.94, "scene": 4, "te": "రెవియో వాళ్ల తరఫున ఆటోమేటిక్‌గా పోస్ట్ చేయదు.", "en": "Reviyo never automatically posts on their behalf."},
+    {"start": 55.36, "end": 59.41, "scene": 5, "te": "బిజినెస్ ఓనర్‌గా మీరు టాపిక్స్ మార్చుకోవచ్చు. క్యూ ఆర్ కార్డ్ ప్రింట్ చేసుకోవచ్చు.", "en": "As the owner, customise your topics and print your QR card."},
+    {"start": 59.84, "end": 63.99, "scene": 5, "te": "ఎక్కడి నుంచి స్కాన్లు వస్తున్నాయో, ఏ దశలో కస్టమర్లు ఆగుతున్నారో చూడొచ్చు.", "en": "See where scans come from and where customers stop in the journey."},
+    {"start": 64.4, "end": 66.93, "scene": 5, "te": "ప్రతి కస్టమర్‌కీ ఒకే రివ్యూ అవకాశం ఇవ్వండి.", "en": "Give every customer the same opportunity to review."},
+    {"start": 67.32, "end": 68.92, "scene": 5, "te": "రివ్యూలకు బహుమతులు ఇవ్వకండి.", "en": "Never offer rewards for reviews."},
+    {"start": 69.36, "end": 73.03, "scene": 5, "te": "మీ బిజినెస్ కోసం ఉచిత గూగుల్ రివ్యూ క్యూ ఆర్ కోడ్‌తో ప్రారంభించండి.", "en": "Start with a free Google review QR code for your business."},
+    {"start": 73.42, "end": 75.58, "scene": 5, "te": "మరిన్ని వివరాలకు… రెవియో డాట్ ఇన్.", "en": "Learn more at reviyo.in."}
+  ]
+}
