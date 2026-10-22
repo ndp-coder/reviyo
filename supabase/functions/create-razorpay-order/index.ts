@@ -4,7 +4,7 @@
 import { getCorsHeaders, isAllowedBrowserOrigin } from "../_shared/cors.ts";
 
 const PLAN_PRICES: Record<string, { amount: number; label: string }> = {
-  "1_month": { amount: 50000, label: "Monthly plan" }, // ₹500 in paise
+  "1_month": { amount: 49900, label: "Monthly plan" }, // ₹499 in paise
   "6_months": { amount: 199900, label: "6 Months Plan" },   // ₹1,999 in paise
   "12_months": { amount: 299900, label: "12 Months Plan" }, // ₹2,999 in paise
 };

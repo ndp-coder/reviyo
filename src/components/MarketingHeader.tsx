@@ -26,7 +26,7 @@ const mobileLink = 'block rounded-lg px-3 py-3 text-base font-medium text-gray-8
  * Top navigation for public pages. On phones the links move into a menu
  * behind a button, so Sign in, Pricing, and the rest stay reachable.
  */
-export function MarketingHeader({ links = DEFAULT_MARKETING_LINKS, signupLabel = 'Start free trial' }: { links?: MarketingLink[]; signupLabel?: string }) {
+export function MarketingHeader({ links = DEFAULT_MARKETING_LINKS, signupLabel = 'Get started' }: { links?: MarketingLink[]; signupLabel?: string }) {
   const [open, setOpen] = useState(false);
   // Signed-in owners get a way back to their dashboard instead of sign-up
   // prompts. Until auth has loaded this renders the signed-out header, which is

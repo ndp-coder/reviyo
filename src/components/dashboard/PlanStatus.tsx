@@ -21,7 +21,7 @@ export function PlanStatus({
   mandate,
 }: {
   subscription: Subscription | null;
-  mandate: Pick<AutopayMandate, 'status' | 'plan' | 'method'> | null;
+  mandate: Pick<AutopayMandate, 'status' | 'plan' | 'method' | 'amount'> | null;
 }) {
   if (!subscription?.expires_at) return null;
   const ends = new Date(subscription.expires_at).getTime();
@@ -41,7 +41,7 @@ export function PlanStatus({
       const plan = PLANS[mandate.plan];
       return (
         <Alert variant="info" className="mt-6" action={billing}>
-          Free trial: {daysLeft} day{daysLeft === 1 ? '' : 's'} left. Your {plan.months}-month plan ({formatRupees(plan.price)})
+          Free trial: {daysLeft} day{daysLeft === 1 ? '' : 's'} left. Your {plan.months}-month plan ({formatRupees(mandate.amount / 100)})
           starts on {endsOn}, paid by {mandate.method === 'upi' ? 'UPI AutoPay' : 'card AutoPay'}. You&apos;ll get a
           notice 24 hours before the charge.
         </Alert>

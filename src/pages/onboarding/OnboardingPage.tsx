@@ -19,18 +19,16 @@ import { BrandLogo } from '@/components/BrandLogo';
 import { SkipLink } from '@/components/SkipLink';
 import { AiTopicSuggestions } from '@/components/AiTopicSuggestions';
 import { GoogleReviewLinkHelp } from '@/components/GoogleReviewLinkHelp';
-import { AutopaySetup } from '@/components/AutopaySetup';
 import { PayOncePlans, type PaymentFeedback } from '@/components/PayOncePlans';
 import { paymentGate } from '@/lib/payment-gate';
-import { hasSubscriptionAccess } from '@/lib/subscription';
 import { legal } from '@/config/legal';
 import { ConsentCheckbox } from '@/components/ConsentCheckbox';
 import { PartnerOwnerReview } from '@/components/PartnerOwnerReview';
 import { InvitationPasswordSetup } from '@/components/InvitationPasswordSetup';
 import { parsePartnerTopics, validatePartnerDetails } from '@/lib/partner-setup';
-import { Star, Store, Link2, Image, QrCode, ArrowRight, ArrowLeft, ArrowUp, ArrowDown, Check, Copy, Plus, X, Upload, Gift, CreditCard, Download } from 'lucide-react';
+import { Star, Store, Link2, Image, QrCode, ArrowRight, ArrowLeft, ArrowUp, ArrowDown, Check, Copy, Plus, X, Upload, CreditCard, Download } from 'lucide-react';
 import QRCode from 'qrcode';
-import type { Business, Subscription } from '@/lib/types';
+import type { Business } from '@/lib/types';
 
 // Name and category share the first screen: both take seconds, and splitting
 // them only added a click.
@@ -39,7 +37,7 @@ const STEPS = [
   { label: 'Google link', icon: Link2 },
   { label: 'Logo', icon: Image },
   { label: 'Topics', icon: Star },
-  { label: 'Free trial', icon: Gift },
+  { label: 'Payment', icon: CreditCard },
   { label: 'QR code', icon: QrCode },
 ] as const;
 const STEP = { business: 0, google: 1, logo: 2, topics: 3, trial: 4, qr: 5 } as const;
@@ -93,15 +91,11 @@ export function OnboardingPage() {
   const [topics, setTopics] = useState<string[]>([]);
   const [newTopic, setNewTopic] = useState('');
   const [business, setBusiness] = useState<Business | null>(null);
-  // The subscription of a business that already exists but has never paid
-  // (the old sign-up-only free trial): its trial is used up, so the payment
-  // step offers a plan instead.
-  const [existingSubscription, setExistingSubscription] = useState<Subscription | null>(null);
   const [payFeedback, setPayFeedback] = useState<PaymentFeedback | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState('');
 
-  // Owners with a business go to the dashboard only once they have paid (the
-  // ₹1 AutoPay check or a plan). Anyone else — a refresh or closed tab during
+  // Owners with a business go to the dashboard after a confirmed plan payment
+  // or while they still have previously granted access. Anyone else — a refresh or closed tab during
   // payment, or an existing owner who never paid — lands on the payment step.
   useEffect(() => {
     let cancelled = false;
@@ -126,29 +120,14 @@ export function OnboardingPage() {
       }
       if (data) {
         const existing = data as Business;
-        const [gate, subscriptionRes] = await Promise.all([
-          paymentGate(existing.id),
-          supabase
-            .from('subscriptions')
-            .select('*')
-            .eq('business_id', existing.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-        ]);
+        const gate = await paymentGate(existing.id);
         if (cancelled) return;
         if (gate !== 'not_paid') {
           navigate('/dashboard', { replace: true });
           return;
         }
-        if (subscriptionRes.error) {
-          setCheckFailed(true);
-          setCheckingExisting(false);
-          return;
-        }
         setBusiness(existing);
         setBusinessName(existing.name);
-        setExistingSubscription((subscriptionRes.data as Subscription | null) ?? null);
         setStep(STEP.trial);
       }
       if (!data) {
@@ -207,14 +186,12 @@ export function OnboardingPage() {
 
   const effectiveCategory = category === OTHER_CATEGORY ? customCategory.trim() : category;
 
-  // An owner whose free trial is used up pays for a plan at the trial step.
-  const partnerSetup = Boolean(partnerDraft) || business?.trial_eligible === false;
-  const trialAvailable = !partnerSetup && existingSubscription === null;
+  // Partner invitations shorten the details steps; every owner pays to activate.
+  const partnerSetup = Boolean(partnerDraft);
   const visibleSteps = partnerSetup ? [STEP.topics, STEP.trial, STEP.qr] : STEPS.map((_, i) => i);
   const visibleStep = visibleSteps.indexOf(step);
   const totalSteps = visibleSteps.length;
-  const stepLabel = (i: number) => (partnerSetup && i === STEP.topics ? 'Review details' : i === STEP.trial && !trialAvailable ? 'Payment' : STEPS[i].label);
-  const existingAccessLive = hasSubscriptionAccess(existingSubscription);
+  const stepLabel = (i: number) => (partnerSetup && i === STEP.topics ? 'Review details' : STEPS[i].label);
 
   const reviewUrl = business ? reviewUrlFor(business.slug) : '';
 
@@ -683,27 +660,7 @@ export function OnboardingPage() {
             </Card>
           )}
 
-          {step === STEP.trial && business && trialAvailable && (
-            <Card className="p-5 sm:p-8">
-              <h1 className="text-xl font-bold text-gray-900">Start your {legal.trialDays}-day free trial</h1>
-              <p className="mt-1.5 text-sm text-gray-600">
-                Your business is saved. Set up AutoPay with a ₹1 verification payment, which we refund straight
-                away. You won&apos;t be charged for the plan until your trial ends, and you can cancel any time
-                before that.
-              </p>
-              <div className="mt-6">
-                <AutopaySetup
-                  businessId={business.id}
-                  userName={profile?.full_name || businessName}
-                  userEmail={user?.email}
-                  trialAvailable
-                  onComplete={() => setStep(STEP.qr)}
-                />
-              </div>
-            </Card>
-          )}
-
-          {step === STEP.trial && business && partnerSetup && <div className="space-y-5">
+          {step === STEP.trial && business && <div className="space-y-5">
             <Card className="p-5 sm:p-8">
               <h1 className="text-xl font-bold text-gray-900">Activate {business.name}</h1>
               <p className="mt-2 text-sm text-gray-600">Your business details are saved. Choose a plan below and pay securely with UPI, card or netbanking. Once payment is confirmed, you can download your QR code and use your dashboard.</p>
@@ -715,49 +672,6 @@ export function OnboardingPage() {
                 if (paid) { setPayFeedback(null); setStep(STEP.qr); }
               }} />
           </div>}
-
-          {step === STEP.trial && business && !trialAvailable && !partnerSetup && (
-            <div className="space-y-6">
-              <Card className="p-5 sm:p-8">
-                <h1 className="text-xl font-bold text-gray-900">
-                  {existingAccessLive ? 'Set up payment to keep going' : 'Choose a plan to continue'}
-                </h1>
-                <p className="mt-1.5 text-sm text-gray-600">
-                  {existingAccessLive
-                    ? 'Your free trial is running. Set up AutoPay now so your review page keeps working when it ends — you won’t be charged for the plan until then.'
-                    : 'Your free trial has ended. Set up AutoPay or pay once to switch on AI review drafting and your dashboard.'}
-                </p>
-                <div className="mt-6">
-                  <AutopaySetup
-                    businessId={business.id}
-                    userName={profile?.full_name || businessName}
-                    userEmail={user?.email}
-                    trialAvailable={false}
-                    currentAccessEndsAt={existingSubscription?.expires_at}
-                    onComplete={(result) => {
-                      // With the trial over, the first charge is still a day or two
-                      // away: Billing shows it until the plan starts.
-                      if (hasSubscriptionAccess(result.subscription ?? existingSubscription)) setStep(STEP.qr);
-                      else navigate('/dashboard/billing');
-                    }}
-                  />
-                </div>
-              </Card>
-              {payFeedback && <Alert variant={payFeedback.type}>{payFeedback.message}</Alert>}
-              <PayOncePlans
-                businessId={business.id}
-                userName={profile?.full_name || businessName}
-                userEmail={user?.email || ''}
-                onFeedback={setPayFeedback}
-                onFinished={(paid) => {
-                  if (paid) {
-                    setPayFeedback(null);
-                    setStep(STEP.qr);
-                  }
-                }}
-              />
-            </div>
-          )}
 
           {step === STEP.qr && business && (
             <Card className="p-5 text-center sm:p-8">
@@ -840,7 +754,7 @@ export function OnboardingPage() {
           </div>
         )}
 
-        {/* The app opens only after AutoPay is set up. Owners who aren't ready
+        {/* The app opens only after a plan payment is confirmed. Owners who aren't ready
             can leave: the business is saved and this step is waiting when
             they sign in again. */}
         {step === STEP.trial && business && (

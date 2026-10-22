@@ -1,5 +1,4 @@
 import { getCategoryByValue } from '@/config/categories';
-import { legal } from '@/config/legal';
 
 /**
  * Industry landing pages (/for/:slug). Each one targets what an owner in that
@@ -37,7 +36,7 @@ export const industries: Industry[] = [
     singular: 'dental clinic',
     metaTitle: 'Get More Google Reviews for Your Dental Clinic | Reviyo',
     metaDescription:
-      `A QR code at your reception helps patients write genuine Google reviews in under a minute, with AI help to put their visit into words. ${legal.trialDays}-day free trial.`,
+      `A QR code at your reception helps patients write genuine Google reviews in under a minute, with AI help to put their visit into words. Paid plans for your business.`,
     headline: 'More Google reviews for your dental clinic, in your patients’ own words',
     intro:
       'Most patients leave your chair relieved and grateful, then forget to review you by the time they reach the car. Reviyo puts a QR code at reception so they can tap what they liked and get help turning it into a review in their own words before they leave.',
@@ -70,7 +69,7 @@ export const industries: Industry[] = [
     singular: 'salon',
     metaTitle: 'Google Review QR Code for Salons & Beauty Parlours | Reviyo',
     metaDescription:
-      `Help salon clients leave Google reviews while they’re still at the mirror. A QR code, AI-assisted writing in their own words, and a ${legal.trialDays}-day free trial.`,
+      `Help salon clients leave Google reviews while they’re still at the mirror. A QR code and AI-assisted writing in their own words. Paid plans for your business.`,
     headline: 'Turn “I love my hair” at the mirror into a Google review',
     intro:
       'The best moment to ask for a salon review is when the client sees the result. Reviyo gives them a QR code to scan right there, then helps them describe the stylist, the service, and the experience in their own words.',
@@ -103,7 +102,7 @@ export const industries: Industry[] = [
     singular: 'restaurant',
     metaTitle: 'Get More Google Reviews for Your Restaurant | QR Code | Reviyo',
     metaDescription:
-      `Put a QR code on the table or bill folder and help diners write genuine Google reviews about the food, service, and ambience. ${legal.trialDays}-day free trial.`,
+      `Put a QR code on the table or bill folder and help diners write genuine Google reviews about the food, service, and ambience. Paid plans for your business.`,
     headline: 'Get more Google reviews for your restaurant, right at the table',
     intro:
       'Diners decide where to eat by scrolling reviews, but few write one after a good meal. A QR code on the table or bill folder lets them tap what they enjoyed and get help writing a genuine review while the taste is fresh.',
@@ -136,7 +135,7 @@ export const industries: Industry[] = [
     singular: 'café',
     metaTitle: 'Google Review QR Code for Cafés & Coffee Shops | Reviyo',
     metaDescription:
-      `Help regulars and first-timers review your café on Google while they sip. A QR code, AI help to put it into words, and a ${legal.trialDays}-day free trial.`,
+      `Help regulars and first-timers review your café on Google while they sip. A QR code and AI help to put it into words. Paid plans for your business.`,
     headline: 'Your regulars love the coffee. Help them say so on Google.',
     intro:
       'Café customers often linger, which is the perfect time to ask. Reviyo puts a QR code on the counter or table so customers can tap what they liked and get help writing a review about the coffee, food, and vibe.',
@@ -169,7 +168,7 @@ export const industries: Industry[] = [
     singular: 'gym',
     metaTitle: 'Get More Google Reviews for Your Gym or Fitness Studio | Reviyo',
     metaDescription:
-      'A QR code at the front desk helps members review your gym’s trainers, equipment, and cleanliness on Google, with AI help in their own words. Free trial.',
+      'A QR code at the front desk helps members review your gym’s trainers, equipment, and cleanliness on Google, with AI help in their own words. Paid plans.',
     headline: 'Members who see results make the best reviewers',
     intro:
       'A member who just hit a personal best or finished their first month is your most convincing reviewer. Reviyo makes it easy for them to tap what they liked and write a genuine Google review from the front desk or the locker room.',
@@ -202,7 +201,7 @@ export const industries: Industry[] = [
     singular: 'jewellery store',
     metaTitle: 'Google Reviews for Jewellery Stores | Build Trust Online | Reviyo',
     metaDescription:
-      `Jewellery buyers choose on trust. Help your customers write genuine Google reviews about your designs, purity, and service. ${legal.trialDays}-day free trial.`,
+      `Jewellery buyers choose on trust. Help your customers write genuine Google reviews about your designs, purity, and service. Paid plans for your business.`,
     headline: 'Jewellery is bought on trust. Let your customers vouch for you.',
     intro:
       'Buying jewellery is a considered, often emotional purchase, and trust decides where people buy. Reviyo helps customers put their experience into words, about the designs, the staff’s guidance, and how they were treated, as a Google review.',
@@ -235,7 +234,7 @@ export const industries: Industry[] = [
     singular: 'diagnostic centre',
     metaTitle: 'Get More Google Reviews for Your Diagnostic Centre or Lab | Reviyo',
     metaDescription:
-      'Help patients review your diagnostic centre on Google: staff care, waiting time, report turnaround, and cleanliness. No patient data collected. Free trial.',
+      'Help patients review your diagnostic centre on Google: staff care, waiting time, report turnaround, and cleanliness. No patient data collected. Paid plans.',
     headline: 'Help patients tell others about a smooth, careful test visit',
     intro:
       'Patients remember whether the sample collection was painless, the wait was short, and the report came on time. Reviyo lets them tap what they liked and write a genuine Google review, without ever asking for their name or test details.',
@@ -268,7 +267,7 @@ export const industries: Industry[] = [
     singular: 'service centre',
     metaTitle: 'Google Reviews for Car & Bike Service Centres | QR Code | Reviyo',
     metaDescription:
-      `A QR code at vehicle delivery helps customers review your service centre on Google: quality, timeliness, transparency. ${legal.trialDays}-day free trial.`,
+      `A QR code at vehicle delivery helps customers review your service centre on Google: quality, timeliness, transparency. Paid plans for your business.`,
     headline: 'Earn reviews at the moment you hand back the keys',
     intro:
       'Customers judge a service centre when they collect their vehicle: was it ready on time, was the bill clear, does it run well? Reviyo lets them scan a QR code at delivery and write a genuine Google review about the experience.',
@@ -301,7 +300,7 @@ export const industries: Industry[] = [
     singular: 'hotel',
     metaTitle: 'Get More Google Reviews for Your Hotel or Homestay | Reviyo',
     metaDescription:
-      `Help guests review your hotel, lodge, or homestay on Google at checkout: rooms, cleanliness, staff, food, and location. ${legal.trialDays}-day free trial.`,
+      `Help guests review your hotel, lodge, or homestay on Google at checkout: rooms, cleanliness, staff, food, and location. Paid plans for your business.`,
     headline: 'Checkout is your best moment to ask for a Google review',
     intro:
       'Travellers rely heavily on Google reviews to pick a place to stay, but most guests forget once they leave. Reviyo lets guests scan a QR code at checkout and write a genuine review about the room, staff, and stay.',
@@ -334,7 +333,7 @@ export const industries: Industry[] = [
     singular: 'tuition centre',
     metaTitle: 'Google Reviews for Tuition & Coaching Centres | Reviyo',
     metaDescription:
-      'Parents and students choose coaching centres by reputation. Help them write genuine Google reviews about teaching, material, and results. Free trial.',
+      'Parents and students choose coaching centres by reputation. Help them write genuine Google reviews about teaching, material, and results. Paid plans.',
     headline: 'Let parents and students speak for your teaching',
     intro:
       'Parents choose a tuition centre largely on what other parents say. Reviyo helps parents and students say what they liked and write genuine Google reviews about the teachers, study material, and progress.',
@@ -367,7 +366,7 @@ export const industries: Industry[] = [
     singular: 'retail store',
     metaTitle: 'Get More Google Reviews for Your Retail Store | QR Code | Reviyo',
     metaDescription:
-      'A QR code at the billing counter helps shoppers review your store on Google: variety, pricing, and helpful staff. AI-assisted, in their own words. Free trial.',
+      'A QR code at the billing counter helps shoppers review your store on Google: variety, pricing, and helpful staff. AI-assisted, in their own words. Paid plans.',
     headline: 'Turn shoppers at your billing counter into Google reviewers',
     intro:
       'Local shoppers often check Google before deciding which store to visit. Reviyo puts a QR code at your billing counter so every customer can say what they liked and write a genuine review about variety, pricing, and service.',

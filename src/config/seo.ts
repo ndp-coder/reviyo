@@ -223,7 +223,7 @@ export function publicPages(): PageMeta[] {
     {
       path: '/',
       title: 'Get More Google Reviews with a QR Code & AI | Reviyo',
-      description: `Get more genuine Google reviews: customers scan your QR code and AI helps them write in their own words. For local businesses in India. ${legal.trialDays}-day free trial.`,
+      description: `Get more genuine Google reviews: customers scan your QR code and AI helps them write in their own words. For local businesses in India. Paid plans. No free trial.`,
       changefreq: 'weekly',
       priority: 1,
       jsonLd: [organization, localBusiness, website, softwareApplication, faqPage(landingFaqs)],
@@ -231,7 +231,7 @@ export function publicPages(): PageMeta[] {
     {
       path: '/pricing',
       title: `Pricing: Google Review QR Code & AI Tool from ${formatRupees(cheapestPlan.price)} | Reviyo`,
-      description: `Pricing for one business: ${planSummary}, taxes included. ${legal.trialDays}-day free trial with a ₹1 AutoPay check, refunded. Cancel anytime.`,
+      description: `Pricing for one business: ${planSummary}, taxes included. Paid access starts after payment confirmation. No free trial.`,
       changefreq: 'monthly',
       priority: 0.9,
       trail: [{ name: 'Pricing', path: '/pricing' }],
@@ -302,7 +302,7 @@ export function publicPages(): PageMeta[] {
       jsonLd: [localBusiness, breadcrumbs([{ name: 'Contact Us', path: '/contact' }])] },
     legalPage('/privacy', 'Privacy Policy', 'What personal data Reviyo collects, why, how long we keep it, and your rights under India’s DPDP Act, 2023.'),
     legalPage('/terms', 'Terms & Conditions', 'The terms for using Reviyo, including trials, AutoPay, and the rules against fake, incentivised, or gated reviews.'),
-    legalPage('/refunds', 'Refund & Cancellation Policy', 'How the Reviyo free trial, AutoPay, cancellation, and refunds work, in plain language.'),
+    legalPage('/refunds', 'Refund & Cancellation Policy', 'How Reviyo paid plans, AutoPay, cancellation, and refunds work, in plain language.'),
     legalPage('/cookies', 'Cookie Policy', 'Reviyo uses only essential browser storage: your sign-in, and two dashboard tools that remember what you typed. No tracking or advertising cookies.'),
   ];
 }
@@ -413,7 +413,7 @@ export function renderLlmsTxt(): string {
     '',
     `> ${SITE_NAME} helps local businesses in India get more genuine Google reviews. Customers scan the business's QR code, tap what they liked, and AI drafts a review from their own input, which they check, edit, and post on Google themselves.`,
     '',
-    `- Pricing: ${planSummary}, taxes included, for one business at one location. ${legal.trialDays}-day free trial.`,
+    `- Pricing: ${planSummary}, taxes included, for one business at one location. Paid plans. No free trial.`,
     `- ${SITE_NAME} never filters who is asked for a review, never offers anything in return for one, and never posts on a customer's behalf.`,
     '- The AI uses only what the customer entered. It does not invent experiences, staff names, or prices.',
     `- ${SITE_NAME} is an independent product, not affiliated with or endorsed by Google.`,

@@ -11,15 +11,11 @@ export function RefundPolicyPage() {
       title="Refund & Cancellation Policy"
       summary={`When you can get your money back from ${N}, how to ask, and how long it takes. Written plainly, because a refund policy nobody can understand is worse than none.`}
     >
-      <Clause id="trial" heading="1. Try it before you pay">
+      <Clause id="payment" heading="1. Paid access">
         <p>
-          Every new business gets a <strong>14-day free trial with full access</strong>. To start
-          it you set up AutoPay with a <strong>₹1 verification payment, which we refund
-          immediately</strong> (it usually reaches your account in 5–7 working days). The trial is
-          the intended way to decide whether {N} works for your business.{' '}
-          <strong>Cancel AutoPay before the trial ends and you are never charged.</strong> If you
-          don&rsquo;t cancel, the plan you chose is charged when the trial ends; you will be
-          notified at least 24 hours before.
+          New subscriptions have no free trial. Pay upfront for your chosen term; access starts after
+          payment confirmation. A refundable ₹1 AutoPay authorisation check, if you choose automatic
+          renewals, does not activate a paid plan. Previously granted trials keep their original expiry.
         </p>
       </Clause>
 

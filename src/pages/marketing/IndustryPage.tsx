@@ -6,7 +6,6 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { getIndustry, industries, industryTopics } from '@/config/industries';
 import { TOOL_PATH } from '@/config/seo';
-import { legal } from '@/config/legal';
 import { formatRupees, PLANS } from '@/config/plans';
 import { buttonClasses } from '@/components/ui/button-styles';
 
@@ -35,7 +34,7 @@ export function IndustryPage() {
               <p className="mt-6 text-lg leading-relaxed text-gray-700">{industry.intro}</p>
               <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
                 <Link to="/signup" className={`${buttonClasses({ size: 'lg' })} w-full sm:w-auto`}>
-                  Start your {legal.trialDays}-day free trial
+                  Get started
                 </Link>
                 <Link
                   to={TOOL_PATH}
@@ -96,7 +95,7 @@ export function IndustryPage() {
             </ol>
 
             <div className="mt-14 border-l-4 border-accent-500 bg-accent-50 px-6 py-5">
-              <h2 className="text-lg font-bold text-gray-900">Reviews that follow Google’s rules</h2>
+              <h2 className="text-lg font-bold text-gray-900">Reviews that follow Googleâ€™s rules</h2>
               <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-800">
                 Every customer sees the same options however their visit went, nothing is offered in return for a review, and
                 the customer writes and posts the final review themselves. That keeps your reviews credible and your
@@ -127,7 +126,7 @@ export function IndustryPage() {
                 Start collecting genuine reviews for your {industry.singular}
               </h2>
               <p className="mt-2 text-brand-100">
-                {legal.trialDays}-day free trial. ₹1 AutoPay check, refunded. Monthly plan: {formatRupees(PLANS['1_month'].price)} per month.{' '}
+                Paid plans. Monthly plan: {formatRupees(PLANS['1_month'].price)} per month.{' '}
                 <Link to="/pricing" className="font-semibold text-white underline underline-offset-2">
                   See pricing
                 </Link>
@@ -137,7 +136,7 @@ export function IndustryPage() {
               to="/signup"
               className="inline-flex min-h-12 flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-6 text-base font-semibold text-brand-900 transition-colors hover:bg-brand-50"
             >
-              Start your free trial
+              Get started
             </Link>
           </div>
         </section>

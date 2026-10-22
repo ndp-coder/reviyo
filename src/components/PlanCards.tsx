@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { BEST_VALUE_PLAN, PLAN_FEATURES, PLAN_ORDER, PLANS, YEARLY_SAVING, formatRupees, perMonth, planTerm } from '@/config/plans';
-import { legal } from '@/config/legal';
 import { buttonClasses } from '@/components/ui/button-styles';
 
 /**
@@ -34,13 +33,13 @@ export function PlanCards({ headingLevel = 'h3' }: { headingLevel?: 'h2' | 'h3' 
               </div>
               <p className="mt-3 text-5xl md:text-4xl lg:text-5xl font-bold tabular-nums tracking-tight text-gray-900">{formatRupees(plan.price)}</p>
               <p className="mt-1 text-sm text-gray-600">
-                {plan.months === 1 ? 'for 1 month, billed monthly with AutoPay' : `for ${planTerm(planId)}, which works out to ${perMonth(planId)}`}
+                {plan.months === 1 ? 'for 1 month, paid upfront' : `for ${planTerm(planId)}, which works out to ${perMonth(planId)}`}
               </p>
               <Link
                 to="/signup"
                 className={`${buttonClasses({ variant: bestValue ? 'primary' : 'outline', size: 'lg' })} mt-6 w-full`}
               >
-                Start {legal.trialDays}-day free trial
+                Get started
               </Link>
             </div>
           );

@@ -89,7 +89,7 @@ export function PartnerTraining() {
       <section aria-labelledby="training-prices-title" className="rounded-lg border border-gray-200 bg-gray-50 p-4">
         <h3 id="training-prices-title" className="text-sm font-semibold text-gray-900">Confirm the current price with the owner</h3>
         <p className="mt-2 text-sm text-gray-700">{PLAN_ORDER.map(plan => `${formatRupees(PLANS[plan].price)} for ${planTerm(plan)}`).join(' · ')}.</p>
-        <p className="mt-2 text-xs leading-relaxed text-gray-600">This class was recorded on {new Date(`${partnerTraining.recorded}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. Use the price and terms shown in the owner’s checkout when selling. Partner-prepared setups have no free trial.</p>
+        <p className="mt-2 text-xs leading-relaxed text-gray-600">This class was recorded on {new Date(`${partnerTraining.recorded}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}. Prices mentioned in the recording may be outdated. Use the current prices above and the terms shown in the owner’s checkout when selling. Partner-prepared setups have no free trial.</p>
       </section>
       <details className="group text-sm">
         <summary className="cursor-pointer font-semibold text-gray-900">Read the full class and practice scripts</summary>

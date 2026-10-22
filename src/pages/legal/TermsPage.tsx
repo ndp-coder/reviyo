@@ -80,13 +80,13 @@ export function TermsPage() {
         </p>
       </Clause>
 
-      <Clause id="plans" heading="4. Trial, plans, and payment">
+      <Clause id="plans" heading="4. Plans and payment">
         <List
           items={[
-            'New businesses get one 14-day free trial with full access. To start it you set up AutoPay (a UPI AutoPay mandate or a card mandate) with a ₹1 verification payment, which we refund immediately.',
-            `Paid plans are ${PLAN_SUMMARY}, inclusive of applicable taxes unless stated otherwise at checkout. The monthly plan is billed once per calendar month with AutoPay, not once every 30 days.`,
-            'With AutoPay, the plan you chose is charged automatically when your trial ends, and again at the end of every term, until you cancel. The mandate never allows more than the plan price per charge. You are notified by your bank or UPI app at least 24 hours before each charge.',
-            'You can cancel AutoPay at any time from Billing, or from your UPI app. Cancelling stops all future charges; you keep access until the end of the trial or term you are in. Cancel before the trial ends and you pay nothing.',
+            'New subscriptions have no free trial. Pay upfront for your chosen term. Access starts only after a confirmed plan payment. Previously granted trials keep their original expiry dates.',
+            `Paid plans are ${PLAN_SUMMARY}, inclusive of applicable taxes unless stated otherwise at checkout. The monthly term is one calendar month. One-time purchases do not renew automatically.`,
+            'AutoPay for renewals is optional and requires separate consent. A refundable ₹1 verification payment registers the mandate; it does not buy a plan or unlock paid access. Your bank or UPI app gives advance notice before a recurring charge. Existing mandates retain the amount and terms you authorised; new mandates use the price shown when you authorise them.',
+            'You can cancel AutoPay at any time from Billing, or from your UPI app. Cancelling stops future AutoPay charges; you keep access until the end of your existing paid term or previously granted trial.',
             'You can instead pay once for a fixed term from Billing. One-time payments do not renew.',
             'Payments are processed by Razorpay. We never see or store your card, UPI, or bank details.',
             'We may change prices at any time. A price change never affects a term you have already paid for.',

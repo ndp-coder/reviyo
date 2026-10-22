@@ -8,7 +8,6 @@ import { HomeProductFilm } from '@/components/HomeProductFilm';
 import { landingFaqs } from '@/config/faq';
 import { industries } from '@/config/industries';
 import { TOOL_PATH } from '@/config/seo';
-import { legal } from '@/config/legal';
 import { PLANS, formatRupees } from '@/config/plans';
 import { PlanCards } from '@/components/PlanCards';
 import { buttonClasses } from '@/components/ui/button-styles';
@@ -43,8 +42,8 @@ export function LandingPage() {
           <p className="landing-context"><span aria-hidden="true" />Google reviews, with a little help from Reviyo</p>
           <h1>Make room for<br />your next<br />Google review.</h1>
           <p className="landing-hero-description">You take care of the experience. We help customers find the words to share it. One scan, an editable draft, and a review they post themselves.</p>
-          <div className="landing-hero-actions"><Link to="/signup" className={`${buttonClasses({ size: 'lg' })} landing-primary`}>Start {legal.trialDays}-day free trial</Link><a href="#product-film" className="landing-watch-link"><span className="landing-play-small" aria-hidden="true">▶</span>Watch how it works</a></div>
-          <p className="landing-trial-note">₹1 AutoPay check, refunded. Cancel before your trial ends to avoid the plan charge.</p>
+          <div className="landing-hero-actions"><Link to="/signup" className={`${buttonClasses({ size: 'lg' })} landing-primary`}>Get started</Link><a href="#product-film" className="landing-watch-link"><span className="landing-play-small" aria-hidden="true">▶</span>Watch how it works</a></div>
+          <p className="landing-trial-note">Choose a paid plan to activate your business. No free trial.</p>
           <div className="landing-start-price"><span>Made for local businesses in India.</span><a href="#pricing">Plans from {formatRupees(PLANS['1_month'].price)}/month</a></div>
         </div>
         <figure className="landing-hero-scene">
@@ -76,11 +75,11 @@ export function LandingPage() {
 
       <section className="landing-section landing-industries-section"><div className="landing-container landing-industry-layout"><div><p className="landing-section-kicker">Built for the businesses around us</p><h2>Behind every counter,<br />there’s a story.</h2><p className="landing-section-description">Cafés and clinics. Salons and shops. One business, one location, and the people who walk through your door.</p><Link to="/for" className="landing-text-link">Find your industry</Link></div><ul className="landing-industries">{industries.map(industry => <li key={industry.slug}><Link to={`/for/${industry.slug}`}>{industry.plural.replace(/^\w/, c => c.toUpperCase())}</Link></li>)}</ul></div></section>
 
-      <section id="pricing" className="landing-section landing-pricing-section"><div className="landing-container"><div className="landing-pricing-heading"><p className="landing-section-kicker">Simple from the start</p><h2>Your business. Your pace.</h2><p>Every feature, on every plan. One business and one location.<br />Taxes included. No per-review charges.</p></div><div className="landing-plans"><PlanCards /></div><p className="landing-pricing-note">Start with a {legal.trialDays}-day trial. ₹1 AutoPay check, refunded straight away. Cancel before the trial ends to avoid the plan charge.</p></div></section>
+      <section id="pricing" className="landing-section landing-pricing-section"><div className="landing-container"><div className="landing-pricing-heading"><p className="landing-section-kicker">Simple from the start</p><h2>Your business. Your pace.</h2><p>Every feature, on every plan. One business and one location.<br />Taxes included. No per-review charges.</p></div><div className="landing-plans"><PlanCards /></div><p className="landing-pricing-note">Pay upfront for your chosen term. One-time payments do not renew automatically.</p></div></section>
 
       <section id="faq" className="landing-section"><div className="landing-container landing-faq-layout"><div><p className="landing-section-kicker">A little clarity</p><h2>Good questions.<br />Straight answers.</h2><p className="landing-section-description">Everything else you might want to know before putting a QR on your counter.</p><Link to="/contact" className="landing-text-link">Ask us a question</Link></div><div className="landing-faqs">{landingFaqs.map((item, index) => <details key={item.q} open={index === 0}><summary>{item.q}<ChevronDown size={18} aria-hidden="true" /></summary><p>{item.a}</p></details>)}</div></div></section>
 
-      <section className="landing-final-section"><div className="landing-container"><div className="landing-guides"><h2>A little help getting started.</h2><div><Link to="/guides/google-review-qr-code" className="landing-text-link">Set up your Google review QR</Link><Link to="/guides/ai-google-review-assistant" className="landing-text-link">Understand AI review writing</Link><Link to="/guides" className="landing-text-link">Explore all guides</Link></div></div><div className="landing-final-panel"><div><h2>Your counter.<br />Their next conversation.</h2><p>Give your customers a simpler way to share their experience.</p><p className="landing-final-note">Try Reviyo for {legal.trialDays} days. ₹1 AutoPay check, refunded. Cancel before the trial ends.</p></div><div className="landing-final-actions"><Link to="/signup" className={`${buttonClasses({ size: 'lg' })} landing-light-button`}>Start my free trial</Link><Link to={TOOL_PATH}>Or make a free review QR</Link></div></div></div></section>
+      <section className="landing-final-section"><div className="landing-container"><div className="landing-guides"><h2>A little help getting started.</h2><div><Link to="/guides/google-review-qr-code" className="landing-text-link">Set up your Google review QR</Link><Link to="/guides/ai-google-review-assistant" className="landing-text-link">Understand AI review writing</Link><Link to="/guides" className="landing-text-link">Explore all guides</Link></div></div><div className="landing-final-panel"><div><h2>Your counter.<br />Their next conversation.</h2><p>Give your customers a simpler way to share their experience.</p><p className="landing-final-note">Choose your plan and pay securely through Razorpay. Access starts after payment confirmation.</p></div><div className="landing-final-actions"><Link to="/signup" className={`${buttonClasses({ size: 'lg' })} landing-light-button`}>Get started</Link><Link to={TOOL_PATH}>Or make a free review QR</Link></div></div></div></section>
     </main><SiteFooter />
   </div>;
 }

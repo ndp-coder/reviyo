@@ -19,7 +19,7 @@ export function DashboardOverview() {
   const { business, subscription, mandate } = useOutletContext<{
     business: Business | null;
     subscription: Subscription | null;
-    mandate: Pick<AutopayMandate, 'status' | 'plan' | 'method'> | null;
+    mandate: Pick<AutopayMandate, 'status' | 'plan' | 'method' | 'amount'> | null;
   }>();
   const stats = useDashboardStats(business);
 

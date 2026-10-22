@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CreditCard, Smartphone, ShieldCheck, Bell, RotateCcw } from 'lucide-react';
+import { CreditCard, Smartphone, Bell, RotateCcw } from 'lucide-react';
 import { Alert, Button } from '@/components/ui';
 import { ConsentCheckbox } from '@/components/ConsentCheckbox';
-import { legal } from '@/config/legal';
 import { branding } from '@/config/branding';
 import { AUTOPAY_PLANS, formatRupees, setUpAutopay } from '@/lib/autopay';
 import { BEST_VALUE_PLAN, PLAN_ORDER, YEARLY_SAVING, perMonth, billingPeriod } from '@/config/plans';
@@ -13,8 +12,6 @@ interface AutopaySetupProps {
   businessId: string;
   userName?: string;
   userEmail?: string;
-  /** True when this business has never had a subscription: the free trial applies. */
-  trialAvailable: boolean;
   /** End of any access the business already has, used to show the first charge date. */
   currentAccessEndsAt?: string | null;
   onComplete: (result: { trialStarted: boolean; subscription?: Subscription | null }) => void;
@@ -38,7 +35,6 @@ export function AutopaySetup({
   businessId,
   userName,
   userEmail,
-  trialAvailable,
   currentAccessEndsAt,
   onComplete,
 }: AutopaySetupProps) {
@@ -54,9 +50,7 @@ export function AutopaySetup({
   const period = billingPeriod(plan);
 
   const accessEnd = currentAccessEndsAt ? new Date(currentAccessEndsAt) : null;
-  const firstCharge = trialAvailable
-    ? new Date(Date.now() + legal.trialDays * 24 * 60 * 60 * 1000)
-    : accessEnd && accessEnd.getTime() > Date.now()
+  const firstCharge = accessEnd && accessEnd.getTime() > Date.now()
       ? accessEnd
       : null;
   const firstChargeText = firstCharge ? `on ${formatDate(firstCharge)}` : 'within 2 days, after your bank’s advance notice';
@@ -160,17 +154,10 @@ export function AutopaySetup({
             <RotateCcw className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-600" aria-hidden="true" />
             <span>
               <strong>Today: ₹1</strong> to verify your {methodName}. It is refunded straight away and
-              usually shows up in 5–7 working days.
+              usually shows up in 5–7 working days. This check does not activate a paid plan.
             </span>
           </li>
-          {trialAvailable && (
-            <li className="flex gap-2.5">
-              <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-600" aria-hidden="true" />
-              <span>
-                <strong>Your {legal.trialDays}-day free trial starts now</strong>, with full access.
-              </span>
-            </li>
-          )}
+
           <li className="flex gap-2.5">
             <CreditCard className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-600" aria-hidden="true" />
             <span>
@@ -181,7 +168,7 @@ export function AutopaySetup({
             <Bell className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-600" aria-hidden="true" />
             <span>
               Your {method === 'upi' ? 'UPI app' : 'bank'} notifies you at least 24 hours before every charge.
-              Cancel any time from Billing{trialAvailable ? ' — cancel before the trial ends and you pay nothing' : ''}.
+              Cancel any time from Billing.
             </span>
           </li>
         </ul>
@@ -203,7 +190,7 @@ export function AutopaySetup({
       {error && <Alert variant="error">{error}</Alert>}
 
       <Button size="lg" className="w-full" onClick={handleSetup} loading={processing}>
-        {trialAvailable ? 'Pay ₹1 and start free trial' : 'Pay ₹1 and turn on AutoPay'}
+        Pay ₹1 and turn on AutoPay
       </Button>
       <p className="text-center text-xs text-gray-600">Secure payment by Razorpay. We never see your card or UPI PIN.</p>
     </div>

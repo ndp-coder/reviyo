@@ -26,7 +26,7 @@ export function DashboardLayout() {
   // Whether this business has ever paid; see paymentGate.
   const [gate, setGate] = useState<PaymentGate | undefined>(undefined);
   // Latest AutoPay setup, so Overview can say whether a charge is coming.
-  const [mandate, setMandate] = useState<Pick<AutopayMandate, 'status' | 'plan' | 'method'> | null>(null);
+  const [mandate, setMandate] = useState<Pick<AutopayMandate, 'status' | 'plan' | 'method' | 'amount'> | null>(null);
   // Unread private feedback, shown next to the nav item: it is the one thing an
   // owner usually needs to act on.
   const [newFeedbackCount, setNewFeedbackCount] = useState(0);
@@ -110,7 +110,7 @@ export function DashboardLayout() {
         .maybeSingle(),
       supabase
         .from('autopay_mandates')
-        .select('status, plan, method')
+        .select('status, plan, method, amount')
         .eq('business_id', business.id)
         .neq('status', 'created')
         .order('created_at', { ascending: false })
@@ -122,7 +122,7 @@ export function DashboardLayout() {
     // access regardless, so the UI stays open and lets that decide.
     setSubscriptionCheckFailed(Boolean(error || mandateRes.error));
     setSubscription((data as Subscription | null) ?? null);
-    setMandate((mandateRes.data as Pick<AutopayMandate, 'status' | 'plan' | 'method'> | null) ?? null);
+    setMandate((mandateRes.data as Pick<AutopayMandate, 'status' | 'plan' | 'method' | 'amount'> | null) ?? null);
     setGate(paid);
   }, [business]);
 
@@ -304,7 +304,7 @@ export function DashboardLayout() {
                 </>
               ) : (
                 <>
-                  Start your free trial to switch on AI review drafting and your dashboard.{' '}
+                  Choose a paid plan to switch on AI review drafting and your dashboard.{' '}
                   <Link to="/dashboard/billing" className="font-medium underline underline-offset-2">Set it up</Link>.
                 </>
               )}

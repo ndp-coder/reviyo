@@ -7,7 +7,7 @@ import { legal, displayValue } from '@/config/legal';
 import { PLANS, billingPeriod } from '@/config/plans';
 import { Alert, Card, Button, Badge, PageHeader, Skeleton } from '@/components/ui';
 import { AutopaySetup } from '@/components/AutopaySetup';
-import { AUTOPAY_PLANS, cancelAutopay, formatRupees } from '@/lib/autopay';
+import { cancelAutopay, formatRupees } from '@/lib/autopay';
 import { PayOncePlans } from '@/components/PayOncePlans';
 import type {
   AutopayMandate,
@@ -112,7 +112,6 @@ export function BillingPage() {
   const isExpired = subscription?.status === 'expired' || (daysRemaining !== null && daysRemaining <= 0);
 
   const mandateLive = mandate !== null && ['authorized', 'active', 'paused'].includes(mandate.status);
-  const trialAvailable = !subscription && business?.trial_eligible !== false;
 
   async function handleCancelAutopay() {
     if (!business) return;
@@ -131,12 +130,10 @@ export function BillingPage() {
     await Promise.all([loadData(), refreshSubscription()]);
   }
 
-  async function handleAutopayComplete(result: { trialStarted: boolean }) {
+  async function handleAutopayComplete() {
     setFeedback({
       type: 'success',
-      message: result.trialStarted
-        ? `AutoPay is on and your ${legal.trialDays}-day free trial has started. Your ₹1 is being refunded.`
-        : 'AutoPay is on. Your ₹1 is being refunded.',
+      message: 'AutoPay is on. Your ₹1 is being refunded. Plan access requires a confirmed plan payment.',
     });
     await Promise.all([loadData(), refreshSubscription()]);
   }
@@ -186,7 +183,7 @@ export function BillingPage() {
                 <div>
                   <dt className="text-xs text-gray-600">Plan</dt>
                   <dd className="mt-0.5 text-sm font-medium text-gray-900">
-                    {isTrial ? `${legal.trialDays}-day free trial` : `${PLANS[subscription.plan].label}`}
+                    {isTrial ? 'Existing trial' : `${PLANS[subscription.plan].label}`}
                   </dd>
                 </div>
                 {subscription.expires_at && (
@@ -223,7 +220,7 @@ export function BillingPage() {
                     </Badge>
                   </div>
                   <p className="mt-2 text-sm text-gray-700">
-                    {formatRupees(AUTOPAY_PLANS[mandate.plan].price)} {billingPeriod(mandate.plan)} via{' '}
+                    {formatRupees(mandate.amount / 100)} {billingPeriod(mandate.plan)} via{' '}
                     {mandate.method === 'upi' ? 'UPI AutoPay' : 'card'}.
                     {subscription?.expires_at && mandate.status !== 'paused' && (
                       <>
@@ -278,7 +275,7 @@ export function BillingPage() {
               ) : (
                 <div>
                   <h2 className="text-base font-semibold text-gray-900">
-                    {trialAvailable ? `Start your ${legal.trialDays}-day free trial` : 'Turn on AutoPay'}
+                    Turn on AutoPay
                   </h2>
                   {mandate?.status === 'failed' && (
                     <Alert variant="error" className="mt-3">
@@ -291,16 +288,13 @@ export function BillingPage() {
                     </Alert>
                   )}
                   <p className="mt-1 text-sm text-gray-600">
-                    {!trialAvailable
-                      ? 'Renew automatically so AI drafting and your dashboard never pause.'
-                      : 'Set up AutoPay with a ₹1 verification payment, refunded straight away. Nothing more is charged until your trial ends.'}
+                    Enable optional automatic renewals. The ₹1 authorisation check does not activate a paid plan.
                   </p>
                   <div className="mt-5">
                     <AutopaySetup
                       businessId={business.id}
                       userName={profile?.full_name || business.name}
                       userEmail={user?.email}
-                      trialAvailable={trialAvailable}
                       currentAccessEndsAt={subscription?.expires_at}
                       onComplete={handleAutopayComplete}
                     />

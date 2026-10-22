@@ -29,7 +29,7 @@ async function invoke<T>(name: string, body: Record<string, unknown>, fallback: 
 /**
  * Sets up AutoPay end to end: creates the ₹1 authorisation order, opens
  * Razorpay Checkout for the chosen method, and confirms the result with the
- * server, which refunds the ₹1 and starts the trial.
+ * server, which refunds the ₹1. This authorisation does not grant plan access.
  */
 export async function setUpAutopay(params: {
   businessId: string;

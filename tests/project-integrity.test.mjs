@@ -271,9 +271,11 @@ test('owners who have never paid stay on onboarding\'s payment step, not in the 
     read('src/pages/dashboard/DashboardLayout.tsx'),
   ]);
 
-  // Paid means the ₹1 AutoPay check went through or a plan was bought; a
-  // subscription alone (the old sign-up-only trial) is not enough.
-  assert.match(gate, /\.not\('auth_payment_id', 'is', null\)/);
+  // A refundable mandate check cannot unlock new plan access. Existing
+  // subscriptions (including legacy trials) and paid orders remain honoured.
+  assert.doesNotMatch(gate, /from\('autopay_mandates'\)/);
+  assert.match(gate, /\.in\('status', \['active', 'trial'\]\)/);
+  assert.match(gate, /\.gt\('expires_at'/);
   assert.match(gate, /\.eq\('status', 'paid'\)/);
   assert.match(gate, /return 'unknown'/);
 

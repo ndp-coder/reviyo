@@ -7,7 +7,6 @@ import { SkipLink } from '@/components/SkipLink';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { Button, Input } from '@/components/ui';
 import { buttonClasses } from '@/components/ui/button-styles';
-import { legal } from '@/config/legal';
 import { reviewLinkToolFaqs } from '@/config/faq';
 import { directReviewUrl, isGooglePlaceId, isSafeExternalUrl, reviewUrlFromPlaceId, validateGoogleReviewUrl } from '@/lib/url-safety';
 
@@ -200,7 +199,7 @@ export function ReviewLinkGeneratorPage() {
                 .
               </p>
               <Link to="/signup" className={`${buttonClasses()} mt-4`}>
-                  Try Reviyo free for {legal.trialDays} days
+                  Get started with Reviyo
                 </Link>
               </div>
 

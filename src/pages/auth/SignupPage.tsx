@@ -110,8 +110,8 @@ export function SignupPage() {
           <p className="font-medium">What happens next</p>
           <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-brand-900">
             <li>Add your business name, Google review link, and review topics.</li>
-            <li>Verify UPI or a card with ₹1, refunded straight away. Your {legal.trialDays}-day trial starts.</li>
-            <li>Print your QR code. Nothing more is charged until the trial ends; cancel any time before.</li>
+            <li>Choose a plan and pay securely through Razorpay to activate your business.</li>
+            <li>After payment is confirmed, download your QR code and use your dashboard. No free trial.</li>
           </ol>
         </div>
 

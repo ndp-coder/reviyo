@@ -194,7 +194,7 @@ check('bypassing the invitation claim still cannot get a partner-prepared trial'
 check('partner monthly and six-month purchases activate exactly once without a commission',async()=>{
   await db.exec(`INSERT INTO auth.users(id,email) VALUES('${PARTNER}','short-plan-partner@example.in');
     INSERT INTO commission_partners(email,name) VALUES('short-plan-partner@example.in','Partner');`);
-  for(const [index,plan,amount] of [[1,'1_month',50000],[2,'6_months',199900]]) {
+  for(const [index,plan,amount] of [[1,'1_month',49900],[2,'6_months',199900]]) {
     const owner=`99999999-9999-4999-8999-00000000000${index}`;
     const email=`short-plan-owner-${index}@example.in`;
     await db.query(`INSERT INTO auth.users(id,email) VALUES($1,$2)`,[owner,email]);
@@ -226,7 +226,7 @@ check('onboarding creates a business with NO subscription', async () => {
   const biz = await asUser(U1, () =>
     one(`SELECT create_business_with_defaults('Pet Spa','pet-spa','Pet grooming',NULL,NULL,NULL,ARRAY['Staff','Hygiene']) AS b`));
   B = biz.b.id;
-  assert.equal(biz.b.trial_eligible,true,'ordinary signup still has its existing trial eligibility');
+  assert.equal(biz.b.trial_eligible,false,'ordinary signup requires payment');
   assert.equal((await one(`SELECT count(*)::int AS n FROM subscriptions WHERE business_id=$1`, [B])).n, 0);
   assert.equal((await one(`SELECT business_has_active_subscription($1) AS ok`, [B])).ok, false);
 });
@@ -237,10 +237,17 @@ const newMandate = async (order, plan = '12_months') =>
     [B, U1, plan, plan === '12_months' ? 299900 : 199900, order])).id;
 
 let M1;
-check('₹1 authorisation starts exactly one 14-day trial', async () => {
+check('₹1 authorisation cannot start a trial; an existing trial keeps its access', async () => {
   M1 = await newMandate('order_auth_1');
   const r = await one(`SELECT start_autopay_trial('order_auth_1','pay_auth_1','token_1') AS r`);
-  assert.equal(r.r.trial_started, true);
+  assert.equal(r.r.trial_started, false);
+  assert.equal(r.r.subscription, null);
+  assert.equal((await one(`SELECT business_has_active_subscription($1) AS ok`, [B])).ok, false);
+  await rejects(`INSERT INTO subscriptions(business_id,plan,status,starts_at,expires_at) VALUES($1,'12_months','trial',now(),now()+interval '14 days')`, [B], /new trials are disabled/, 'ordinary trial insert');
+  // Simulate a subscription granted before this migration was deployed.
+  await db.exec(`ALTER TABLE subscriptions DISABLE TRIGGER partner_paid_subscription`);
+  try { await db.query(`INSERT INTO subscriptions(business_id,plan,status,starts_at,expires_at) VALUES($1,'12_months','trial',now(),now()+interval '14 days')`, [B]); }
+  finally { await db.exec(`ALTER TABLE subscriptions ENABLE TRIGGER partner_paid_subscription`); }
   const s = await one(`SELECT status, plan, round(extract(epoch FROM expires_at - now())/86400) AS days FROM subscriptions WHERE business_id=$1`, [B]);
   assert.equal(s.status, 'trial'); assert.equal(s.plan, '12_months'); assert.equal(Number(s.days), 14);
   assert.equal((await one(`SELECT business_has_active_subscription($1) AS ok`, [B])).ok, true);
@@ -672,7 +679,7 @@ check('developer directory paginates, searches literally and does not expose pay
   } finally { await db.exec(`UPDATE profiles SET role='user' WHERE id='${U2}'`); }
 });
 
-check('monthly trial, ₹500 charges and month-end renewals are idempotent and never earn commission or bonuses', async () => {
+check('monthly paid activation, ₹499 charges and month-end renewals are idempotent and never earn commission or bonuses', async () => {
   const uid = '88888888-8888-8888-8888-888888888888';
   const email = 'monthly-owner@example.in';
   await db.query(`INSERT INTO auth.users(id,email) VALUES($1,$2)`, [uid,email]);
@@ -680,19 +687,23 @@ check('monthly trial, ₹500 charges and month-end renewals are idempotent and n
   const referral = (await one(`INSERT INTO commission_referrals(partner_id,email,created_at) VALUES($1,$2,now()-interval '20 days') RETURNING id`, [monthlyPartner,email])).id;
   const biz = (await one(`INSERT INTO businesses(owner_id,name,slug,category) VALUES($1,'Monthly salon','monthly-salon','Salon') RETURNING id`, [uid])).id;
   const mandate = (await one(`INSERT INTO autopay_mandates(business_id,user_id,plan,amount,method,razorpay_customer_id,auth_order_id,consent_version)
-    VALUES($1,$2,'1_month',50000,'upi','cust_monthly','monthly-auth','monthly-v1') RETURNING id`, [biz,uid])).id;
+    VALUES($1,$2,'1_month',49900,'upi','cust_monthly','monthly-auth','monthly-v1') RETURNING id`, [biz,uid])).id;
   const trial = (await one(`SELECT start_autopay_trial('monthly-auth','monthly-auth-payment','monthly-token') AS r`)).r;
-  assert.equal(trial.trial_started,true);
-  assert.equal(trial.subscription.plan,'1_month');
-  assert.equal((await one(`SELECT round(extract(epoch FROM expires_at-now())/86400)::int AS days FROM subscriptions WHERE business_id=$1`, [biz])).days,14);
+  assert.equal(trial.trial_started,false);
+  assert.equal(trial.subscription,null);
+  assert.equal((await one(`SELECT business_has_active_subscription($1) AS ok`,[biz])).ok,false);
+  // The first full payment activates access, not the refundable authorisation.
+  await db.query(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,'monthly-initial','1_month',49900)`,[biz,uid]);
+  const initial=(await one(`SELECT process_paid_order('monthly-initial','monthly-initial-payment') AS r`)).r;
+  assert.equal(initial.subscription.status,'active');
   await db.query(`UPDATE subscriptions SET expires_at=now()+interval '2 days' WHERE business_id=$1`, [biz]);
   const due = await one(`SELECT plan,amount FROM autopay_mandates_due_for_charge() WHERE mandate_id=$1`, [mandate]);
-  assert.deepEqual(due,{plan:'1_month',amount:50000});
+  assert.deepEqual(due,{plan:'1_month',amount:49900});
 
   // A calendar month from January 31 ends on February 28, not March 2.
   await db.query(`UPDATE subscriptions SET expires_at='2027-01-31T12:00:00Z' WHERE business_id=$1`, [biz]);
   const firstOrder = (await one(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount,kind,mandate_id)
-    VALUES($1,$2,'monthly-charge-1','1_month',50000,'autopay',$3) RETURNING id`, [biz,uid,mandate])).id;
+    VALUES($1,$2,'monthly-charge-1','1_month',49900,'autopay',$3) RETURNING id`, [biz,uid,mandate])).id;
   const paid = (await one(`SELECT settle_autopay_charge('monthly-charge-1','monthly-payment-1',true) AS r`)).r;
   assert.equal(Date.parse(paid.subscription.expires_at),Date.parse('2027-02-28T12:00:00Z'));
   assert.equal(paid.subscription.status,'active');
@@ -710,10 +721,24 @@ check('monthly trial, ₹500 charges and month-end renewals are idempotent and n
     await db.query(`INSERT INTO auth.users(id,email) VALUES($1,$2)`,[nextUid,nextEmail]);
     await db.query(`INSERT INTO commission_referrals(partner_id,email,created_at) VALUES($1,$2,now()-interval '20 days')`,[monthlyPartner,nextEmail]);
     const nextBiz=(await one(`INSERT INTO businesses(owner_id,name,slug,category) VALUES($1,'Monthly business',$2,'Salon') RETURNING id`,[nextUid,`monthly-${i}`])).id;
-    await db.query(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,$3,'1_month',50000)`,[nextBiz,nextUid,`monthly-once-${i}`]);
+    await db.query(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,$3,'1_month',49900)`,[nextBiz,nextUid,`monthly-once-${i}`]);
     await one(`SELECT process_paid_order($1,$2)`,[`monthly-once-${i}`,`monthly-once-payment-${i}`]);
   }
   assert.equal((await one(`SELECT count(*)::int AS n FROM commission_earnings WHERE partner_id=$1`,[monthlyPartner])).n,0,'ten monthly customers earn neither commission nor bonus');
   assert.equal((await one(`SELECT count(*)::int AS n FROM commission_candidates() WHERE referral_id=$1`,[referral])).n,0);
   await asUser(uid,()=>rejects(`SELECT activate_or_renew_subscription($1,'1_month','forged')`,[biz],/permission denied/,'monthly activation is server-only'));
+});
+
+check('existing monthly mandates retain their authorised ₹500 amount after new pricing changes', async () => {
+  const uid='eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
+  await db.query(`INSERT INTO auth.users(id,email) VALUES($1,'legacy-monthly@example.in')`,[uid]);
+  const biz=(await one(`INSERT INTO businesses(owner_id,name,slug,category) VALUES($1,'Legacy monthly','legacy-monthly','Salon') RETURNING id`,[uid])).id;
+  const mandate=(await one(`INSERT INTO autopay_mandates(business_id,user_id,plan,amount,method,razorpay_customer_id,auth_order_id,consent_version) VALUES($1,$2,'1_month',50000,'upi','legacy-customer','legacy-auth','legacy-terms') RETURNING id`,[biz,uid])).id;
+  await one(`SELECT start_autopay_trial('legacy-auth','legacy-payment','legacy-token')`);
+  assert.equal((await one(`SELECT amount FROM autopay_mandates WHERE id=$1`,[mandate])).amount,50000);
+  await db.query(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,'legacy-initial','1_month',50000)`,[biz,uid]);
+  await one(`SELECT process_paid_order('legacy-initial','legacy-initial-payment')`);
+  await db.query(`UPDATE subscriptions SET expires_at=now()+interval '2 days' WHERE business_id=$1`,[biz]);
+  assert.equal((await one(`SELECT amount FROM autopay_mandates_due_for_charge() WHERE mandate_id=$1`,[mandate])).amount,50000);
+  await rejects(`SELECT start_autopay_trial(NULL,'payment','token')`,[],/required/,'invalid setup');
 });

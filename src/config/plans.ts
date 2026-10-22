@@ -7,7 +7,7 @@ import type { SubscriptionPlan } from '@/lib/types';
  * can import it without pulling in the Supabase client.
  */
 export const PLANS: Record<SubscriptionPlan, { label: string; price: number; months: number }> = {
-  '1_month': { label: 'Monthly', price: 500, months: 1 },
+  '1_month': { label: 'Monthly', price: 499, months: 1 },
   '6_months': { label: '6 months', price: 1999, months: 6 },
   '12_months': { label: '12 months', price: 2999, months: 12 },
 };

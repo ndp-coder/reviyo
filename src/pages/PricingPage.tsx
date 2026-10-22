@@ -4,7 +4,6 @@ import { SiteFooter } from '@/components/SiteFooter';
 import { SkipLink } from '@/components/SkipLink';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { PlanCards } from '@/components/PlanCards';
-import { legal } from '@/config/legal';
 import { TOOL_PATH } from '@/config/seo';
 
 export function PricingPage() {
@@ -22,9 +21,9 @@ export function PricingPage() {
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-700">
             One subscription covers one business, one location, and one Google Business Profile.
-            Inclusive of applicable taxes. Renews automatically with UPI AutoPay or card until you
-            cancel, and you are <strong className="text-gray-900">notified at least 24 hours before
-            every charge</strong>. Prefer not to use AutoPay? Pay once for a term from Billing.
+            Inclusive of applicable taxes. Pay upfront for your chosen term. One-time payments do not
+            renew automatically. You can enable AutoPay for renewals separately from Billing; you
+            receive advance notice before recurring charges.
           </p>
 
           <div className="mt-12">
@@ -33,11 +32,8 @@ export function PricingPage() {
 
           <div className="mt-10 max-w-3xl space-y-3 text-sm leading-relaxed text-gray-700">
             <p>
-              Your {legal.trialDays}-day free trial includes full access. To start it you set up AutoPay with a ₹1
-              verification payment, which is refunded straight away. Nothing more is charged until the
-              trial ends, and cancelling before then costs nothing. Payments are processed by
-              Razorpay, an RBI-authorised payment aggregator — we never see or store your card, UPI,
-              or bank details.
+              There is no free trial. Your plan starts after payment is confirmed. Payments are
+              processed by Razorpay; we never see or store your card, UPI PIN, or bank credentials.
             </p>
             <p>
               Changed your mind? Full refund within 7 days, no reason needed. See the{' '}
