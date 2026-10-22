@@ -1,6 +1,7 @@
 export type UserRole = 'user' | 'admin';
 
-export type SubscriptionPlan = '6_months' | '12_months';
+// '6_months' is no longer sold; earlier orders and subscriptions still carry it.
+export type SubscriptionPlan = '1_month' | '12_months' | '6_months';
 export type SubscriptionStatus = 'trial' | 'active' | 'expired' | 'cancelled';
 
 export type PrivateFeedbackStatus = 'new' | 'seen' | 'resolved';
@@ -180,4 +181,42 @@ export interface AutopaySetupOrder {
   plan: SubscriptionPlan;
   plan_amount: number;
   business_name?: string;
+}
+
+export type QrPrintOrderStatus = 'awaiting_address' | 'ready' | 'sent_to_printer' | 'shipped' | 'delivered' | 'cancelled';
+
+/** Where the free printed QR kit is delivered (delivery_addresses). */
+export interface DeliveryAddress {
+  business_id: string;
+  recipient_name: string;
+  phone: string;
+  address_line1: string;
+  address_line2: string;
+  city: string;
+  state: string;
+  pincode: string;
+  updated_at: string;
+}
+
+/** The free printed QR kit: table stand + tent card (qr_print_orders). */
+export interface QrPrintOrder {
+  id: string;
+  business_id: string;
+  payment_order_id: string;
+  status: QrPrintOrderStatus;
+  recipient_name: string | null;
+  phone: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state: string | null;
+  pincode: string | null;
+  business_name: string | null;
+  courier: string | null;
+  tracking_number: string | null;
+  created_at: string;
+  sent_to_printer_at: string | null;
+  shipped_at: string | null;
+  delivered_at: string | null;
+  updated_at: string;
 }

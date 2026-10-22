@@ -3,7 +3,7 @@
 
 import { getCorsHeaders, isAllowedBrowserOrigin } from "../_shared/cors.ts";
 import { type AdminClient, razorpay, type RazorpayJson } from "../_shared/autopay.ts";
-import { inBackground, sendReceipt } from "../_shared/email.ts";
+import { inBackground, sendAfterPayment } from "../_shared/email.ts";
 
 function getSupabaseSecretKey(): string {
   const secretKeys = Deno.env.get("SUPABASE_SECRET_KEYS");
@@ -235,8 +235,9 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Emailed once, whether the browser or the webhook confirms first.
-    await inBackground(sendReceipt(supabase as AdminClient, razorpay_order_id));
+    // Receipt and printed QR kit, once each, whether the browser or the
+    // webhook confirms first.
+    await inBackground(sendAfterPayment(supabase as AdminClient, razorpay_order_id));
 
     return new Response(
       JSON.stringify({

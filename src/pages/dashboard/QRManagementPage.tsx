@@ -7,6 +7,7 @@ import { Alert, Card, Button, PageHeader } from '@/components/ui';
 import { buttonClasses } from '@/components/ui/button-styles';
 import { WhatsAppRequest } from '@/components/dashboard/WhatsAppRequest';
 import { ExtraQrCodes } from '@/components/dashboard/ExtraQrCodes';
+import { PrintedQrKit } from '@/components/dashboard/PrintedQrKit';
 import type { Business } from '@/lib/types';
 
 export function QRManagementPage() {
@@ -146,6 +147,9 @@ export function QRManagementPage() {
           </p>
         </Card>
       </div>
+
+      {/* The free printed stand and tent card: preview, address, and delivery status. */}
+      <PrintedQrKit business={business} />
 
       {/* More ways to reach customers: a WhatsApp message after the visit, and
           separate codes per spot so Analytics can compare them. */}

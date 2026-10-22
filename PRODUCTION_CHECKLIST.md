@@ -56,6 +56,11 @@ CLI.
   origins; set `APP_ORIGINS` only for other domains (staging, previews).
 - [ ] Redeploy all Edge Functions after the migrations and secrets are in
   place. Use the complete list in `README.md`.
+- [ ] Printed QR kit: set `PRINT_ORDER_EMAIL` to your print partner's order
+  address (unset, orders go to support@reviyo.in), deploy the new
+  `send-print-order` function, and confirm `legal.printedKitDeliveryTime` in
+  `src/config/legal.ts` matches your printer's real timing. Place one test
+  order end to end and check the printed QR codes scan.
 - [ ] Configure the Razorpay webhook with the complete event list in
   `README.md`, use the same webhook secret, and verify signed test events are
   accepted exactly once.

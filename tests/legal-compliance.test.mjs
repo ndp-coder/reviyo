@@ -10,6 +10,7 @@ const LEGAL_PAGES = {
   '/terms': 'src/pages/legal/TermsPage.tsx',
   '/cookies': 'src/pages/legal/CookiePolicyPage.tsx',
   '/refunds': 'src/pages/legal/RefundPolicyPage.tsx',
+  '/shipping': 'src/pages/legal/ShippingPolicyPage.tsx',
   '/contact': 'src/pages/legal/ContactPage.tsx',
 };
 

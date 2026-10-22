@@ -379,3 +379,158 @@ check('website visit counts hold no personal data, skip private pages, and only 
     await db.exec(`UPDATE profiles SET role = 'user' WHERE id = '${U2}'`);
   }
 });
+
+check('the 1-month plan adds one month; the retired 6-month plan still works for earlier rows', async () => {
+  const biz = await asUser(U2, () =>
+    one(`SELECT create_business_with_defaults('Kaveri Cafe','kaveri-cafe','Cafe',NULL,NULL,NULL,ARRAY['Coffee']) AS b`));
+  const B2 = biz.b.id;
+  await db.query(`INSERT INTO payment_orders (business_id,user_id,order_id,plan,amount,status) VALUES ($1,$2,'order_m1','1_month',39900,'created')`, [B2, U2]);
+  await q(`SELECT process_paid_order('order_m1','pay_m1')`);
+  const s = await one(`SELECT plan, status, round(extract(epoch FROM expires_at - starts_at)/86400) AS days FROM subscriptions WHERE business_id=$1`, [B2]);
+  assert.equal(s.plan, '1_month');
+  assert.equal(s.status, 'active');
+  assert.ok([28, 29, 30, 31].includes(Number(s.days)), `one calendar month, got ${s.days} days`);
+  // Rows for the retired plan are still accepted (history, mandates set up before the change).
+  await db.query(`INSERT INTO payment_orders (business_id,user_id,order_id,plan,amount,status) VALUES ($1,$2,'order_m6','6_months',199900,'created')`, [B2, U2]);
+  await rejects(`INSERT INTO payment_orders (business_id,user_id,order_id,plan,amount,status) VALUES ($1,$2,'order_bad','3_months',100,'created')`,
+    [B2, U2], /payment_orders_plan_check/, 'unknown plan');
+  await rejects(`SELECT activate_or_renew_subscription($1,'2_months','x')`, [B2], /Invalid plan/, 'unknown plan duration');
+});
+
+check('the first real payment places exactly one printed QR order; the ₹1 check and failed payments do not', async () => {
+  // B paid its first AutoPay charge (order_c1) earlier, before any address was saved.
+  const orders = await q(`SELECT payment_order_id, status FROM qr_print_orders WHERE business_id=$1`, [B]);
+  assert.deepEqual(orders, [{ payment_order_id: 'order_c1', status: 'awaiting_address' }]);
+  // Later payments never add a second kit.
+  const paidCount = (await one(`SELECT count(*)::int AS n FROM payment_orders WHERE business_id=$1 AND status='paid'`, [B])).n;
+  assert.ok(paidCount >= 2, 'B has more than one paid order by now');
+  // The ₹1 authorisation never becomes a paid payment order.
+  assert.equal((await one(`SELECT count(*)::int AS n FROM payment_orders WHERE order_id LIKE 'order_auth%'`)).n, 0);
+  // Kaveri's kit comes from its paid order, not the unpaid one created after it.
+  const B2 = (await one(`SELECT id FROM businesses WHERE slug='kaveri-cafe'`)).id;
+  const kit = await one(`SELECT payment_order_id, status FROM qr_print_orders WHERE business_id=$1`, [B2]);
+  assert.deepEqual(kit, { payment_order_id: 'order_m1', status: 'awaiting_address' });
+  // Orders that are created, attempted, or failed never place a kit.
+  await db.exec(`DELETE FROM qr_print_orders WHERE business_id='${B2}'`);
+  await db.exec(`UPDATE payment_orders SET status='failed' WHERE order_id='order_m6'`);
+  assert.equal((await q(`SELECT id FROM qr_print_orders WHERE business_id=$1`, [B2])).length, 0);
+  // Businesses already paying when this launched get a kit from the migration's backfill.
+  const migration = (await import('node:fs')).readFileSync(new URL('../supabase/migrations/20261022130000_printed_qr_orders.sql', import.meta.url), 'utf8');
+  const backfill = migration.slice(migration.indexOf('INSERT INTO qr_print_orders (business_id, payment_order_id)\nSELECT DISTINCT ON'));
+  await db.exec(backfill);
+  const restored = await one(`SELECT payment_order_id, status FROM qr_print_orders WHERE business_id=$1`, [B2]);
+  assert.deepEqual(restored, { payment_order_id: 'order_m1', status: 'awaiting_address' }, 'earliest paid order, waiting for an address');
+});
+
+check('saving the address fills the waiting order; only the owner can save or read it', async () => {
+  const save = (biz, phone = '+91 98765 43210', pincode = '520010') =>
+    q(`SELECT save_delivery_address($1,'  Asha   Rao ',$2,'12, MG Road, Opp. Bus Stand','Labbipet','Vijayawada','Andhra Pradesh',$3) AS o`, [biz, phone, pincode]);
+  // Someone else's business, anon, and bad input are refused.
+  await asUser(U2, () => rejects(`SELECT save_delivery_address($1,'Asha','9876543210','12 MG Road','','Vijayawada','Andhra Pradesh','520010')`,
+    [B], /Business not found/, 'other owner'));
+  await asAnon(() => rejects(`SELECT save_delivery_address($1,'Asha','9876543210','12 MG Road','','Vijayawada','Andhra Pradesh','520010')`,
+    [B], /permission denied/, 'anon'));
+  await asUser(U1, () => rejects(`SELECT save_delivery_address($1,'Asha','12345','12 MG Road','','Vijayawada','Andhra Pradesh','520010')`,
+    [B], /10-digit Indian mobile/, 'bad phone'));
+  await asUser(U1, () => rejects(`SELECT save_delivery_address($1,'Asha','9876543210','12 MG Road','','Vijayawada','Andhra Pradesh','012345')`,
+    [B], /6-digit PIN/, 'bad pin'));
+  await asUser(U1, () => rejects(`SELECT save_delivery_address($1,'Asha','9876543210','12 MG Road','','Vijayawada','Atlantis','520010')`,
+    [B], /delivery_addresses_state_check/, 'bad state'));
+
+  const [{ o }] = await asUser(U1, () => save(B));
+  assert.equal(o.status, 'ready');
+  assert.equal(o.recipient_name, 'Asha Rao', 'trimmed and spaces collapsed');
+  assert.equal(o.phone, '9876543210', '+91 and spaces removed');
+  assert.equal(o.state, 'Andhra Pradesh');
+
+  // Owners read only their own address and order, and cannot write either directly.
+  assert.equal((await asUser(U1, () => q(`SELECT business_id FROM delivery_addresses`))).length, 1);
+  assert.equal((await asUser(U2, () => q(`SELECT business_id FROM delivery_addresses`))).length, 0);
+  assert.equal((await asUser(U2, () => q(`SELECT id FROM qr_print_orders WHERE business_id=$1`, [B]))).length, 0);
+  await asUser(U1, () => rejects(`UPDATE qr_print_orders SET status='delivered' WHERE business_id=$1`, [B], /permission denied/, 'direct update'));
+  await asUser(U1, () => rejects(`INSERT INTO delivery_addresses (business_id,recipient_name,phone,address_line1,city,state,pincode) VALUES ($1,'A','9876543210','12 MG Road','X','Goa','403001')`,
+    [B], /permission denied/, 'direct insert'));
+  for (const table of ['delivery_addresses', 'qr_print_orders']) {
+    for (const priv of ['SELECT', 'INSERT', 'UPDATE', 'DELETE']) {
+      assert.equal((await one(`SELECT has_table_privilege('anon', $1, $2) AS ok`, [`public.${table}`, priv])).ok, false, `anon ${priv} ${table}`);
+    }
+  }
+
+  // Once it has gone to the printer the order's address is frozen.
+  await db.exec(`UPDATE qr_print_orders SET status='sent_to_printer', sent_to_printer_at=now() WHERE business_id='${B}'`);
+  const [{ o: after }] = await asUser(U1, () =>
+    q(`SELECT save_delivery_address($1,'Ravi Kumar','9123456789','45 Beach Road','','Visakhapatnam','Andhra Pradesh','530002') AS o`, [B]));
+  assert.equal(after.status, 'sent_to_printer');
+  assert.equal(after.recipient_name, 'Asha Rao', 'order keeps the address that was printed');
+  assert.equal((await one(`SELECT recipient_name FROM delivery_addresses WHERE business_id=$1`, [B])).recipient_name, 'Ravi Kumar');
+});
+
+check('an address saved before paying makes the first payment\'s order ready at once', async () => {
+  const B2 = (await one(`SELECT id FROM businesses WHERE slug='kaveri-cafe'`)).id;
+  // Start again for this business: no kit yet, address first, then pay.
+  await db.exec(`DELETE FROM qr_print_orders WHERE business_id='${B2}'`);
+  await asUser(U2, () => q(`SELECT save_delivery_address($1,'Kaveri','9988776655','3 Temple Street','','Chennai','Tamil Nadu','600004')`, [B2]));
+  assert.equal((await q(`SELECT id FROM qr_print_orders WHERE business_id=$1`, [B2])).length, 0, 'no kit before paying');
+  await db.query(`INSERT INTO payment_orders (business_id,user_id,order_id,plan,amount,status) VALUES ($1,$2,'order_m2','1_month',39900,'created')`, [B2, U2]);
+  await q(`SELECT process_paid_order('order_m2','pay_m2')`);
+  const kit = await one(`SELECT status, payment_order_id, city, pincode FROM qr_print_orders WHERE business_id=$1`, [B2]);
+  assert.deepEqual(kit, { status: 'ready', payment_order_id: 'order_m2', city: 'Chennai', pincode: '600004' });
+});
+
+check('a problem creating the kit never stops a payment from being recorded', async () => {
+  const B2 = (await one(`SELECT id FROM businesses WHERE slug='kaveri-cafe'`)).id;
+  await db.exec(`DELETE FROM qr_print_orders WHERE business_id='${B2}'`);
+  await db.exec(`ALTER TABLE qr_print_orders ADD CONSTRAINT test_always_fails CHECK (false) NOT VALID`);
+  try {
+    await db.query(`INSERT INTO payment_orders (business_id,user_id,order_id,plan,amount,status) VALUES ($1,$2,'order_m3','1_month',39900,'created')`, [B2, U2]);
+    await q(`SELECT process_paid_order('order_m3','pay_m3')`);
+    assert.equal((await one(`SELECT status FROM payment_orders WHERE order_id='order_m3'`)).status, 'paid');
+    assert.equal((await q(`SELECT id FROM qr_print_orders WHERE business_id=$1`, [B2])).length, 0);
+  } finally {
+    await db.exec(`ALTER TABLE qr_print_orders DROP CONSTRAINT test_always_fails`);
+  }
+});
+
+check('only admins move a kit to shipped (with tracking), delivered, or cancelled', async () => {
+  const id = (await one(`SELECT id FROM qr_print_orders WHERE business_id=$1`, [B])).id;
+  await asUser(U1, () => rejects(`SELECT admin_update_print_order($1,'shipped','DTDC','D123456')`, [id], /Admins only/, 'owner'));
+  await asAnon(() => rejects(`SELECT admin_update_print_order($1,'shipped','DTDC','D123456')`, [id], /permission denied/, 'anon'));
+  await db.exec(`UPDATE profiles SET role = 'admin' WHERE id = '${U2}'`);
+  try {
+    const admin = (sql, params) => asUser(U2, () => q(sql, params));
+    await asUser(U2, () => rejects(`SELECT admin_update_print_order($1,'shipped','','')`, [id], /courier and tracking/, 'no tracking'));
+    await asUser(U2, () => rejects(`SELECT admin_update_print_order($1,'delivered')`, [id], /Only a shipped order/, 'skip shipped'));
+    await asUser(U2, () => rejects(`SELECT admin_update_print_order($1,'ready')`, [id], /Unsupported status/, 'unknown move'));
+    const [{ o: shipped }] = await admin(`SELECT admin_update_print_order($1,'shipped',' DTDC ','D123456789') AS o`, [id]);
+    assert.equal(shipped.status, 'shipped'); assert.equal(shipped.courier, 'DTDC'); assert.ok(shipped.shipped_at);
+    const [{ o: delivered }] = await admin(`SELECT admin_update_print_order($1,'delivered') AS o`, [id]);
+    assert.equal(delivered.status, 'delivered'); assert.ok(delivered.delivered_at);
+    await asUser(U2, () => rejects(`SELECT admin_update_print_order($1,'cancelled')`, [id], /cannot be cancelled/, 'cancel delivered'));
+    // Admins see every kit; owners only their own.
+    assert.ok((await admin(`SELECT id FROM qr_print_orders`)).length >= 1);
+  } finally {
+    await db.exec(`UPDATE profiles SET role = 'user' WHERE id = '${U2}'`);
+  }
+});
+
+check('print-order emails can each be logged once', async () => {
+  const id = (await one(`SELECT id FROM qr_print_orders WHERE business_id=$1`, [B])).id;
+  for (const kind of ['print_order', 'print_order_placed', 'print_address_needed', 'print_shipped']) {
+    const claim = () => q(`INSERT INTO email_log (kind, ref, business_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING kind`, [kind, id, B]);
+    assert.equal((await claim()).length, 1, `${kind} first claim`);
+    assert.equal((await claim()).length, 0, `${kind} second claim`);
+  }
+});
+
+check('the owner\'s data export includes the delivery address and kit, but never the AutoPay token', async () => {
+  const [{ e }] = await asUser(U1, () => q(`SELECT export_my_data() AS e`));
+  assert.equal(e.delivery_addresses.length, 1);
+  assert.equal(e.delivery_addresses[0].recipient_name, 'Ravi Kumar');
+  assert.equal(e.qr_print_orders.length, 1);
+  assert.ok(e.autopay_mandates.length >= 1);
+  assert.ok(e.autopay_mandates.every((m) => !('token_id' in m) && !('user_id' in m)), 'no token or user id in the export');
+  assert.ok(e.shared_with.some((s) => s.startsWith('Our print partner and courier')));
+  // Another owner's export holds none of it.
+  const [{ e: other }] = await asUser(U2, () => q(`SELECT export_my_data() AS e`));
+  assert.ok(other.delivery_addresses.every((a) => a.recipient_name !== 'Ravi Kumar'));
+});

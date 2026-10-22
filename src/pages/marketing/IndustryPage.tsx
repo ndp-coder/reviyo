@@ -7,7 +7,7 @@ import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { getIndustry, industries, industryTopics } from '@/config/industries';
 import { TOOL_PATH } from '@/config/seo';
 import { legal } from '@/config/legal';
-import { formatRupees, PLANS } from '@/config/plans';
+import { formatRupees, PLANS, PLAN_ORDER } from '@/config/plans';
 import { buttonClasses } from '@/components/ui/button-styles';
 
 const capitalise = (text: string) => text.replace(/^\w/, (c) => c.toUpperCase());
@@ -127,7 +127,7 @@ export function IndustryPage() {
                 Start collecting genuine reviews for your {industry.singular}
               </h2>
               <p className="mt-2 text-brand-100">
-                {legal.trialDays}-day free trial. ₹1 AutoPay check, refunded. Plans from {formatRupees(PLANS['6_months'].price)} for {PLANS['6_months'].months} months.{' '}
+                {legal.trialDays}-day free trial. ₹1 AutoPay check, refunded. Plans from {formatRupees(PLANS[PLAN_ORDER[0]].price)} for {PLANS[PLAN_ORDER[0]].label}.{' '}
                 <Link to="/pricing" className="font-semibold text-white underline underline-offset-2">
                   See pricing
                 </Link>

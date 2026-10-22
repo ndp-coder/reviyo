@@ -16,6 +16,7 @@ export const SENDER = {
 } as const;
 
 export const PLAN_LABELS: Record<string, string> = {
+  "1_month": "1 month",
   "6_months": "6 months",
   "12_months": "12 months",
 };
@@ -24,6 +25,7 @@ export interface Email {
   subject: string;
   text: string;
   html: string;
+  attachments?: { filename: string; content: string; contentType: string }[];
 }
 
 const escapeHtml = (value: string) =>
@@ -174,5 +176,106 @@ export function planEndingEmail(input: {
       "After that, your QR codes still send customers to Google, but AI review drafting, your dashboard, and private feedback pause until you choose a plan.",
     ],
     button: { label: "Choose a plan", url: billingUrl() },
+  });
+}
+
+// ============================================
+// Free printed QR kit (table stand + tent card)
+// ============================================
+
+export interface PrintAddress {
+  recipient_name: string;
+  phone: string;
+  address_line1: string;
+  address_line2: string | null;
+  city: string;
+  state: string;
+  pincode: string;
+}
+
+/** The address as lines, ready to copy onto a parcel. */
+export function addressLines(a: PrintAddress): string[] {
+  return [
+    a.recipient_name,
+    a.address_line1,
+    ...(a.address_line2 ? [a.address_line2] : []),
+    `${a.city}, ${a.state} ${a.pincode}`,
+    `Phone: ${a.phone}`,
+  ];
+}
+
+const qrPageUrl = () => `${SENDER.siteUrl}/dashboard/qr`;
+
+/** To the print partner: what to make and where to send it. Files attached. */
+export function printOrderEmail(input: {
+  orderRef: string;
+  businessName: string;
+  address: PrintAddress;
+  standFile: string;
+  tentCardFile: string;
+}): Email {
+  return layout({
+    subject: `Print order ${input.orderRef}: QR stand and table card for ${input.businessName}`,
+    intro: [
+      `New print order from ${SENDER.brand}. Please print the two attached files and ship both items to the address below.`,
+      `1. ${input.standFile}: insert for an acrylic table stand, 4 × 6 inches (101.6 × 152.4 mm), portrait.`,
+      `2. ${input.tentCardFile}: table tent card. Print flat at 105 × 296 mm on 300 gsm card, then fold along the middle (the grey ticks at the edges mark the fold). The top half is upside down on purpose, so both sides read upright once folded.`,
+      "Both files are vector SVGs at actual size with a white background. Please keep the QR codes at 100% size and don't add any border or text to them. If Poppins isn't installed, any bold sans-serif font is fine.",
+      "Ship to:",
+      ...addressLines(input.address),
+    ],
+    rows: [
+      ["Order", input.orderRef],
+      ["Business name on the print", input.businessName],
+    ],
+    outro: [`When it ships, reply with the courier name and tracking number, and mention order ${input.orderRef}.`],
+  });
+}
+
+/** To the owner, once the order has gone to the printer. */
+export function printOrderPlacedEmail(input: { businessName: string; address: PrintAddress }): Email {
+  return layout({
+    subject: `Your free QR stand and table card for ${input.businessName} are being printed`,
+    intro: [
+      `Good news: we've sent your free printed QR kit for ${input.businessName} to the printer. It has a QR table stand and a table tent card, both with your business name and your review QR code.`,
+      "It will be delivered to:",
+      ...addressLines(input.address),
+    ],
+    button: { label: "Track it in your dashboard", url: qrPageUrl() },
+    outro: [
+      "We'll email you the tracking number as soon as it ships.",
+      "Address wrong? Reply to this email straight away and we'll fix it before it ships.",
+    ],
+  });
+}
+
+/** To the owner: paid, but we don't know where to send the kit yet. */
+export function printAddressNeededEmail(input: { businessName: string }): Email {
+  return layout({
+    subject: `Where should we send your free QR stand for ${input.businessName}?`,
+    intro: [
+      `Thanks for your payment. Your plan includes a free printed QR kit for ${input.businessName}: a QR table stand and a table tent card with your business name and review QR code.`,
+      "Add your delivery address and we'll send it to the printer straight away.",
+    ],
+    button: { label: "Add delivery address", url: qrPageUrl() },
+  });
+}
+
+/** To the owner, when the kit ships. */
+export function printShippedEmail(input: {
+  businessName: string;
+  courier: string;
+  trackingNumber: string;
+  address: PrintAddress;
+}): Email {
+  return layout({
+    subject: `Your QR stand and table card for ${input.businessName} have shipped`,
+    intro: [`Your free printed QR kit for ${input.businessName} is on its way.`],
+    rows: [
+      ["Courier", input.courier],
+      ["Tracking number", input.trackingNumber],
+    ],
+    button: { label: "See it in your dashboard", url: qrPageUrl() },
+    outro: ["Delivering to:", ...addressLines(input.address)],
   });
 }

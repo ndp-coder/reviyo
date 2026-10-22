@@ -6,7 +6,7 @@ import { ConsentCheckbox } from '@/components/ConsentCheckbox';
 import { legal } from '@/config/legal';
 import { branding } from '@/config/branding';
 import { AUTOPAY_PLANS, formatRupees, setUpAutopay } from '@/lib/autopay';
-import { BEST_VALUE_PLAN, PLAN_ORDER, YEARLY_SAVING, perMonth } from '@/config/plans';
+import { BEST_VALUE_PLAN, PLAN_ORDER, YEARLY_SAVING, billingPeriod, perMonth } from '@/config/plans';
 import type { AutopayMethod, Subscription, SubscriptionPlan } from '@/lib/types';
 
 interface AutopaySetupProps {
@@ -51,7 +51,7 @@ export function AutopaySetup({
 
   const selected = AUTOPAY_PLANS[plan];
   const price = formatRupees(selected.price);
-  const period = `every ${selected.months} months`;
+  const period = billingPeriod(plan);
 
   const accessEnd = currentAccessEndsAt ? new Date(currentAccessEndsAt) : null;
   const firstCharge = trialAvailable
@@ -108,7 +108,7 @@ export function AutopaySetup({
                 <span className="text-sm font-medium text-gray-700">{option.label}</span>
                 <span className="mt-1 text-2xl font-bold text-gray-900">{formatRupees(option.price)}</span>
                 <span className="text-xs text-gray-600">
-                  {perMonth(key)}, billed every {option.months} months
+                  {option.months === 1 ? 'Billed every month' : `${perMonth(key)}, billed ${billingPeriod(key)}`}
                 </span>
                 {key === BEST_VALUE_PLAN && (
                   <span className="absolute right-3 top-3 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">

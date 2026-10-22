@@ -17,6 +17,9 @@ export interface DataExport {
   analytics_events: unknown[];
   subscriptions: unknown[];
   payment_orders: unknown[];
+  autopay_mandates: unknown[];
+  delivery_addresses: unknown[];
+  qr_print_orders: unknown[];
   shared_with: string[];
 }
 

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { branding } from '@/config/branding';
 import { legal, displayValue } from '@/config/legal';
+import { PLANS, PLAN_ORDER } from '@/config/plans';
 import { LegalPage, Clause, SubHeading, List } from '@/components/legal/LegalPage';
 
 const N = branding.name;
@@ -26,7 +27,8 @@ export function RefundPolicyPage() {
       <Clause id="cooling-off" heading="2. 7-day refund window">
         <p>
           If you buy a plan and change your mind, email us within <strong>7 calendar days</strong> of
-          payment and we will refund you in full, no questions asked and no reason required.
+          payment and we will refund you in full, no questions asked and no reason required. The free
+          printed QR stand and table card that come with your first payment are yours to keep.
         </p>
         <p>
           This applies even if you have used the service during those 7 days. It applies once per
@@ -36,7 +38,7 @@ export function RefundPolicyPage() {
 
       <Clause id="after" heading="3. After the 7-day window">
         <p>
-          Plans are prepaid for a fixed term of 6 or 12 months. After day 7, we do not give refunds
+          Plans are prepaid for a fixed term of {PLAN_ORDER.map((id) => PLANS[id].label).join(' or ')}. After day 7, we do not give refunds
           for a change of mind or for not using the service — but we do refund in these cases:
         </p>
         <List

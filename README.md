@@ -121,6 +121,8 @@ owner-supplied URLs to safe schemes.
    supabase functions deploy create-autopay-mandate --project-ref yagchgwgbttxfihlyddm
    supabase functions deploy verify-autopay-mandate --project-ref yagchgwgbttxfihlyddm
    supabase functions deploy cancel-autopay --project-ref yagchgwgbttxfihlyddm
+supabase functions deploy send-print-order --project-ref yagchgwgbttxfihlyddm
+   supabase functions deploy send-print-order --project-ref yagchgwgbttxfihlyddm
    supabase functions deploy autopay-scheduler --project-ref yagchgwgbttxfihlyddm
    supabase functions deploy delete-account --project-ref yagchgwgbttxfihlyddm
    ```
@@ -259,6 +261,30 @@ Functions are deployed separately with the Supabase CLI commands above.
    `Content-Security-Policy-Report-Only` to `Content-Security-Policy` in
    `netlify.toml` to enforce it.
 
+## Free printed QR kit (automatic)
+
+Every business gets one printed QR kit after its first plan payment (never
+for the ₹1 AutoPay check): a 4 × 6 inch acrylic table stand insert and a
+105 × 296 mm table tent card, each with the business name, "Scan to review us
+on Google", the QR code, and a small "by Reviyo".
+
+1. When a payment order becomes paid, a database trigger creates the order in
+   `qr_print_orders` (one per business). With a saved delivery address it is
+   `ready`; without one it is `awaiting_address` and the owner is emailed for it.
+2. `verify-razorpay-payment` / `razorpay-webhook` (right after payment),
+   `send-print-order` (right after the owner saves an address), and
+   `autopay-scheduler` (catch-up) email the print order, with both print-ready
+   SVG files attached, to `PRINT_ORDER_EMAIL`, then confirm to the owner.
+   The order is claimed before sending, so it goes out once.
+3. Set `PRINT_ORDER_EMAIL` to your print partner's order address. Unset, orders
+   go to support@reviyo.in for you to forward.
+4. When it ships, record the courier and tracking number on the admin page;
+   the owner gets them by email and in their dashboard.
+
+Owners add the address and see the status on Dashboard → QR code. The usual
+delivery time shown to customers is `legal.printedKitDeliveryTime` in
+`src/config/legal.ts`.
+
 ## Email from support@reviyo.in
 
 Every email an owner gets comes from `support@reviyo.in` (the Hostinger
@@ -321,7 +347,7 @@ The `google_review_url` field on the `businesses` table stores the direct review
 
 ### Razorpay Payments Integration
 
-Reviyo integrates Razorpay for automated subscription payments and renewals (6 Months @ ₹1,999 and 12 Months @ ₹2,999).
+Reviyo integrates Razorpay for automated subscription payments and renewals (1 month @ ₹399 and 12 months @ ₹2,999). The 6-month plan is no longer sold; earlier orders and any AutoPay already set up for it keep working at the amount the owner authorised.
 
 #### 1. Set Supabase Edge Function Secrets
 Copy the blank server template and fill the ignored file with your own live

@@ -78,6 +78,11 @@ export function PrivacyPolicyPage() {
               'To activate your subscription, show your payment history, and meet tax and accounting obligations.',
               'Necessary to provide the service; and legal obligation for retention.',
             ],
+            [
+              'Delivery address — the receiver’s name, a mobile number, and the address, only if you add one',
+              'To print and deliver the free QR table stand and table card that come with your plan, and so the courier can reach you.',
+              'Necessary to provide the service you asked for.',
+            ],
           ]}
         />
         <p>
@@ -213,8 +218,13 @@ export function PrivacyPolicyPage() {
             ],
             [
               'Hostinger (email)',
-              'Business owners’ email address and the content of the emails we send them: sign-in codes, account emails, payment receipts, and billing reminders. Customers who scan a QR code are never emailed.',
+              'Business owners’ email address and the content of the emails we send them: sign-in codes, account emails, payment receipts, billing reminders, and printed QR order updates. Print orders sent to our print partner also pass through it. Customers who scan a QR code are never emailed.',
               'Sending those emails from our support address.',
+            ],
+            [
+              'Our print partner and courier',
+              'For business owners who receive the free printed QR kit: the receiver’s name, mobile number, and delivery address, your business name, and your QR code.',
+              'Printing and delivering the QR table stand and table card.',
             ],
             [
               'The business whose QR code you scanned',
@@ -267,6 +277,11 @@ export function PrivacyPolicyPage() {
             ['Analytics counts', `${legal.analyticsRetentionDays} days`, 'Permanently deleted.'],
             [
               'Business owner account and business profile',
+              'For as long as your account is open',
+              'Deleted when you delete your account.',
+            ],
+            [
+              'Delivery address and printed QR order',
               'For as long as your account is open',
               'Deleted when you delete your account.',
             ],

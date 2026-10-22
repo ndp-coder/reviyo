@@ -680,6 +680,10 @@ export function OnboardingPage() {
               <p className="mt-1.5 text-sm text-gray-600">
                 Put it where customers pay or wait. Scanning it opens your review page.
               </p>
+              <p className="mt-2 text-sm text-gray-600">
+                We&apos;ll also print and deliver a QR table stand and table card with your business name, free, after
+                your first plan payment. Add your delivery address on the QR code page in your dashboard.
+              </p>
 
               {qrDataUrl ? (
                 <div className="mt-6 flex flex-col items-center">

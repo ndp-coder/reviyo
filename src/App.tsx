@@ -18,6 +18,7 @@ import { PrivacyPolicyPage } from '@/pages/legal/PrivacyPolicyPage';
 import { TermsPage } from '@/pages/legal/TermsPage';
 import { CookiePolicyPage } from '@/pages/legal/CookiePolicyPage';
 import { RefundPolicyPage } from '@/pages/legal/RefundPolicyPage';
+import { ShippingPolicyPage } from '@/pages/legal/ShippingPolicyPage';
 import { ContactPage } from '@/pages/legal/ContactPage';
 import { IndustriesPage } from '@/pages/marketing/IndustriesPage';
 import { IndustryPage } from '@/pages/marketing/IndustryPage';
@@ -92,6 +93,7 @@ function App() {
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/cookies" element={<CookiePolicyPage />} />
       <Route path="/refunds" element={<RefundPolicyPage />} />
+      <Route path="/shipping" element={<ShippingPolicyPage />} />
       <Route path="/contact" element={<ContactPage />} />
 
       {/* Auth routes */}

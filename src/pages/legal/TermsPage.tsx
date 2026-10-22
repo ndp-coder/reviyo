@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { branding } from '@/config/branding';
 import { legal, displayValue } from '@/config/legal';
+import { PLANS, PLAN_ORDER, formatRupees } from '@/config/plans';
 import { LegalPage, Clause, SubHeading, List } from '@/components/legal/LegalPage';
 
 const N = branding.name;
@@ -83,10 +84,11 @@ export function TermsPage() {
         <List
           items={[
             'New businesses get one 14-day free trial with full access. To start it you set up AutoPay (a UPI AutoPay mandate or a card mandate) with a ₹1 verification payment, which we refund immediately.',
-            'Paid plans are ₹1,999 for 6 months and ₹2,999 for 12 months, inclusive of applicable taxes unless stated otherwise at checkout.',
+            `Paid plans are ${PLAN_ORDER.map((id) => `${formatRupees(PLANS[id].price)} for ${PLANS[id].label}`).join(' and ')}, inclusive of applicable taxes unless stated otherwise at checkout.`,
             'With AutoPay, the plan you chose is charged automatically when your trial ends, and again at the end of every term, until you cancel. The mandate never allows more than the plan price per charge. You are notified by your bank or UPI app at least 24 hours before each charge.',
             'You can cancel AutoPay at any time from Billing, or from your UPI app. Cancelling stops all future charges; you keep access until the end of the trial or term you are in. Cancel before the trial ends and you pay nothing.',
             'You can instead pay once for a fixed term from Billing. One-time payments do not renew.',
+            `Your first plan payment (not the ₹1 AutoPay verification) includes one free printed QR kit per business: a QR table stand and a table tent card, delivered free within India, usually within ${legal.printedKitDeliveryTime} after it goes to the printer. Our Shipping & Delivery Policy has the details. The kit is yours to keep.`,
             'Payments are processed by Razorpay. We never see or store your card, UPI, or bank details.',
             'We may change prices at any time. A price change never affects a term you have already paid for.',
           ]}

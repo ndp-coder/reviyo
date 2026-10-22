@@ -4,6 +4,7 @@ import { isDirectReviewLink } from '@/lib/url-safety';
 import { useDashboardStats } from '@/lib/use-dashboard-stats';
 import { Alert, Button, Card, Skeleton, Badge, PageHeader, Spinner } from '@/components/ui';
 import { PlanStatus } from '@/components/dashboard/PlanStatus';
+import { PrintKitNudge } from '@/components/dashboard/PrintKitNudge';
 import type { AutopayMandate, Business, PrivateFeedbackStatus, Subscription } from '@/lib/types';
 
 const statusLabel: Record<PrivateFeedbackStatus, string> = { new: 'New', seen: 'Seen', resolved: 'Resolved' };
@@ -132,6 +133,7 @@ export function DashboardOverview() {
       />
 
       <PlanStatus subscription={subscription} mandate={mandate} />
+      {business && <PrintKitNudge businessId={business.id} />}
 
       {setupRemaining > 0 && (
         <Card className="mt-6 p-5">

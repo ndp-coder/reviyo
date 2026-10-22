@@ -34,7 +34,7 @@ export function PlanCards({ headingLevel = 'h3' }: { headingLevel?: 'h2' | 'h3' 
               </div>
               <p className="mt-3 text-5xl font-bold tabular-nums tracking-tight text-gray-900">{formatRupees(plan.price)}</p>
               <p className="mt-1 text-sm text-gray-600">
-                for {plan.months} months, which works out to {perMonth(planId)}
+                {plan.months === 1 ? 'per month, billed monthly' : `for ${plan.label}, which works out to ${perMonth(planId)}`}
               </p>
               <Link
                 to="/signup"

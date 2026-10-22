@@ -68,7 +68,9 @@ test('create-razorpay-order edge function verifies user ownership, plans, and am
   assert.match(edgeFn, /api\.razorpay\.com\/v1\/orders/);
   assert.match(edgeFn, /RAZORPAY_KEY_ID/);
   assert.match(edgeFn, /RAZORPAY_KEY_SECRET/);
-  assert.match(edgeFn, /"6_months":\s*\{\s*amount:\s*199900/);
+  assert.match(edgeFn, /"1_month":\s*\{\s*amount:\s*39900/);
+  // The 6-month plan is no longer sold.
+  assert.doesNotMatch(edgeFn, /"6_months":/);
   assert.match(edgeFn, /"12_months":\s*\{\s*amount:\s*299900/);
   assert.match(edgeFn, /supabase\.from\("payment_orders"\)\.insert/);
   assert.match(edgeFn, /if \(insertError\)/);
@@ -193,11 +195,15 @@ test('AutoPay plan prices match the one-time checkout prices', async () => {
     // Client display prices live in one place, shared by Billing, AutoPay setup, and the marketing pages.
     read('src/config/plans.ts'),
   ]);
-  for (const [plan, paise] of [['6_months', 199900], ['12_months', 299900]]) {
+  for (const [plan, paise] of [['1_month', 39900], ['12_months', 299900]]) {
     assert.match(oneTime, new RegExp(`"${plan}":\\s*\\{\\s*amount:\\s*${paise}`));
     assert.match(autopay, new RegExp(`"${plan}":\\s*${paise}`));
     assert.match(client, new RegExp(`'${plan}':\\s*\\{[^}]*price:\\s*${paise / 100}`));
   }
+  // New purchases and AutoPay setups cannot pick the retired 6-month plan,
+  // but its label and price stay so earlier orders still display.
+  assert.doesNotMatch(oneTime + autopay, /"6_months":/);
+  assert.match(client, /export const PLAN_ORDER: SubscriptionPlan\[\] = \['1_month', '12_months'\];/);
   // The authorisation is exactly ₹1 and is always refunded.
   assert.match(autopay, /export const AUTH_AMOUNT = 100;/);
   assert.match(autopay, /\/refund`/);

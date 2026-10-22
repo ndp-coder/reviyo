@@ -7,11 +7,15 @@ import type { SubscriptionPlan } from '@/lib/types';
  * can import it without pulling in the Supabase client.
  */
 export const PLANS: Record<SubscriptionPlan, { label: string; price: number; months: number }> = {
-  '6_months': { label: '6 months', price: 1999, months: 6 },
+  '1_month': { label: '1 month', price: 399, months: 1 },
   '12_months': { label: '12 months', price: 2999, months: 12 },
+  // No longer sold. Kept so earlier orders, subscriptions, and AutoPay set up
+  // for it still display correctly; never add it to PLAN_ORDER.
+  '6_months': { label: '6 months', price: 1999, months: 6 },
 };
 
-export const PLAN_ORDER: SubscriptionPlan[] = ['6_months', '12_months'];
+/** The plans on sale, in display order. */
+export const PLAN_ORDER: SubscriptionPlan[] = ['1_month', '12_months'];
 
 /** The longer plan, highlighted as the better deal. */
 export const BEST_VALUE_PLAN: SubscriptionPlan = '12_months';
@@ -26,12 +30,19 @@ export function perMonth(plan: SubscriptionPlan): string {
   return `${formatRupees(Math.round(price / months))}/month`;
 }
 
-/** What the 12-month plan saves over buying the 6-month plan twice. */
-export const YEARLY_SAVING = PLANS['6_months'].price * 2 - PLANS['12_months'].price;
+/** "every month" or "every 12 months". */
+export function billingPeriod(plan: SubscriptionPlan): string {
+  const { months } = PLANS[plan];
+  return months === 1 ? 'every month' : `every ${months} months`;
+}
+
+/** What the 12-month plan saves over paying monthly for a year. */
+export const YEARLY_SAVING = PLANS['1_month'].price * 12 - PLANS['12_months'].price;
 
 /** Everything a subscription includes — identical for every term. */
 export const PLAN_FEATURES = [
   '1 business, 1 location, 1 Google Business Profile',
+  'Free printed QR table stand and table card, delivered in India',
   'Custom QR code (PNG and SVG) and printable counter card',
   'AI-assisted review drafting in the customer’s own words',
   'Customisable review topics',

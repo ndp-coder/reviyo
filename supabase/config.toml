@@ -25,5 +25,8 @@ verify_jwt = true
 [functions.cancel-autopay]
 verify_jwt = true
 
+[functions.send-print-order]
+verify_jwt = true
+
 [functions.autopay-scheduler]
 verify_jwt = false

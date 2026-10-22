@@ -66,7 +66,7 @@ export const legal = {
    * is recorded against each customer review session and each signup so you can
    * prove which notice a person actually agreed to (DPDPA s.6(1)).
    */
-  policyLastUpdated: '2026-09-30',
+  policyLastUpdated: '2026-10-22',
   // .2 (25 Sep): Terms describe the AutoPay trial and automatic renewal.
   // 26 Sep .1: Privacy and Cookie policies list the dashboard's browser storage
   // and say precisely how IP addresses are (not) handled.
@@ -79,6 +79,12 @@ export const legal = {
   autopayTermsVersion: '2026-09-25.1',
   /** Free trial length. Must match start_autopay_trial() in the database. */
   trialDays: 14,
+  /**
+   * How long the free printed QR kit usually takes to arrive after it goes to
+   * the printer. Shown on the Shipping Policy, Terms, and dashboard; change it
+   * here if your print partner's timing differs.
+   */
+  printedKitDeliveryTime: '7–10 working days',
 
   /**
    * Where personal data is stored and processed. Update these to match your

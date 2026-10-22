@@ -37,7 +37,7 @@ type JsonLd = Record<string, unknown>;
 const real = (value: string | null | undefined) => (value && !isPlaceholder(value) ? value : undefined);
 
 const cheapestPlan = PLANS[PLAN_ORDER[0]];
-const planSummary = PLAN_ORDER.map((id) => `${formatRupees(PLANS[id].price)} for ${PLANS[id].months} months`).join(' or ');
+const planSummary = PLAN_ORDER.map((id) => `${formatRupees(PLANS[id].price)} for ${PLANS[id].label}`).join(' or ');
 
 /** One step in a breadcrumb trail. Home is always first and is not listed. */
 export interface Crumb {
@@ -275,6 +275,7 @@ export function publicPages(): PageMeta[] {
       jsonLd: [localBusiness, breadcrumbs([{ name: 'Contact Us', path: '/contact' }])] },
     legalPage('/privacy', 'Privacy Policy', 'What personal data Reviyo collects, why, how long we keep it, and your rights under India’s DPDP Act, 2023.'),
     legalPage('/terms', 'Terms & Conditions', 'The terms for using Reviyo, including trials, AutoPay, and the rules against fake, incentivised, or gated reviews.'),
+    legalPage('/shipping', 'Shipping & Delivery Policy', 'How the free printed QR stand and table card that come with every Reviyo plan are shipped: when, where in India, cost, and what happens if a parcel is damaged or lost.'),
     legalPage('/refunds', 'Refund & Cancellation Policy', 'How the Reviyo free trial, AutoPay, cancellation, and refunds work, in plain language.'),
     legalPage('/cookies', 'Cookie Policy', 'Reviyo uses only essential browser storage: your sign-in, and two dashboard tools that remember what you typed. No tracking or advertising cookies.'),
   ];

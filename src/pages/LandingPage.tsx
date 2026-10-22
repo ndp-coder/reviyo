@@ -31,8 +31,8 @@ const steps = [
 
 const features = [
   {
-    title: 'A QR code and a counter card, ready to print',
-    text: 'Download your code as PNG or SVG, or print the ready-made card. Add separate codes for tables, bills, or a second counter and see which one gets scanned.',
+    title: 'A printed QR stand and table card, delivered free',
+    text: 'After your first payment we print a table stand and a tent card with your business name and QR code, and deliver them anywhere in India. You can also download the code as PNG or SVG, and add separate codes for tables or bills.',
   },
   {
     title: 'Review requests on WhatsApp',

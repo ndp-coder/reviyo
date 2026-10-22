@@ -10,6 +10,7 @@ const legalLinks = [
   { to: '/terms', label: 'Terms & Conditions' },
   { to: '/cookies', label: 'Cookie Policy' },
   { to: '/refunds', label: 'Refund & Cancellation Policy' },
+  { to: '/shipping', label: 'Shipping & Delivery Policy' },
   { to: '/contact', label: 'Contact Us' },
 ];
 

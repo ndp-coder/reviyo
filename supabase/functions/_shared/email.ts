@@ -10,17 +10,33 @@
 
 // @ts-types="npm:@types/nodemailer@8.0.2"
 import nodemailer from "npm:nodemailer@10.0.12";
+// @ts-types="npm:@types/qrcode@1.5.6"
+import QRCode from "npm:qrcode@1.5.4";
 import type { AdminClient } from "./autopay.ts";
 import {
   type Email,
   paymentFailedEmail,
   planEndingEmail,
+  type PrintAddress,
+  printAddressNeededEmail,
+  printOrderEmail,
+  printOrderPlacedEmail,
+  printShippedEmail,
   receiptEmail,
   renewalNoticeEmail,
   SENDER,
 } from "./email-templates.ts";
+import { type QrMatrix, STAND_SOURCE, standSvg, TENT_CARD_SOURCE, tentCardSvg } from "./print-artwork.ts";
 
-type Kind = "receipt" | "renewal_notice" | "payment_failed" | "plan_ending";
+type Kind =
+  | "receipt"
+  | "renewal_notice"
+  | "payment_failed"
+  | "plan_ending"
+  | "print_order"
+  | "print_order_placed"
+  | "print_address_needed"
+  | "print_shipped";
 
 /**
  * Lets an email finish after the response has been sent, so a slow mail
@@ -65,6 +81,7 @@ export async function sendEmail(to: string, email: Email): Promise<void> {
       subject: email.subject,
       text: email.text,
       html: email.html,
+      attachments: email.attachments,
     });
   } finally {
     transport.close();
@@ -223,6 +240,227 @@ export async function sendPaymentFailed(admin: AdminClient, orderId: string): Pr
   }
 }
 
+// ============================================
+// Free printed QR kit
+// ============================================
+
+/** Where print orders go: the print partner, or our own inbox to forward. */
+const printOrderEmailAddress = () => Deno.env.get("PRINT_ORDER_EMAIL")?.trim() || SENDER.supportEmail;
+
+const PRINT_ORDER_COLUMNS =
+  "id, business_id, status, recipient_name, phone, address_line1, address_line2, city, state, pincode, business_name, courier, tracking_number, sent_to_printer_at";
+
+interface PrintOrderRow extends PrintAddress {
+  id: string;
+  business_id: string;
+  status: string;
+  business_name: string | null;
+  courier: string | null;
+  tracking_number: string | null;
+  sent_to_printer_at: string | null;
+}
+
+/** Short, readable reference for the printer and support: "RV-1A2B3C4D". */
+export const printOrderRef = (orderId: string) => `RV-${orderId.replace(/-/g, "").slice(0, 8).toUpperCase()}`;
+
+function qrMatrix(text: string): QrMatrix {
+  const { modules } = QRCode.create(text, { errorCorrectionLevel: "M" });
+  return { size: modules.size, isDark: (row: number, col: number) => Boolean(modules.get(row, col)) };
+}
+
+/** Same link and ?src the dashboard preview uses (src/lib/print-artwork.ts). */
+const printedReviewUrl = (slug: string, source: string) =>
+  `${SENDER.siteUrl.replace(/\/+$/, "")}/r/${encodeURIComponent(slug)}?src=${encodeURIComponent(source)}`;
+
+async function wasSent(admin: AdminClient, kind: Kind, ref: string): Promise<boolean> {
+  const { data } = await admin.from("email_log").select("kind").eq("kind", kind).eq("ref", ref).maybeSingle();
+  return Boolean(data);
+}
+
+/**
+ * Sends a ready print order to the printer. The order is claimed first
+ * (ready -> sent_to_printer), which freezes the address the owner can still
+ * edit until then; if the email does not go out, the claim is undone so the
+ * next run tries again. Then the owner gets a confirmation.
+ */
+export async function sendPrintOrder(admin: AdminClient, businessId: string): Promise<boolean> {
+  try {
+    if (!smtpConfig()) return false;
+    const { data: business } = await admin.from("businesses").select("name, slug").eq("id", businessId).maybeSingle();
+    if (!business) return false;
+
+    const { data: claimed, error: claimError } = await admin
+      .from("qr_print_orders")
+      .update({
+        status: "sent_to_printer",
+        sent_to_printer_at: new Date().toISOString(),
+        business_name: business.name,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("business_id", businessId)
+      .eq("status", "ready")
+      .select(PRINT_ORDER_COLUMNS)
+      .maybeSingle();
+    if (claimError) {
+      console.error("print order: could not claim", businessId, claimError.message);
+      return false;
+    }
+    if (!claimed) return false; // Not ready, or another run has it.
+    const order = claimed as PrintOrderRow;
+
+    const sent = await deliverPrintOrder(admin, order, business.name as string, business.slug as string);
+    if (!sent) {
+      await admin
+        .from("qr_print_orders")
+        .update({ status: "ready", sent_to_printer_at: null, updated_at: new Date().toISOString() })
+        .eq("id", order.id)
+        .eq("status", "sent_to_printer");
+      return false;
+    }
+    await sendPrintOrderPlaced(admin, order);
+    return true;
+  } catch (err) {
+    console.error("print order", businessId, err);
+    return false;
+  }
+}
+
+/** The printer email itself, sent once per order. True once it has gone out. */
+async function deliverPrintOrder(admin: AdminClient, order: PrintOrderRow, name: string, slug: string): Promise<boolean> {
+  const ref = printOrderRef(order.id);
+  const standFile = `${ref}-table-stand-4x6in.svg`;
+  const tentCardFile = `${ref}-table-tent-card-105x296mm.svg`;
+  const sent = await sendOnce(admin, "print_order", order.id, order.business_id, async () => ({
+    to: printOrderEmailAddress(),
+    email: {
+      ...printOrderEmail({ orderRef: ref, businessName: name, address: order, standFile, tentCardFile }),
+      attachments: [
+        { filename: standFile, content: standSvg(name, qrMatrix(printedReviewUrl(slug, STAND_SOURCE))), contentType: "image/svg+xml" },
+        {
+          filename: tentCardFile,
+          content: tentCardSvg(name, qrMatrix(printedReviewUrl(slug, TENT_CARD_SOURCE))),
+          contentType: "image/svg+xml",
+        },
+      ],
+    },
+  }));
+  // false also means "already sent earlier"; the log says which.
+  return sent || (await wasSent(admin, "print_order", order.id));
+}
+
+async function sendPrintOrderPlaced(admin: AdminClient, order: PrintOrderRow): Promise<boolean> {
+  return await sendOnce(admin, "print_order_placed", order.id, order.business_id, async () => {
+    const owner = await businessAndOwner(admin, order.business_id);
+    if (!owner) return null;
+    return { to: owner.email, email: printOrderPlacedEmail({ businessName: owner.name, address: order }) };
+  });
+}
+
+/** Asks the owner for a delivery address, once, when a paid order has none. */
+export async function sendPrintAddressNeeded(admin: AdminClient, businessId: string): Promise<boolean> {
+  try {
+    const { data: order } = await admin
+      .from("qr_print_orders")
+      .select("id, status")
+      .eq("business_id", businessId)
+      .maybeSingle();
+    if (!order || order.status !== "awaiting_address") return false;
+    return await sendOnce(admin, "print_address_needed", order.id, businessId, async () => {
+      const owner = await businessAndOwner(admin, businessId);
+      if (!owner) return null;
+      return { to: owner.email, email: printAddressNeededEmail({ businessName: owner.name }) };
+    });
+  } catch (err) {
+    console.error("email: print address needed", businessId, err);
+    return false;
+  }
+}
+
+/** Tells the owner the kit shipped, with the tracking number, once. */
+async function sendPrintShipped(admin: AdminClient, order: PrintOrderRow): Promise<boolean> {
+  if (order.status !== "shipped" || !order.courier || !order.tracking_number) return false;
+  return await sendOnce(admin, "print_shipped", order.id, order.business_id, async () => {
+    const owner = await businessAndOwner(admin, order.business_id);
+    if (!owner) return null;
+    return {
+      to: owner.email,
+      email: printShippedEmail({
+        businessName: owner.name,
+        courier: order.courier as string,
+        trackingNumber: order.tracking_number as string,
+        address: order,
+      }),
+    };
+  });
+}
+
+/**
+ * Everything a payment can start: the receipt, then the printed QR kit (sent
+ * to the printer if the address is in, otherwise a request for the address).
+ * Used by the payment Edge Functions right after an order is paid.
+ */
+export async function sendAfterPayment(admin: AdminClient, orderId: string): Promise<void> {
+  await sendReceipt(admin, orderId);
+  try {
+    const { data: order } = await admin.from("payment_orders").select("business_id, status").eq("order_id", orderId).maybeSingle();
+    if (!order || order.status !== "paid") return;
+    if (!(await sendPrintOrder(admin, order.business_id))) {
+      await sendPrintAddressNeeded(admin, order.business_id);
+    }
+  } catch (err) {
+    console.error("email: after payment", orderId, err);
+  }
+}
+
+/** Scheduler catch-up for print orders: ready ones, missing address requests, shipping notices. */
+async function sendPendingPrintEmails(admin: AdminClient, count: (key: string, sent: boolean) => void): Promise<void> {
+  const { data: ready } = await admin.from("qr_print_orders").select("business_id").eq("status", "ready").limit(100);
+  for (const o of ready ?? []) count("print_orders_sent", await sendPrintOrder(admin, o.business_id));
+
+  // A run that stopped between claiming an order and emailing it.
+  const stale = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+  const { data: claimed } = await admin
+    .from("qr_print_orders")
+    .select(PRINT_ORDER_COLUMNS)
+    .eq("status", "sent_to_printer")
+    .lt("sent_to_printer_at", stale)
+    .limit(100);
+  for (const row of (claimed ?? []) as PrintOrderRow[]) {
+    try {
+      if (await wasSent(admin, "print_order", row.id)) {
+        await sendPrintOrderPlaced(admin, row);
+        continue;
+      }
+      const { data: business } = await admin.from("businesses").select("name, slug").eq("id", row.business_id).maybeSingle();
+      if (!business) continue;
+      if (await deliverPrintOrder(admin, row, row.business_name ?? (business.name as string), business.slug as string)) {
+        count("print_orders_sent", true);
+        await sendPrintOrderPlaced(admin, row);
+      }
+    } catch (err) {
+      console.error("print order: retry", row.id, err);
+    }
+  }
+
+  const { data: waiting } = await admin.from("qr_print_orders").select("business_id").eq("status", "awaiting_address").limit(200);
+  for (const o of waiting ?? []) count("print_address_requests_sent", await sendPrintAddressNeeded(admin, o.business_id));
+
+  const recent = new Date(Date.now() - 7 * DAY_MS).toISOString();
+  const { data: shipped } = await admin
+    .from("qr_print_orders")
+    .select(PRINT_ORDER_COLUMNS)
+    .eq("status", "shipped")
+    .gte("updated_at", recent)
+    .limit(100);
+  for (const row of (shipped ?? []) as PrintOrderRow[]) {
+    try {
+      count("print_shipped_notices_sent", await sendPrintShipped(admin, row));
+    } catch (err) {
+      console.error("email: print shipped", row.id, err);
+    }
+  }
+}
+
 /**
  * Catch-up pass for the scheduler: sends anything a browser or webhook did not
  * (receipts and failure notices from the last three days, notices for charges
@@ -294,4 +532,6 @@ export async function sendPendingEmails(admin: AdminClient, summary: Record<stri
       console.error("email: plan ending", s.id, err);
     }
   }
+
+  await sendPendingPrintEmails(admin, count);
 }

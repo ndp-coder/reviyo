@@ -598,9 +598,9 @@ test('owner emails come from support@reviyo.in, match the site config, and rende
   assert.match(email, /from\("email_log"\)/);
   assert.match(email, /ignoreDuplicates: true/);
   assert.match(email, /waitUntil/);
-  assert.match(webhook, /sendReceipt\(admin, orderId\)/);
+  assert.match(webhook, /sendAfterPayment\(admin, orderId\)/);
   assert.match(webhook, /sendPaymentFailed\(admin, orderId\)/);
-  assert.match(verify, /sendReceipt\(supabase as AdminClient, razorpay_order_id\)/);
+  assert.match(verify, /sendAfterPayment\(supabase as AdminClient, razorpay_order_id\)/);
   assert.match(scheduler, /sendPendingEmails\(admin, summary\)/);
 
   let templates;
@@ -675,4 +675,48 @@ test('Claude generation uses Haiku 4.5 through the official SDK, and the Privacy
   }
   // Customers' consent covers the provider the policy names.
   assert.match(legalSrc, /aiProviderName: 'Anthropic, PBC \(Claude API\)'/);
+});
+
+test('printed QR kit: one template for preview and print, states match the database, and the send function is owner-only', async () => {
+  const [artwork, browserArt, emailTs, india, migration, sendFn, config, kitUi] = await Promise.all([
+    read('supabase/functions/_shared/print-artwork.ts'),
+    read('src/lib/print-artwork.ts'),
+    read('supabase/functions/_shared/email.ts'),
+    read('src/config/india.ts'),
+    read('supabase/migrations/20261022130000_printed_qr_orders.sql'),
+    read('supabase/functions/send-print-order/index.ts'),
+    read('supabase/config.toml'),
+    read('src/components/dashboard/PrintedQrKit.tsx'),
+  ]);
+
+  // The dashboard preview and the emailed print files use the same template.
+  assert.match(browserArt, /from '\.\.\/\.\.\/supabase\/functions\/_shared\/print-artwork'/);
+  assert.match(emailTs, /from "\.\/print-artwork\.ts"/);
+  assert.doesNotMatch(artwork, /^import /m, 'the shared template must stay dependency-free');
+  // Business name, the prompt, the QR, and "by Reviyo" under it, at real print sizes.
+  assert.match(artwork, />by Reviyo</);
+  assert.match(artwork, /Scan to review us on Google/);
+  assert.match(artwork, /width: 101\.6, height: 152\.4/);
+  assert.match(artwork, /TENT_FLAT_MM = \{ width: 105, height: 296 \}/);
+  assert.match(artwork, /escapeXml\(line\)/, 'business names are escaped');
+
+  // The address form and the database accept exactly the same 36 states and UTs.
+  const uiStates = [...india.matchAll(/^  '([^']+)',$/gm)].map((m) => m[1]);
+  const dbBlock = migration.slice(migration.indexOf('state text NOT NULL CHECK (state IN ('), migration.indexOf('pincode text NOT NULL'));
+  const dbStates = [...dbBlock.matchAll(/'([^']+)'/g)].map((m) => m[1]);
+  assert.equal(uiStates.length, 36);
+  assert.deepEqual(dbStates, uiStates);
+
+  // Only a signed-in owner of the business can trigger a send.
+  assert.match(config, /\[functions\.send-print-order\]\s+verify_jwt = true/);
+  assert.match(sendFn, /isAllowedBrowserOrigin\(req\)/);
+  assert.match(sendFn, /admin\.auth\.getUser\(accessToken\)/);
+  assert.match(sendFn, /business\.owner_id !== userData\.user\.id/);
+
+  // The trigger never blocks a payment, and the ₹1 check can't earn a kit.
+  assert.match(migration, /EXCEPTION WHEN OTHERS THEN/);
+  assert.match(migration, /IF NEW\.status <> 'paid' OR NEW\.amount <= 0 THEN/);
+
+  // Where the address is collected, the owner is told who receives it.
+  assert.match(kitUi, /only with our print partner and courier/);
 });

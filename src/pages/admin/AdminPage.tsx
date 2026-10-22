@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { BrandLogo } from '@/components/BrandLogo';
 import { Alert, Button, Card, Skeleton, Badge, PageHeader } from '@/components/ui';
 import { SiteTrafficCard } from './SiteTrafficCard';
+import { PrintOrdersCard } from './PrintOrdersCard';
 
 export function AdminPage() {
   const { signOut } = useAuth();
@@ -142,6 +143,7 @@ export function AdminPage() {
         </Card>
       )}
 
+      <PrintOrdersCard />
       <SiteTrafficCard />
       </main>
     </div>

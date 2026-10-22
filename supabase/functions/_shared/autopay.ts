@@ -5,9 +5,11 @@
 // starts, and autopay-scheduler later charges the plan price against the token.
 // Docs: https://razorpay.com/docs/api/payments/recurring-payments/
 
-// Keep in step with PLAN_PRICES in create-razorpay-order (a test checks this).
+// Plans a new AutoPay setup can choose. Keep in step with PLAN_PRICES in
+// create-razorpay-order (a test checks this). A mandate set up earlier for the
+// 6-month plan keeps charging the amount stored on it.
 export const AUTOPAY_PLAN_PRICES: Record<string, number> = {
-  "6_months": 199900, // ₹1,999 in paise
+  "1_month": 39900, // ₹399 in paise
   "12_months": 299900, // ₹2,999 in paise
 };
 
