@@ -3,6 +3,9 @@
  * what search engines read always matches what visitors see.
  */
 export const landingFaqs: { q: string; a: string }[] = [
+  { q: 'Can I customize my QR card?', a: 'Yes. After activating your business, open Dashboard → QR code. Put your business name above the QR, preview the card, then print it or download the artwork. A small “QR by Reviyo” line appears below the QR.' },
+  { q: 'Will you deliver a printed QR stand?', a: 'We’re preparing personalized stand delivery in India. The planned offer is one stand on the first purchase of any plan when delivery is available, with no extra stand on renewal. Delivery is included only when checkout explicitly shows it as available before payment. Otherwise your plan includes downloadable QR artwork and a printable counter card, with no physical delivery or promised dispatch date.' },
+  { q: 'Is there a free trial or automatic renewal?', a: 'New plans have no free trial. Pay upfront for your chosen term; access starts after payment confirmation. One-time purchases do not renew automatically. AutoPay for renewals is optional and can be managed from Billing.' },
   { q: 'Does this create fake reviews?', a: 'No. Reviyo helps customers write genuine reviews based on their own input. The AI never invents experiences, staff names, or facts. The customer controls and submits the final review on Google.' },
   { q: 'Does it automatically post to Google?', a: 'No. The customer copies the review text and pastes it on Google themselves. We never submit reviews automatically. We open the Google review page for the customer and they do the posting.' },
   { q: 'Do you filter negative reviews?', a: 'No. Every customer, however their visit went, follows the same flow and gets the same ability to generate and post a Google review. They choose their star rating on Google themselves. We also offer private feedback for all customers.' },

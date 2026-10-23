@@ -7,6 +7,7 @@ import { parsePartnerTopics, validatePartnerDetails } from '@/lib/partner-setup'
 import { businessCategories, getCategoryLabel, getSuggestedTopics, isPresetCategory, OTHER_CATEGORY } from '@/config/categories';
 import { PLAN_SUMMARY } from '@/config/plans';
 import { GoogleReviewLinkHelp } from '@/components/GoogleReviewLinkHelp';
+import { StandOfferNotice } from '@/components/StandOfferNotice';
 import { Alert, Badge, Button, Card, Input, Select, Skeleton, Textarea } from '@/components/ui';
 
 type Draft = { id: string; name: string; referral_id: string; category: string; google_review_url: string | null; logo_url: string | null; topics: string[]; invitation_sent_at: string | null; claimed_at: string | null; commission_referrals: { email: string } };
@@ -88,6 +89,7 @@ export function PartnerBusinessSetup() {
     <h2 className="font-semibold">Set up a business for an owner</h2>
     <p className="mt-2 text-sm text-gray-600">Prepare the review page here and invite the owner using their own email. New owners create their password first, then check the details, accept the terms, pay for a plan and download their QR code.</p>
     <p className="mt-2 text-sm font-medium text-gray-800">Paid plans only: {PLAN_SUMMARY}. Partner setups do not include a free trial.</p>
+    <StandOfferNotice partner />
     {error && <Alert variant="error" className="mt-4">{error}</Alert>}
     {notice && <Alert variant="success" className="mt-4">{notice}</Alert>}
     <form ref={formRef} className="mt-6 space-y-5" onSubmit={(event) => void submit(event)}>

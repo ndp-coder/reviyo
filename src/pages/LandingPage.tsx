@@ -35,7 +35,7 @@ export function LandingPage() {
     <SkipLink />
     <MarketingHeader links={[
       { href: '#how-it-works', label: 'How it works' }, { href: '#product-film', label: 'Watch the demo' },
-      { href: '#pricing', label: 'Pricing' }, { href: '#faq', label: 'FAQs' },
+      { href: '#qr-stand', label: 'QR stand' }, { href: '#pricing', label: 'Pricing' }, { href: '#faq', label: 'FAQs' },
     ]} />
     <main id="main-content" tabIndex={-1}>
       <section className="landing-hero"><div className="landing-container landing-hero-grid">
@@ -62,6 +62,8 @@ export function LandingPage() {
       </div></section>
 
       <HomeProductFilm />
+
+      <StandOfferNotice featured />
 
       <section id="features" className="landing-section landing-features-section"><div className="landing-container">
         <div className="landing-section-heading"><div><p className="landing-section-kicker">Built around your working day</p><h2>Less explaining.<br />More getting on with your day.</h2></div><p className="landing-section-description">Your page, your topics, your counter card. A simple setup your team can use, wherever the next conversation happens.</p></div>
