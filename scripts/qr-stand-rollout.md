@@ -16,9 +16,17 @@ Use **Qikink print-on-demand dropshipping**, at its published standard rates. Th
 - Custom website integration: https://qikink.com/help/getting-started/how-do-i-get-started/
 - Account setup: https://signup.qikink.com/signup
 
-No account has been created or connected yet. Local browser use was disabled during setup. The signup page requires accepting Qikink's terms, email verification and a WhatsApp number. The owner must confirm acceptance at account creation; credentials must not be requested in chat.
+The owner completed account signup. The signed-in dashboard uses their Google account (`ndigitalsolutions9`), rather than the initially prepared support mailbox. Onboarding is complete for an existing store using a custom website and its first fulfilment provider. Wallet balance was ₹0; no payment or real order was made.
 
-The official website's current Open API documentation link still returns 404. Obtain the current contract from the signed-in integration screen before implementing order submission. Do not guess current endpoints or use unrelated third-party example credentials. Live dispatch remains disabled until a working account, authorized funding, the actual stand SKU and a verified API flow exist.
+With explicit owner confirmation, a sandbox secret was generated and `QIKINK_CLIENT_ID` and `QIKINK_SANDBOX_SECRET` were saved in Supabase Edge secrets. No credentials are in the repository. The dashboard requires sandbox tests before submitting the live-access request; that request has **not** been submitted yet.
+
+The API client and developer-only sandbox connection diagnostic are implemented and unit tested. The diagnostic function is not yet deployed. No production dispatch worker exists yet. A sample print PNG and illustrative mockup are prepared. Upload was blocked by Chrome's file URL permission; after the owner enabled it, browser control again reported that local browser use was disabled. Resume the open designer before creating another account or regenerating credentials.
+
+The public website's API link is outdated. The signed-in dashboard links to the working official reference at https://documenter.getpostman.com/view/26157218/2sBYAysUHS (Orders 08-25). It was read in the browser; an untracked local text copy is in `output/qikink-api-reference.txt`. Sandbox: `https://sandbox.qikink.com`; live: `https://api.qikink.com`. Use the documented token, create and list contracts, not old ERP endpoints. Listing is documented unavailable in sandbox. Tokens replace the previous token, so a dispatch worker needs a global lock/cache across instances, not only each client's in-memory token cache.
+
+Account catalogue verified: **UAcryDiSt-Wh-NA**, white standard acrylic display stand, front placement, Accessories printing (type 5). Design Guidelines confirm **4 × 6 inches**. The account lists ₹120 base plus printing, 18% tax and 150g shipping weight; the designer showed ₹141.60 before the design and shipping. None of these is the final landed price. Verify the final cost before enabling fulfilment.
+
+Live dispatch remains disabled until sandbox validation, live credentials, authorized funding, landed cost, final artwork/sample validation and the complete dispatch/reconciliation worker exist.
 
 ## Earlier supplier enquiries
 

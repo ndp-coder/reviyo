@@ -35,3 +35,7 @@ verify_jwt = false
 
 [functions.commission-scheduler]
 verify_jwt = false
+
+[functions.qikink-sandbox-check]
+# getUser verifies the caller; a server-side profile check requires admin role.
+verify_jwt = false
