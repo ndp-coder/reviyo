@@ -2,7 +2,7 @@
 // https://documenter.getpostman.com/view/26157218/2sBYAysUHS
 export type QikinkErrorCategory = 'validation' | 'auth' | 'rate_limit' | 'vendor' | 'invalid_response' | 'network' | 'timeout';
 export class QikinkError extends Error {
-  constructor(readonly category: QikinkErrorCategory) { super('Qikink request failed'); this.name = 'QikinkError'; }
+  constructor(readonly category: QikinkErrorCategory, readonly reason?: string) { super('Qikink request failed'); this.name = 'QikinkError'; }
 }
 export interface QikinkClientOptions {
   environment: 'sandbox' | 'live'; clientId: string; clientSecret: string;
@@ -13,6 +13,20 @@ const hosts = { sandbox: 'https://sandbox.qikink.com', live: 'https://api.qikink
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const text = (v: unknown, max = 4096): v is string => typeof v === 'string' && !!v.trim() && v.length <= max && !Array.from(v).some(c => c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127);
 const orderId = (v: unknown) => typeof v === 'number' ? Number.isSafeInteger(v) && v > 0 : typeof v === 'string' && /^[1-9]\d*$/.test(v);
+// Preserve useful validation categories without exposing the supplier's raw
+// messages, which can echo addresses, credentials or other request fields.
+function vendorReason(data: unknown): string | undefined {
+  if (!record(data)) return undefined;
+  const value = typeof data.error === 'string' ? data.error : typeof data.message === 'string' ? data.message : '';
+  if (/print.type.*sku/i.test(value)) return 'product_print_type';
+  if (/invalid value for sku/i.test(value)) return 'product_sku';
+  if (/sku|product not found|product unavailable/i.test(value)) return 'product';
+  if (/design|mockup|image|print.type|placement|height|width/i.test(value)) return 'artwork';
+  if (/order.number|order no|already exists|duplicate/i.test(value)) return 'reference';
+  if (/address|shipping|country|province|phone|email|pincode|zip|state/i.test(value)) return 'shipping';
+  if (/client|token|credential|unauthorized/i.test(value)) return 'credentials';
+  return undefined;
+}
 
 /** Reuse one instance per credential/environment per isolate: issuing a token replaces its predecessor.
  * No retries, including auth failures. After ambiguous creates, reconcile the persisted reference first.
@@ -32,12 +46,12 @@ export class QikinkClient {
     const timer = setTimeout(() => controller.abort(), this.#timeout);
     try {
       const response = await this.#fetch(this.#host + path, { ...init, redirect: 'error', signal: controller.signal });
-      if (!response.ok) throw new QikinkError(response.status === 401 || response.status === 403 ? 'auth' : response.status === 429 ? 'rate_limit' : 'vendor');
       let data: unknown;
       try { data = await response.json(); }
-      catch { throw new QikinkError('invalid_response'); }
+      catch { throw new QikinkError(response.ok ? 'invalid_response' : 'vendor'); }
+      if (!response.ok) throw new QikinkError(response.status === 401 || response.status === 403 ? 'auth' : response.status === 429 ? 'rate_limit' : 'vendor', vendorReason(data));
       if (!record(data)) throw new QikinkError('invalid_response');
-      if ('error' in data || data.success === false || ('status_code' in data && String(data.status_code) !== '200')) throw new QikinkError('vendor');
+      if ('error' in data || data.success === false || ('status_code' in data && String(data.status_code) !== '200')) throw new QikinkError('vendor', vendorReason(data));
       return data;
     } catch (error) {
       if (controller.signal.aborted) throw new QikinkError('timeout');
@@ -53,7 +67,7 @@ export class QikinkClient {
         body: new URLSearchParams({ ClientId: this.#clientId, client_secret: this.#secret }).toString() });
       const seconds = typeof data.expires_in === 'number' ? data.expires_in :
         typeof data.expires_in === 'string' && /^\d+$/.test(data.expires_in) ? Number(data.expires_in) : NaN;
-      if (data.ClientId !== this.#clientId || !text(data.Accesstoken) || !Number.isFinite(seconds) || seconds <= 0 || seconds > Number.MAX_SAFE_INTEGER / 1000) throw new QikinkError('invalid_response');
+      if (String(data.ClientId) !== this.#clientId || !text(data.Accesstoken) || !Number.isFinite(seconds) || seconds <= 0 || seconds > Number.MAX_SAFE_INTEGER / 1000) throw new QikinkError('invalid_response');
       this.#cached = { value: data.Accesstoken, expires: started + seconds * 1000 - Math.min(30000, seconds * 100) };
       return data.Accesstoken;
     })();

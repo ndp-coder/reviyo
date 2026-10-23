@@ -18,9 +18,17 @@ Use **Qikink print-on-demand dropshipping**, at its published standard rates. Th
 
 The owner completed account signup. The signed-in dashboard uses their Google account (`ndigitalsolutions9`), rather than the initially prepared support mailbox. Onboarding is complete for an existing store using a custom website and its first fulfilment provider. Wallet balance was ₹0; no payment or real order was made.
 
-With explicit owner confirmation, a sandbox secret was generated and `QIKINK_CLIENT_ID` and `QIKINK_SANDBOX_SECRET` were saved in Supabase Edge secrets. No credentials are in the repository. The dashboard requires sandbox tests before submitting the live-access request; that request has **not** been submitted yet.
+With explicit owner confirmation, a sandbox secret was generated and `QIKINK_CLIENT_ID` and `QIKINK_SANDBOX_SECRET` were saved in Supabase Edge secrets. No credentials are in the repository. The live-access request was submitted successfully on 23 October 2026 after the documented API example passed. Qikink's confirmation says an email response within three working days once approved. Live credentials are not yet available.
 
-The API client and developer-only sandbox connection diagnostic are implemented and unit tested. The diagnostic function is not yet deployed. No production dispatch worker exists yet. A sample print PNG and illustrative mockup are prepared. Upload was blocked by Chrome's file URL permission; after the owner enabled it, browser control again reported that local browser use was disabled. Resume the open designer before creating another account or regenerating credentials.
+The API client and developer/server-only sandbox diagnostic are implemented, tested and deployed. JWT gateway verification is off because the function verifies either the existing server secret or a signed-in admin itself; anonymous and ordinary owner requests are rejected. Generate the single-file dashboard deployment with `node scripts/bundle-qikink-sandbox-check.mjs` (the generated output contains no credentials). A sample print PNG and illustrative mockup are publicly hosted. Designer file upload remains blocked by Chrome's file URL permission, but URL-based API artwork does not require that upload.
+
+Verified sandbox results:
+
+- `connection`: HTTP 200, authenticated.
+- `sample`: acrylic SKU `UAcryDiSt-Wh-NA` with Accessories print type 5 was explicitly rejected: **Invalid Print Type ID for This SKU** (safe category `product_print_type`). This remains unresolved; do not substitute a guessed print type in production.
+- `api_reference_sample`: Qikink's documented `MVnHs-Wh-S` / DTG type 1 example succeeded, order **25378080**, reference **awqrmm9846fiuj**. This verifies API order creation only, **not acrylic stand fulfilment**. This was sandbox only; no real purchase or charge was made.
+
+Diagnostic samples use fixed fictional shipping details and sample artwork, never customer addresses. Keep a sample's UUID/reference across ambiguous attempts; never blindly create a fresh reference after a timeout. Sandbox order lookup is unavailable. Screenshots are local in `output/qikink-api-sample-success.png` and `output/qikink-live-access-requested.png`. No production dispatch or artwork rendering worker exists yet.
 
 The public website's API link is outdated. The signed-in dashboard links to the working official reference at https://documenter.getpostman.com/view/26157218/2sBYAysUHS (Orders 08-25). It was read in the browser; an untracked local text copy is in `output/qikink-api-reference.txt`. Sandbox: `https://sandbox.qikink.com`; live: `https://api.qikink.com`. Use the documented token, create and list contracts, not old ERP endpoints. Listing is documented unavailable in sandbox. Tokens replace the previous token, so a dispatch worker needs a global lock/cache across instances, not only each client's in-memory token cache.
 
@@ -36,6 +44,8 @@ Quote requests were sent from support@reviyo.in to Qikink (sales@qikink.com) and
 - PrintX: https://www.printxdesign.com/qr-code-stands.html advertises custom QR stands with a minimum quantity of ten. Individual shipment and automation support have not been confirmed.
 
 Requested: prepaid landed rates, reseller tiers without volume commitments, individual addresses, artwork/DPI/bleed, account and sandbox steps, current API, duplicate prevention, order lookup, tracking, serviceability, cancellations and replacements. These earlier enquiries are background only; do not wait for them to continue Qikink's standard account setup.
+
+Qikink replied on 23 October (support ticket 132299): ₹165, 3mm acrylic, no MOQ; individual designs and direct API ordering supported. Bulk discounts require 50+ of the same design, so unique business QR artwork does not qualify. Shipping/other charges require panel verification. Their phrase “2 acrylic stands per product listing” needs clarification before treating it as a customer quantity. They recommend a printed sample and physical QR scan before fulfilment. No negotiated rate or volume commitment was accepted.
 
 ## Implemented preparation
 

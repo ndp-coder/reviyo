@@ -108,6 +108,13 @@ test('sandbox connection check authenticates without placing or listing an order
   assert.deepEqual(calls, ['https://sandbox.qikink.com/api/token']);
 });
 
+test('supplier validation errors expose only a fixed reason, never the raw request details', async () => {
+  const client = new QikinkClient(options(async url => json(url.endsWith('/token') ? token() : { error: 'Invalid SKU fixture-secret Example Road', status_code: '400' }, url.endsWith('/token') ? 200 : 400)));
+  await assert.rejects(client.createOrder({}), error => { safeError('vendor')(error); assert.equal(error.reason, 'product'); return true; });
+  const mismatch = new QikinkClient(options(async url => json(url.endsWith('/token') ? token() : { error: 'Invalid Print Type ID for This SKU', status_code: '400' }, url.endsWith('/token') ? 200 : 400)));
+  await assert.rejects(mismatch.createOrder({}), error => { assert.equal(error.reason, 'product_print_type'); return true; });
+});
+
 test('200 vendor errors, HTTP failures, malformed successes and transport errors are safe; writes never retry', async () => {
   const cases = [[() => json({ error: 'vendor-private fixture-secret Example Road' }), 'vendor'],
     [() => json({ ...created(), status_code: '400' }), 'vendor'], [() => json({ ...created(), success: false }), 'vendor'],
