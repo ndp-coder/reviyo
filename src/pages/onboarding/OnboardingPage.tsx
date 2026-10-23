@@ -1,3 +1,4 @@
+import { QrStandSetup } from '@/components/QrStandSetup';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { reviewUrlFor } from '@/lib/review-source';
 import { Link, useNavigate } from 'react-router-dom';
@@ -666,6 +667,7 @@ export function OnboardingPage() {
               <p className="mt-2 text-sm text-gray-600">Your business details are saved. Choose a plan below and pay securely with UPI, card or netbanking. Once payment is confirmed, you can download your QR code and use your dashboard.</p>
               <p className="mt-2 text-sm font-medium text-gray-800">Pay once to activate your business. Renewal is your choice.</p>
             </Card>
+            <QrStandSetup business={business} />
             {payFeedback && <Alert variant={payFeedback.type}>{payFeedback.message}</Alert>}
             <PayOncePlans businessId={business.id} userName={profile?.full_name || businessName} userEmail={user?.email || ''}
               heading="Choose your plan" onFeedback={setPayFeedback} onFinished={(paid) => {

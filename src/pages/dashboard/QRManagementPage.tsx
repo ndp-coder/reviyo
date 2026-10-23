@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { reviewUrlFor } from '@/lib/review-source';
 import { useOutletContext } from 'react-router-dom';
-import { Download, Copy, ExternalLink, Check, Printer } from 'lucide-react';
+import { Download, Copy, ExternalLink, Check } from 'lucide-react';
 import QRCode from 'qrcode';
 import { Alert, Card, Button, PageHeader } from '@/components/ui';
 import { buttonClasses } from '@/components/ui/button-styles';
 import { WhatsAppRequest } from '@/components/dashboard/WhatsAppRequest';
 import { ExtraQrCodes } from '@/components/dashboard/ExtraQrCodes';
-import { ReviewCounterCard } from '@/components/ReviewCounterCard';
+import { QrStandSetup } from '@/components/QrStandSetup';
 import type { Business } from '@/lib/types';
 
 export function QRManagementPage() {
@@ -22,13 +22,13 @@ export function QRManagementPage() {
 
   useEffect(() => {
     if (!reviewUrl) return;
-    QRCode.toDataURL(reviewUrl, { width: 600, margin: 2, color: { dark: '#1e293b', light: '#ffffff' } })
+    QRCode.toDataURL(reviewUrl, { width: 600, margin: 4, color: { dark: '#1e293b', light: '#ffffff' } })
       .then(setQrDataUrl)
       .catch((error) => {
         console.error(error);
         setQrFailed(true);
       });
-    QRCode.toString(reviewUrl, { type: 'svg', margin: 2, color: { dark: '#1e293b', light: '#ffffff' } })
+    QRCode.toString(reviewUrl, { type: 'svg', margin: 4, color: { dark: '#1e293b', light: '#ffffff' } })
       .then(setQrSvg)
       .catch(console.error);
   }, [reviewUrl]);
@@ -123,21 +123,7 @@ export function QRManagementPage() {
           <div className="mt-4 text-xs text-gray-600 break-all text-center max-w-xs select-all">{reviewUrl}</div>
         </Card>
 
-        {/* Printable counter card. Printing shows only this card (see the
-            print rules in index.css), sized for an A5/A4 sheet. */}
-        <Card className="p-5 sm:p-8">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-sm font-semibold text-gray-900">Printable counter card</h2>
-            <Button size="sm" variant="outline" onClick={() => window.print()} disabled={!qrDataUrl}>
-              <Printer className="h-4 w-4" aria-hidden="true" /> Print card
-            </Button>
-          </div>
-          <ReviewCounterCard businessName={business.name} logoUrl={business.logo_url} qrImage={qrDataUrl} />
-          <p className="mt-4 text-xs text-gray-600">
-            Print it and place it at your cash counter, reception desk, or billing area — anywhere customers wait a
-            moment.
-          </p>
-        </Card>
+        <QrStandSetup business={business} qrDataUrl={qrDataUrl} qrSvg={qrSvg} />
       </div>
 
       {/* More ways to reach customers: a WhatsApp message after the visit, and

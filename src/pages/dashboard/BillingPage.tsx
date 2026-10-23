@@ -1,3 +1,4 @@
+import { QrStandSetup } from '@/components/QrStandSetup';
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { ShieldCheck, Receipt } from 'lucide-react';
@@ -303,6 +304,8 @@ export function BillingPage() {
               )}
             </Card>
           )}
+
+          {business && <QrStandSetup business={business} />}
 
           {/* One-time payment. Secondary to AutoPay, so it is compact. */}
           {business && (

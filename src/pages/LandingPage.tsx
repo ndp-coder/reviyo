@@ -10,6 +10,7 @@ import { industries } from '@/config/industries';
 import { TOOL_PATH } from '@/config/seo';
 import { PLANS, formatRupees } from '@/config/plans';
 import { PlanCards } from '@/components/PlanCards';
+import { StandOfferNotice } from '@/components/StandOfferNotice';
 import { buttonClasses } from '@/components/ui/button-styles';
 
 const steps = [
@@ -75,7 +76,7 @@ export function LandingPage() {
 
       <section className="landing-section landing-industries-section"><div className="landing-container landing-industry-layout"><div><p className="landing-section-kicker">Built for the businesses around us</p><h2>Behind every counter,<br />there’s a story.</h2><p className="landing-section-description">Cafés and clinics. Salons and shops. One business, one location, and the people who walk through your door.</p><Link to="/for" className="landing-text-link">Find your industry</Link></div><ul className="landing-industries">{industries.map(industry => <li key={industry.slug}><Link to={`/for/${industry.slug}`}>{industry.plural.replace(/^\w/, c => c.toUpperCase())}</Link></li>)}</ul></div></section>
 
-      <section id="pricing" className="landing-section landing-pricing-section"><div className="landing-container"><div className="landing-pricing-heading"><p className="landing-section-kicker">Simple from the start</p><h2>Your business. Your pace.</h2><p>Every feature, on every plan. One business and one location.<br />Taxes included. No per-review charges.</p></div><div className="landing-plans"><PlanCards /></div><p className="landing-pricing-note">Pay upfront for your chosen term. One-time payments do not renew automatically.</p></div></section>
+      <section id="pricing" className="landing-section landing-pricing-section"><div className="landing-container"><div className="landing-pricing-heading"><p className="landing-section-kicker">Simple from the start</p><h2>Your business. Your pace.</h2><p>Every feature, on every plan. One business and one location.<br />Taxes included. No per-review charges.</p></div><div className="landing-plans"><PlanCards /><StandOfferNotice /></div><p className="landing-pricing-note">Pay upfront for your chosen term. One-time payments do not renew automatically.</p></div></section>
 
       <section id="faq" className="landing-section"><div className="landing-container landing-faq-layout"><div><p className="landing-section-kicker">A little clarity</p><h2>Good questions.<br />Straight answers.</h2><p className="landing-section-description">Everything else you might want to know before putting a QR on your counter.</p><Link to="/contact" className="landing-text-link">Ask us a question</Link></div><div className="landing-faqs">{landingFaqs.map((item, index) => <details key={item.q} open={index === 0}><summary>{item.q}<ChevronDown size={18} aria-hidden="true" /></summary><p>{item.a}</p></details>)}</div></div></section>
 

@@ -78,6 +78,11 @@ export function PrivacyPolicyPage() {
               'To activate your subscription, show your payment history, and meet tax and accounting obligations.',
               'Necessary to provide the service; and legal obligation for retention.',
             ],
+            [
+              'QR stand customization and, when delivery is available, recipient name, mobile number and Indian delivery address',
+              'To prepare your counter card and deliver an included stand. We collect an address only when delivery is available and you explicitly consent. Checkout keeps a copy of the confirmed print name and address for that order. Your address is not public and is not sent in payment gateway notes.',
+              'Your separate delivery consent. The printing partner shown with the delivery form and its courier receive only the details needed to fulfil that order. Printed delivery is not currently available.',
+            ],
           ]}
         />
         <p>

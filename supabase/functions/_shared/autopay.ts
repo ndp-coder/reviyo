@@ -1,14 +1,14 @@
 // Shared AutoPay (Razorpay recurring payments) helpers for Edge Functions.
 //
 // Flow: a ₹1 authorisation payment registers a mandate ("token") with the
-// owner's UPI app or card. That ₹1 is captured and refunded, the 14-day trial
-// starts, and autopay-scheduler later charges the plan price against the token.
+// owner's UPI app or card. That ₹1 is captured and refunded. New plans are paid
+// upfront; autopay-scheduler later renews at the mandate's agreed amount.
 // Docs: https://razorpay.com/docs/api/payments/recurring-payments/
 
 // Keep in step with PLAN_PRICES in create-razorpay-order (a test checks this).
 export const AUTOPAY_PLAN_PRICES: Record<string, number> = {
-  "1_month": 49900, // ₹499 in paise
-  "6_months": 199900, // ₹1,999 in paise
+  "1_month": 29900, // ₹299 in paise
+  "6_months": 175000, // ₹1,750 in paise
   "12_months": 299900, // ₹2,999 in paise
 };
 

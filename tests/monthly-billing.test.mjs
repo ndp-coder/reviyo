@@ -4,11 +4,11 @@ import vm from 'node:vm';
 import { test } from 'node:test';
 import ts from 'typescript';
 
-test('monthly receipts, advance notices and failed-payment emails identify the actual ₹499 plan', () => {
+test('monthly receipts, advance notices and failed-payment emails identify the actual ₹299 plan', () => {
   const source = readFileSync(new URL('../supabase/functions/_shared/email-templates.ts', import.meta.url), 'utf8');
   const exports = {};
   vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports });
-  const base = { businessName: 'Monthly salon', plan: '1_month', amountPaise: 49900 };
+  const base = { businessName: 'Monthly salon', plan: '1_month', amountPaise: 29900 };
   const emails = [
     exports.receiptEmail({ ...base, paymentId: 'pay_monthly', orderId: 'order_monthly', paidAt: '2026-10-02T06:00:00Z', accessUntil: '2026-11-02T06:00:00Z', autopay: true }),
     exports.renewalNoticeEmail({ ...base, chargeOn: '2026-11-02T06:00:00Z' }),
@@ -16,7 +16,7 @@ test('monthly receipts, advance notices and failed-payment emails identify the a
   ];
   for (const email of emails) {
     assert.match(email.text, /Monthly/);
-    assert.match(email.text, /₹499/);
+    assert.match(email.text, /₹299/);
     assert.doesNotMatch(email.text + email.html, /1_month|12 months|₹2,999|undefined/);
   }
 });

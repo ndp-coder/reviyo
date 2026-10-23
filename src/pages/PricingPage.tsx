@@ -4,6 +4,7 @@ import { SiteFooter } from '@/components/SiteFooter';
 import { SkipLink } from '@/components/SkipLink';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { PlanCards } from '@/components/PlanCards';
+import { StandOfferNotice } from '@/components/StandOfferNotice';
 import { TOOL_PATH } from '@/config/seo';
 
 export function PricingPage() {
@@ -28,6 +29,7 @@ export function PricingPage() {
 
           <div className="mt-12">
             <PlanCards headingLevel="h2" />
+            <StandOfferNotice />
           </div>
 
           <div className="mt-10 max-w-3xl space-y-3 text-sm leading-relaxed text-gray-700">

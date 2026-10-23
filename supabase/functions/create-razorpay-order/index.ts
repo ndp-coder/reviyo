@@ -4,8 +4,8 @@
 import { getCorsHeaders, isAllowedBrowserOrigin } from "../_shared/cors.ts";
 
 const PLAN_PRICES: Record<string, { amount: number; label: string }> = {
-  "1_month": { amount: 49900, label: "Monthly plan" }, // ₹499 in paise
-  "6_months": { amount: 199900, label: "6 Months Plan" },   // ₹1,999 in paise
+  "1_month": { amount: 29900, label: "Monthly plan" }, // ₹299 in paise
+  "6_months": { amount: 175000, label: "6 Months Plan" },   // ₹1,750 in paise
   "12_months": { amount: 299900, label: "12 Months Plan" }, // ₹2,999 in paise
 };
 
@@ -113,6 +113,14 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Validate the delivery address before opening a payable Razorpay order.
+    // The snapshot is server-produced; no address enters gateway notes or logs.
+    const { data: standSnapshot, error: standError } = await supabase.rpc("stand_checkout_snapshot", {
+      p_business_id: business.id, p_user_id: user.id,
+    });
+    if (standError) return new Response(JSON.stringify({ error: standError.code === "P0001" ? standError.message : "Could not check stand delivery. Please try again before paying." }), {
+      status: standError.code === "P0001" ? 400 : 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
     const planConfig = PLAN_PRICES[plan];
     const receipt = `rcpt_${Date.now().toString().slice(-8)}_${Math.random().toString(36).substring(2, 6)}`;
 
@@ -161,6 +169,7 @@ Deno.serve(async (req: Request) => {
       amount: rzpOrder.amount,
       currency: rzpOrder.currency,
       status: "created",
+      stand_snapshot: standSnapshot,
       receipt: rzpOrder.receipt,
       metadata: {
         razorpay_order_id: rzpOrder.id,

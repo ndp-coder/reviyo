@@ -194,7 +194,7 @@ check('bypassing the invitation claim still cannot get a partner-prepared trial'
 check('partner monthly and six-month purchases activate exactly once without a commission',async()=>{
   await db.exec(`INSERT INTO auth.users(id,email) VALUES('${PARTNER}','short-plan-partner@example.in');
     INSERT INTO commission_partners(email,name) VALUES('short-plan-partner@example.in','Partner');`);
-  for(const [index,plan,amount] of [[1,'1_month',49900],[2,'6_months',199900]]) {
+  for(const [index,plan,amount] of [[1,'1_month',29900],[2,'6_months',199900]]) {
     const owner=`99999999-9999-4999-8999-00000000000${index}`;
     const email=`short-plan-owner-${index}@example.in`;
     await db.query(`INSERT INTO auth.users(id,email) VALUES($1,$2)`,[owner,email]);
@@ -679,7 +679,7 @@ check('developer directory paginates, searches literally and does not expose pay
   } finally { await db.exec(`UPDATE profiles SET role='user' WHERE id='${U2}'`); }
 });
 
-check('monthly paid activation, ₹499 charges and month-end renewals are idempotent and never earn commission or bonuses', async () => {
+check('monthly paid activation, ₹299 charges and month-end renewals are idempotent and never earn commission or bonuses', async () => {
   const uid = '88888888-8888-8888-8888-888888888888';
   const email = 'monthly-owner@example.in';
   await db.query(`INSERT INTO auth.users(id,email) VALUES($1,$2)`, [uid,email]);
@@ -687,23 +687,23 @@ check('monthly paid activation, ₹499 charges and month-end renewals are idempo
   const referral = (await one(`INSERT INTO commission_referrals(partner_id,email,created_at) VALUES($1,$2,now()-interval '20 days') RETURNING id`, [monthlyPartner,email])).id;
   const biz = (await one(`INSERT INTO businesses(owner_id,name,slug,category) VALUES($1,'Monthly salon','monthly-salon','Salon') RETURNING id`, [uid])).id;
   const mandate = (await one(`INSERT INTO autopay_mandates(business_id,user_id,plan,amount,method,razorpay_customer_id,auth_order_id,consent_version)
-    VALUES($1,$2,'1_month',49900,'upi','cust_monthly','monthly-auth','monthly-v1') RETURNING id`, [biz,uid])).id;
+    VALUES($1,$2,'1_month',29900,'upi','cust_monthly','monthly-auth','monthly-v1') RETURNING id`, [biz,uid])).id;
   const trial = (await one(`SELECT start_autopay_trial('monthly-auth','monthly-auth-payment','monthly-token') AS r`)).r;
   assert.equal(trial.trial_started,false);
   assert.equal(trial.subscription,null);
   assert.equal((await one(`SELECT business_has_active_subscription($1) AS ok`,[biz])).ok,false);
   // The first full payment activates access, not the refundable authorisation.
-  await db.query(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,'monthly-initial','1_month',49900)`,[biz,uid]);
+  await db.query(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,'monthly-initial','1_month',29900)`,[biz,uid]);
   const initial=(await one(`SELECT process_paid_order('monthly-initial','monthly-initial-payment') AS r`)).r;
   assert.equal(initial.subscription.status,'active');
   await db.query(`UPDATE subscriptions SET expires_at=now()+interval '2 days' WHERE business_id=$1`, [biz]);
   const due = await one(`SELECT plan,amount FROM autopay_mandates_due_for_charge() WHERE mandate_id=$1`, [mandate]);
-  assert.deepEqual(due,{plan:'1_month',amount:49900});
+  assert.deepEqual(due,{plan:'1_month',amount:29900});
 
   // A calendar month from January 31 ends on February 28, not March 2.
   await db.query(`UPDATE subscriptions SET expires_at='2027-01-31T12:00:00Z' WHERE business_id=$1`, [biz]);
   const firstOrder = (await one(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount,kind,mandate_id)
-    VALUES($1,$2,'monthly-charge-1','1_month',49900,'autopay',$3) RETURNING id`, [biz,uid,mandate])).id;
+    VALUES($1,$2,'monthly-charge-1','1_month',29900,'autopay',$3) RETURNING id`, [biz,uid,mandate])).id;
   const paid = (await one(`SELECT settle_autopay_charge('monthly-charge-1','monthly-payment-1',true) AS r`)).r;
   assert.equal(Date.parse(paid.subscription.expires_at),Date.parse('2027-02-28T12:00:00Z'));
   assert.equal(paid.subscription.status,'active');
@@ -721,7 +721,7 @@ check('monthly paid activation, ₹499 charges and month-end renewals are idempo
     await db.query(`INSERT INTO auth.users(id,email) VALUES($1,$2)`,[nextUid,nextEmail]);
     await db.query(`INSERT INTO commission_referrals(partner_id,email,created_at) VALUES($1,$2,now()-interval '20 days')`,[monthlyPartner,nextEmail]);
     const nextBiz=(await one(`INSERT INTO businesses(owner_id,name,slug,category) VALUES($1,'Monthly business',$2,'Salon') RETURNING id`,[nextUid,`monthly-${i}`])).id;
-    await db.query(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,$3,'1_month',49900)`,[nextBiz,nextUid,`monthly-once-${i}`]);
+    await db.query(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,$3,'1_month',29900)`,[nextBiz,nextUid,`monthly-once-${i}`]);
     await one(`SELECT process_paid_order($1,$2)`,[`monthly-once-${i}`,`monthly-once-payment-${i}`]);
   }
   assert.equal((await one(`SELECT count(*)::int AS n FROM commission_earnings WHERE partner_id=$1`,[monthlyPartner])).n,0,'ten monthly customers earn neither commission nor bonus');
@@ -741,4 +741,52 @@ check('existing monthly mandates retain their authorised ₹500 amount after new
   await db.query(`UPDATE subscriptions SET expires_at=now()+interval '2 days' WHERE business_id=$1`,[biz]);
   assert.equal((await one(`SELECT amount FROM autopay_mandates_due_for_charge() WHERE mandate_id=$1`,[mandate])).amount,50000);
   await rejects(`SELECT start_autopay_trial(NULL,'payment','token')`,[],/required/,'invalid setup');
+});
+
+check('QR stand delivery stays closed until verified and owner print names are private', async () => {
+  const uid='aabbccdd-1111-2222-3333-444444444444';
+  await db.query(`INSERT INTO auth.users(id,email) VALUES($1,'stand-owner@example.in')`,[uid]);
+  const biz=(await one(`INSERT INTO businesses(owner_id,name,slug,category) VALUES($1,'Stand shop','stand-shop','Shop') RETURNING id`,[uid])).id;
+  const address={recipient:'Test Owner',phone:'9876543210',line1:'12 Test Road',line2:'',city:'Vijayawada',state:'Andhra Pradesh',pincode:'520001',country:'IN'};
+  assert.equal((await one(`SELECT qr_stand_offer() AS offer`)).offer.enabled,false);
+  await asUser(uid,async()=>{
+    await one(`SELECT save_stand_preferences($1,'My shop')`,[biz]);
+    assert.equal((await one(`SELECT printed_name FROM stand_preferences WHERE business_id=$1`,[biz])).printed_name,'My shop');
+    await rejects(`SELECT save_stand_preferences($1,'My shop',$2::jsonb,'2026-10-23.1')`,[biz,JSON.stringify(address)],/not available/,'closed delivery');
+    await rejects(`UPDATE stand_preferences SET printed_name='Forged' WHERE business_id=$1`,[biz],/permission denied/,'direct update');
+    await rejects(`SELECT stand_checkout_snapshot($1,$2)`,[biz,uid],/permission denied/,'browser snapshot');
+  });
+  await asUser(U2,async()=>{
+    assert.equal((await one(`SELECT count(*)::int AS n FROM stand_preferences WHERE business_id=$1`,[biz])).n,0);
+    await rejects(`SELECT save_stand_preferences($1,'Stolen')`,[biz],/owner access/,'cross-business write');
+  });
+  assert.equal((await one(`SELECT stand_checkout_snapshot($1,$2) AS snapshot`,[biz,uid])).snapshot,null);
+  await rejects(`UPDATE stand_delivery_settings SET enabled=true`,[],/check constraint/,'cannot enable without supplier');
+  try {
+    await db.exec(`UPDATE stand_delivery_settings SET enabled=true,supplier_ready=true,supplier_name='Test printer only',approved_unit_cost_paise=20000`);
+    await asUser(uid,async()=>{
+      await rejects(`SELECT save_stand_preferences($1,'My shop',$2::jsonb,NULL)`,[biz,JSON.stringify(address)],/privacy notice/,'unticked consent');
+      await rejects(`SELECT save_stand_preferences($1,'My shop',$2::jsonb,'2026-10-23.1')`,[biz,JSON.stringify({...address,pincode:'000000'})],/six-digit/,'invalid PIN');
+      await one(`SELECT save_stand_preferences($1,'My shop',$2::jsonb,'2026-10-23.1')`,[biz,JSON.stringify(address)]);
+    });
+    const snapshot=(await one(`SELECT stand_checkout_snapshot($1,$2) AS snapshot`,[biz,uid])).snapshot;
+    assert.equal(snapshot.printed_name,'My shop');
+    await db.query(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount,stand_snapshot) VALUES($1,$2,'stand-first','1_month',29900,$3::jsonb)`,[biz,uid,JSON.stringify(snapshot)]);
+    assert.equal((await one(`SELECT count(*)::int AS n FROM stand_orders WHERE business_id=$1`,[biz])).n,0,'no shipping for an unpaid order');
+    // Later edits must not change the address already attached to checkout.
+    await asUser(uid,()=>one(`SELECT save_stand_preferences($1,'New card name')`,[biz]));
+    await one(`SELECT process_paid_order('stand-first','stand-payment')`);
+    const job=await one(`SELECT printed_name,delivery_address,status FROM stand_orders WHERE business_id=$1`,[biz]);
+    assert.equal(job.printed_name,'My shop'); assert.deepEqual(job.delivery_address,address); assert.equal(job.status,'queued');
+    await one(`SELECT process_paid_order('stand-first','stand-payment')`);
+    await db.query(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount,stand_snapshot) VALUES($1,$2,'stand-renew','6_months',175000,$3::jsonb)`,[biz,uid,JSON.stringify(snapshot)]);
+    await one(`SELECT process_paid_order('stand-renew','stand-renew-payment')`);
+    assert.equal((await one(`SELECT count(*)::int AS n FROM stand_orders WHERE business_id=$1`,[biz])).n,1,'retry and renewal never create a second stand');
+    assert.equal((await one(`SELECT stand_checkout_snapshot($1,$2) AS snapshot`,[biz,uid])).snapshot,null);
+    await asUser(uid,()=>rejects(`SELECT save_stand_preferences($1,'Changed',$2::jsonb,'2026-10-23.1')`,[biz,JSON.stringify(address)],/already confirmed/,'frozen delivery'));
+    await asUser(U2,async()=>assert.equal((await one(`SELECT count(*)::int AS n FROM stand_orders WHERE business_id=$1`,[biz])).n,0));
+    await db.exec(`SET ROLE anon`);
+    try { await rejects(`SELECT * FROM stand_orders`,[],/permission denied/,'anonymous address access'); }
+    finally { await db.exec(`RESET ROLE`); }
+  } finally { await db.exec(`UPDATE stand_delivery_settings SET enabled=false,supplier_ready=false`); }
 });
