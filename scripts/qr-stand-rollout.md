@@ -18,7 +18,9 @@ Use **Qikink print-on-demand dropshipping**, at its published standard rates. Th
 
 The owner completed account signup. The signed-in dashboard uses their Google account (`ndigitalsolutions9`), rather than the initially prepared support mailbox. Onboarding is complete for an existing store using a custom website and its first fulfilment provider. Wallet balance was ₹0; no payment or real order was made.
 
-With explicit owner confirmation, a sandbox secret was generated and `QIKINK_CLIENT_ID` and `QIKINK_SANDBOX_SECRET` were saved in Supabase Edge secrets. No credentials are in the repository. The live-access request was submitted successfully on 23 October 2026 after the documented API example passed. Qikink's confirmation says an email response within three working days once approved. Live credentials are not yet available.
+With explicit owner confirmation, a sandbox secret was generated and `QIKINK_CLIENT_ID` and `QIKINK_SANDBOX_SECRET` were saved in Supabase Edge secrets. No credentials are in the repository. The live-access request was submitted on 23 October 2026 after the documented API example passed. Qikink approved it the same day. A live secret was generated and saved as `QIKINK_LIVE_SECRET` in Supabase Edge secrets; the temporary browser copy was cleared. No credential values are in source, screenshots or logs.
+
+The server-only `qikink-live-check` function is deployed. It accepts only the existing Supabase server secret and only `{ "action": "connection" }`; it cannot place orders or accept customer details. Gateway legacy JWT verification is off because the function verifies the server secret itself. Its real production test returned **HTTP 200, environment live, authenticated true**. Proof: local `output/qikink-live-connection-success.png`. Generate its dashboard bundle with `node scripts/bundle-qikink-sandbox-check.mjs qikink-live-check`. This proves authentication, not stand order acceptance, printing or shipping. Avoid repeatedly running diagnostics once a dispatch worker uses Qikink tokens, because issuing a token invalidates the previous one.
 
 The API client and developer/server-only sandbox diagnostic are implemented, tested and deployed. JWT gateway verification is off because the function verifies either the existing server secret or a signed-in admin itself; anonymous and ordinary owner requests are rejected. Generate the single-file dashboard deployment with `node scripts/bundle-qikink-sandbox-check.mjs` (the generated output contains no credentials). A sample print PNG and illustrative mockup are publicly hosted. Designer file upload remains blocked by Chrome's file URL permission, but URL-based API artwork does not require that upload.
 
@@ -34,7 +36,7 @@ The public website's API link is outdated. The signed-in dashboard links to the 
 
 Account catalogue verified: **UAcryDiSt-Wh-NA**, white standard acrylic display stand, front placement, Accessories printing (type 5). Design Guidelines confirm **4 × 6 inches**. The account lists ₹120 base plus printing, 18% tax and 150g shipping weight; the designer showed ₹141.60 before the design and shipping. None of these is the final landed price. Verify the final cost before enabling fulfilment.
 
-Live dispatch remains disabled until sandbox validation, live credentials, authorized funding, landed cost, final artwork/sample validation and the complete dispatch/reconciliation worker exist.
+Live dispatch remains disabled until acrylic-order validation, authorized funding, landed cost, final artwork/sample validation and the complete dispatch/reconciliation worker exist. Live credentials and authentication are now confirmed. The acrylic designer's actual visible radio value was checked again: Accessories is print type **5**, and Design Guidelines remain **4 × 6 inches**. The sandbox rejection therefore must not be “fixed” by guessing another print type.
 
 ## Earlier supplier enquiries
 

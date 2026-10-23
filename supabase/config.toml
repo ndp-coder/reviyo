@@ -39,3 +39,7 @@ verify_jwt = false
 [functions.qikink-sandbox-check]
 # getUser verifies the caller; a server-side profile check requires admin role.
 verify_jwt = false
+
+[functions.qikink-live-check]
+# Only the existing server secret is accepted inside the function.
+verify_jwt = false
