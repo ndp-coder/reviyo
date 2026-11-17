@@ -77,14 +77,15 @@ await db.exec(`INSERT INTO auth.users (id, email) VALUES ('${U1}', 'a@x.in'), ('
 await db.exec(`INSERT INTO profiles (id, email) VALUES ('${U1}','a@x.in'), ('${U2}','b@x.in') ON CONFLICT DO NOTHING;`);
 });
 
-check('cash and Razorpay delivery setups start from the proven receipt date once', async () => {
+check('paid QR stands open the review flow before the plan starts on the receipt date', async () => {
   const admin = '65656565-0000-0000-0000-000000000001';
   await q(`INSERT INTO auth.users(id,email) VALUES($1,'delivery-admin@example.in')`, [admin]);
   await q(`UPDATE profiles SET role='admin' WHERE id=$1`, [admin]);
   const address = { recipient: 'Cafe owner', phone: '9876543210', line1: '1 Main Road', city: 'Vijayawada', state: 'Andhra Pradesh', pincode: '520001', country: 'IN' };
-  const save = `SELECT save_admin_delivery_setup($1,'Cafe','Cafe',NULL,NULL,ARRAY['Service'],$2,$3,$4,$5,$6) AS id`;
+  const googleLink = 'https://search.google.com/local/writereview?placeid=test-cafe';
+  const save = `SELECT save_admin_delivery_setup($1,'Cafe','Cafe','${googleLink}',NULL,ARRAY['Service'],$2,$3,$4,$5,$6) AS id`;
   const update = `SELECT update_admin_qr_delivery($1,$2,$3)`;
-  const claim = `SELECT claim_admin_business_setup($1,'v1','Cafe','owner-cafe','Cafe',NULL,NULL,NULL,ARRAY['New topic']) AS business`;
+  const claim = `SELECT claim_admin_business_setup($1,'v1','Cafe','owner-cafe','Cafe','${googleLink}',NULL,NULL,ARRAY['New topic']) AS business`;
   const readDraft = `SELECT my_admin_business_setup($1) AS draft`;
   const { today } = await one(`SELECT to_char(now() AT TIME ZONE 'Asia/Kolkata','YYYY-MM-DD') AS today`);
   const backfilled = await one(`SELECT b.owner_id, b.slug IS NOT NULL AS has_slug, s.claimed_at, o.user_id, o.amount, o.kind
@@ -117,6 +118,8 @@ check('cash and Razorpay delivery setups start from the proven receipt date once
       ({ business } = await asUser(owner, () => one(claim, [id])));
       assert.equal((await one(`SELECT stand_checkout_snapshot($1,$2) AS snapshot`, [business.id,owner])).snapshot,null);
       await q(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,'order_delivery','1_month',29900)`,[business.id,owner]);
+      assert.equal((await one(`SELECT business_accepts_public_reviews($1) AS allowed`,[business.id])).allowed,false);
+      await asAnon(() => rejects(`SELECT * FROM create_review_session($1)`,[business.slug],/Business not found/,'unpaid online checkout'));
       assert.equal((await one(`SELECT process_paid_order('order_delivery','pay_delivery') AS result`)).result.awaiting_delivery,true);
       assert.equal((await one(`SELECT process_paid_order('order_delivery','pay_delivery') AS result`)).result.already_processed,true);
       await rejects(`SELECT stand_checkout_snapshot($1,$2)`,[business.id,owner],/Payment is already recorded/,'duplicate checkout');
@@ -124,6 +127,13 @@ check('cash and Razorpay delivery setups start from the proven receipt date once
     assert.deepEqual(await q(`SELECT kind,user_id FROM payment_orders WHERE business_id=$1 AND status='paid'`,[business.id]),
       [{kind:cash ? 'cash' : 'one_time',user_id:cash ? null : owner}]);
     assert.equal((await one(`SELECT count(*)::int AS n FROM subscriptions WHERE business_id=$1`,[business.id])).n,0);
+    assert.equal((await one(`SELECT business_has_active_subscription($1) AS active`,[business.id])).active,false);
+    assert.equal((await one(`SELECT business_accepts_public_reviews($1) AS allowed`,[business.id])).allowed,true);
+    await asAnon(async () => {
+      assert.equal((await one(`SELECT business_id,business_google_review_url FROM create_review_session($1)`,[business.slug])).business_google_review_url,googleLink);
+      assert.deepEqual(await q(`SELECT * FROM get_lapsed_business_review_link($1)`,[business.slug]),[]);
+      await rejects(`SELECT business_accepts_public_reviews($1)`,[business.id],/permission denied/,'server-only access lookup');
+    });
     await asUser(cash ? U1 : owner, () => rejects(update,[id,'Courier ref',null],/Developer access required/,'non-admin dispatch'));
     await asUser(admin, () => rejects(update,[id,null,today],/from dispatch through today/,'delivery before dispatch'));
     await asUser(admin, () => one(update,[id,'Courier ref',null]));
@@ -133,6 +143,7 @@ check('cash and Razorpay delivery setups start from the proven receipt date once
     const subscription = await one(`SELECT status,starts_at = ($2::date::timestamp AT TIME ZONE 'Asia/Kolkata') AS correct_start,
       expires_at = (($2::date + interval '1 month') AT TIME ZONE 'Asia/Kolkata') AS correct_end FROM subscriptions WHERE business_id=$1`,[business.id,today]);
     assert.deepEqual(subscription,{status:'active',correct_start:true,correct_end:true});
+    assert.equal((await one(`SELECT business_accepts_public_reviews($1) AS allowed`,[business.id])).allowed,true);
     if (cash) {
       await db.exec(`SET ROLE anon`);
       try {
