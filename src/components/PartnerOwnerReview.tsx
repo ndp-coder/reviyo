@@ -31,7 +31,7 @@ export function PartnerOwnerReview(props: Props) {
     <div>
       <p className="break-all text-xs font-medium text-brand-800">Prepared for {props.email}</p>
       <h1 className="mt-2 text-xl font-bold text-gray-900">Check your business details</h1>
-      <p className="mt-2 text-sm text-gray-600">Your partner has done the setup for you. Check or edit the details below, then choose a plan and pay securely. Your review page activates after payment.</p>
+      <p className="mt-2 text-sm text-gray-600">Check or edit the prepared details below, then choose a plan and pay securely. Your review page activates after payment.</p>
     </div>
     <fieldset disabled={props.busy} className="space-y-6">
       <legend className="sr-only">Your business setup</legend>

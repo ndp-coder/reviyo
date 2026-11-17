@@ -142,9 +142,12 @@ test('anonymous clients cannot select review session data directly', async () =>
 test('onboarding uses the transactional setup function', async () => {
   const onboarding = await read('src/pages/onboarding/OnboardingPage.tsx');
 
-  assert.match(onboarding, /\.rpc\(partnerDraft \? 'claim_partner_business' : 'create_business_with_defaults'/);
+  assert.match(onboarding, /'claim_admin_business_setup'\s*:\s*preparedDraft \? 'claim_partner_business' : 'create_business_with_defaults'/);
+  assert.match(onboarding, /\.rpc\(setupFunction,/);
   const partnerSetup = await read('supabase/migrations/20261001160000_partner_business_setup.sql');
+  const adminSetup = await read('supabase/migrations/20261117120423_admin_business_payment_setups.sql');
   assert.match(partnerSetup, /v_result := create_business_with_defaults\(/);
+  assert.match(adminSetup, /v_result := create_business_with_defaults\(/);
   assert.doesNotMatch(onboarding, /\.from\('subscriptions'\)\.insert/);
 });
 

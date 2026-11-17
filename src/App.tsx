@@ -1,7 +1,10 @@
 import { lazy, Suspense, type ReactNode } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { Spinner } from '@/components/ui';
+import { buttonClasses } from '@/components/ui/button-styles';
+import { paymentSetupPath, readPaymentSetup } from '@/lib/payment-setup-link';
+import { AuthLayout } from '@/pages/auth/AuthLayout';
 import { RouteMeta } from '@/components/RouteMeta';
 import { ScrollToTop } from '@/components/ScrollToTop';
 import { PageViewCounter } from '@/components/PageViewCounter';
@@ -64,15 +67,29 @@ function AdminRoute({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function OnboardingRoute({ children }: { children: ReactNode }) {
+function OnboardingRoute({ children, paymentSetup }: { children: ReactNode; paymentSetup: string | null }) {
   const { user, profile, loading } = useAuth();
   if (loading) return <PageLoader />;
+  if (!user && paymentSetup) return (
+    <AuthLayout>
+      <div className="w-full max-w-sm space-y-4">
+        <h1 className="text-2xl font-bold text-gray-900">Pay for your Reviyo plan</h1>
+        <p className="text-sm text-gray-700">Use the owner email given to Reviyo to open your prepared business setup and pay securely through Razorpay.</p>
+        <div className="flex flex-wrap gap-3">
+          <Link to={paymentSetupPath('/login', paymentSetup)} className={buttonClasses()}>Sign in</Link>
+          <Link to={paymentSetupPath('/signup', paymentSetup)} className={buttonClasses({ variant: 'outline' })}>Create account</Link>
+        </div>
+      </div>
+    </AuthLayout>
+  );
   if (!user) return <Navigate to="/login" replace />;
   if (profile?.role === 'admin') return <Navigate to="/admin" replace />;
   return <>{children}</>;
 }
 
 function App() {
+  const { search } = useLocation();
+  const paymentSetup = readPaymentSetup(search);
   return (
     <>
     <RouteMeta />
@@ -99,8 +116,8 @@ function App() {
       <Route path="/contact" element={<ContactPage />} />
 
       {/* Auth routes */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
+      <Route path="/login" element={<LoginPage paymentSetup={paymentSetup} />} />
+      <Route path="/signup" element={<SignupPage paymentSetup={paymentSetup} />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
 
@@ -109,7 +126,7 @@ function App() {
 
       {/* Onboarding */}
       <Route path="/onboarding" element={
-        <OnboardingRoute><OnboardingPage /></OnboardingRoute>
+        <OnboardingRoute paymentSetup={paymentSetup}><OnboardingPage key={paymentSetup ?? 'onboarding'} paymentSetup={paymentSetup} /></OnboardingRoute>
       } />
 
       {/* Dashboard */}

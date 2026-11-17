@@ -18,7 +18,7 @@ await db.exec(`
   CREATE ROLE service_role NOLOGIN BYPASSRLS;
   GRANT anon, authenticated, service_role TO postgres;
   CREATE SCHEMA auth;
-  CREATE TABLE auth.users (id uuid PRIMARY KEY, email text, raw_user_meta_data jsonb DEFAULT '{}'::jsonb, encrypted_password text DEFAULT 'fixture-password-hash');
+  CREATE TABLE auth.users (id uuid PRIMARY KEY, email text, raw_user_meta_data jsonb DEFAULT '{}'::jsonb, encrypted_password text DEFAULT 'fixture-password-hash', email_confirmed_at timestamptz DEFAULT now());
   CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
     $$ SELECT nullif(current_setting('app.uid', true), '')::uuid $$;
   GRANT USAGE ON SCHEMA auth TO anon, authenticated, service_role;
@@ -189,6 +189,51 @@ check('bypassing the invitation claim still cannot get a partner-prepared trial'
   await db.exec(`DELETE FROM partner_business_drafts WHERE id='${draft}'; DELETE FROM commission_referrals WHERE email='bypass-owner@example.in';`);
   assert.equal((await one(`SELECT trial_eligible FROM businesses WHERE id=$1`,[biz.id])).trial_eligible,false,'deleting a referral does not restore trial eligibility');
   await db.exec(`DELETE FROM businesses WHERE id='${biz.id}'; DELETE FROM auth.users WHERE id='${owner}'; DELETE FROM commission_partners WHERE email='bypass-partner@example.in'; DELETE FROM auth.users WHERE id='${PARTNER}';`);
+});
+
+check('only an admin prepares a payment QR setup, and only its verified owner can claim and pay for it', async () => {
+  const admin = '91919191-9191-4191-8191-919191919191';
+  const owner = '92929292-9292-4292-8292-929292929292';
+  const email = 'admin-qr-owner@example.in';
+  await q(`INSERT INTO auth.users(id,email,email_confirmed_at) VALUES($1,'admin-qr-operator@example.in',now()),($2,$3,NULL)`, [admin, owner, email]);
+  await q(`UPDATE profiles SET role='admin' WHERE id=$1`, [admin]);
+
+  const save = `SELECT save_admin_business_setup($1,$2,'Cafe',NULL,NULL,ARRAY['Coffee']) AS id`;
+  await asUser(U1, () => rejects(save, [email, 'New cafe'], /Developer access required/, 'only admins can save'));
+  const { id } = await asUser(admin, () => one(save, [` ${email.toUpperCase()} `, 'New cafe']));
+  assert.equal((await asUser(admin, () => one(save, [email, 'Edited cafe']))).id, id);
+  assert.equal((await asUser(admin, () => one(`SELECT name FROM admin_business_setups WHERE id=$1`, [id]))).name, 'Edited cafe');
+  assert.equal((await asUser(U1, () => one(`SELECT count(*)::int AS count FROM admin_business_setups`))).count, 0);
+  assert.equal((await one(`SELECT count(*)::int AS count FROM commission_referrals WHERE email=$1`, [email])).count, 0);
+
+  const lookup = `SELECT my_admin_business_setup($1) AS setup`;
+  const claim = `SELECT claim_admin_business_setup($1,$2,'My cafe','admin-qr-owner-cafe','Cafe',NULL,NULL,NULL,ARRAY['Coffee']) AS business`;
+  await db.exec('SET ROLE anon');
+  try { await rejects(lookup, [id], /permission denied/, 'anonymous QR access'); }
+  finally { await db.exec('RESET ROLE'); }
+  assert.equal((await asUser(U1, () => one(lookup, [id]))).setup, null);
+  assert.equal((await asUser(owner, () => one(lookup, [id]))).setup, null);
+  await asUser(owner, () => rejects(claim, [id, 'v1'], /No pending setup/, 'unverified email'));
+  await q(`UPDATE auth.users SET email_confirmed_at=now() WHERE id=$1`, [owner]);
+  assert.equal((await asUser(owner, () => one(lookup, [id]))).setup.name, 'Edited cafe');
+  assert.equal((await asUser(owner, () => one(lookup, [null]))).setup, null);
+  await asUser(U1, () => rejects(claim, [id, 'v1'], /No pending setup/, 'different email'));
+  await asUser(owner, () => rejects(claim, [id, null], /Accept the terms/, 'missing consent'));
+
+  const { business } = await asUser(owner, () => one(claim, [id, 'owner-terms-v1']));
+  assert.equal(business.owner_id, owner);
+  assert.equal(business.trial_eligible, false);
+  assert.equal((await one(`SELECT terms_consent_version FROM profiles WHERE id=$1`, [owner])).terms_consent_version, 'owner-terms-v1');
+  assert.equal((await asUser(owner, () => one(lookup, [id]))).setup.business_id, business.id);
+  await asUser(owner, () => rejects(claim, [id, 'v1'], /No pending setup/, 'duplicate claim'));
+  await asUser(admin, () => rejects(save, [email, 'Other cafe'], /has not set up a business/, 'claimed setup cannot be overwritten'));
+  assert.equal((await one(`SELECT business_has_active_subscription($1) AS active`, [business.id])).active, false);
+
+  await q(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,'admin-qr-order','12_months',299900)`, [business.id, owner]);
+  await one(`SELECT process_paid_order('admin-qr-order','admin-qr-capture')`);
+  assert.equal((await one(`SELECT business_has_active_subscription($1) AS active`, [business.id])).active, true);
+  await q(`DELETE FROM auth.users WHERE id=$1 OR id=$2`, [owner, admin]);
+  assert.equal(await one(`SELECT id FROM admin_business_setups WHERE id=$1`, [id]), undefined);
 });
 
 check('partner monthly and six-month purchases activate exactly once without a commission',async()=>{

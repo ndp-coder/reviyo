@@ -23,7 +23,6 @@ import { GoogleReviewLinkHelp } from '@/components/GoogleReviewLinkHelp';
 import { PayOncePlans, type PaymentFeedback } from '@/components/PayOncePlans';
 import { paymentGate } from '@/lib/payment-gate';
 import { legal } from '@/config/legal';
-import { ConsentCheckbox } from '@/components/ConsentCheckbox';
 import { PartnerOwnerReview } from '@/components/PartnerOwnerReview';
 import { InvitationPasswordSetup } from '@/components/InvitationPasswordSetup';
 import { parsePartnerTopics, validatePartnerDetails } from '@/lib/partner-setup';
@@ -60,7 +59,7 @@ function slugify(text: string): string {
     .replace(/^-|-$/g, '');
 }
 
-export function OnboardingPage() {
+export function OnboardingPage({ paymentSetup }: { paymentSetup?: string | null } = {}) {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   // Signing in always lands here; owners who already have a business are sent
@@ -69,9 +68,10 @@ export function OnboardingPage() {
   const [checkingExisting, setCheckingExisting] = useState(true);
   const [passwordRequired, setPasswordRequired] = useState(false);
   const [passwordCheck, setPasswordCheck] = useState(0);
-  const [partnerDraft, setPartnerDraft] = useState<string | null>(null);
+  const [preparedDraft, setPreparedDraft] = useState<{ id: string; source: 'admin' | 'partner' } | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [checkFailed, setCheckFailed] = useState(false);
+  const [setupUnavailable, setSetupUnavailable] = useState(false);
   const [step, setStep] = useState<number>(STEP.business);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
@@ -102,7 +102,7 @@ export function OnboardingPage() {
     let cancelled = false;
     async function checkExistingBusiness() {
       if (!user) return;
-      setCheckingExisting(true); setCheckFailed(false);
+      setCheckingExisting(true); setCheckFailed(false); setSetupUnavailable(false);
       const { data: needsPassword, error: passwordError } = await supabase.rpc('owner_setup_password_required');
       if (cancelled) return;
       if (passwordError || typeof needsPassword !== 'boolean') throw new Error('Could not check invitation access');
@@ -114,8 +114,14 @@ export function OnboardingPage() {
         .eq('owner_id', user.id)
         .maybeSingle();
       if (cancelled) return;
-      if (businessError) {
-        setCheckFailed(true);
+      if (businessError) throw businessError;
+      const { data: adminDraft, error: adminError } = paymentSetup
+        ? await supabase.rpc('my_admin_business_setup', { p_setup: paymentSetup })
+        : { data: null, error: null };
+      if (cancelled) return;
+      if (adminError) throw adminError;
+      if (paymentSetup && (!adminDraft || adminDraft.business_id !== (data?.id ?? null))) {
+        setSetupUnavailable(true);
         setCheckingExisting(false);
         return;
       }
@@ -130,13 +136,14 @@ export function OnboardingPage() {
         setBusiness(existing);
         setBusinessName(existing.name);
         setStep(STEP.trial);
-      }
-      if (!data) {
-        const { data: draft, error: draftError } = await supabase.rpc('my_partner_business_draft');
+      } else {
+        const { data: draft, error: draftError } = adminDraft
+          ? { data: adminDraft, error: null }
+          : await supabase.rpc('my_partner_business_draft');
         if (cancelled) return;
-        if (draftError) { setCheckFailed(true); setCheckingExisting(false); return; }
+        if (draftError) throw draftError;
         if (draft) {
-          setPartnerDraft(draft.id);
+          setPreparedDraft({ id: draft.id, source: adminDraft ? 'admin' : 'partner' });
           setBusinessName(draft.name);
           setCategory(isPresetCategory(draft.category) ? draft.category : OTHER_CATEGORY);
           setCustomCategory(isPresetCategory(draft.category) ? '' : draft.category);
@@ -154,7 +161,7 @@ export function OnboardingPage() {
     return () => {
       cancelled = true;
     };
-  }, [user, navigate, passwordCheck]);
+  }, [user, navigate, passwordCheck, paymentSetup]);
 
   // Auto-suggest topics when category changes
   useEffect(() => {
@@ -187,12 +194,11 @@ export function OnboardingPage() {
 
   const effectiveCategory = category === OTHER_CATEGORY ? customCategory.trim() : category;
 
-  // Partner invitations shorten the details steps; every owner pays to activate.
-  const partnerSetup = Boolean(partnerDraft);
-  const visibleSteps = partnerSetup ? [STEP.topics, STEP.trial, STEP.qr] : STEPS.map((_, i) => i);
+  const preparedSetup = Boolean(preparedDraft || paymentSetup);
+  const visibleSteps = preparedSetup ? [STEP.topics, STEP.trial, STEP.qr] : STEPS.map((_, i) => i);
   const visibleStep = visibleSteps.indexOf(step);
   const totalSteps = visibleSteps.length;
-  const stepLabel = (i: number) => (partnerSetup && i === STEP.topics ? 'Review details' : STEPS[i].label);
+  const stepLabel = (i: number) => (preparedSetup && i === STEP.topics ? 'Review details' : STEPS[i].label);
 
   const reviewUrl = business ? reviewUrlFor(business.slug) : '';
 
@@ -206,20 +212,22 @@ export function OnboardingPage() {
 
   const handleCreateBusiness = useCallback(async (): Promise<boolean> => {
     if (!user || savingRef.current) return false;
-    if (partnerDraft && !acceptedTerms) { setError('Accept the terms and privacy notice to create your business.'); return false; }
+    if (preparedDraft && !acceptedTerms) { setError('Accept the terms and privacy notice to create your business.'); return false; }
     savingRef.current = true;
     setSaving(true);
     setError(null);
     try {
-      const { data: bizData, error: bizError } = await supabase.rpc(partnerDraft ? 'claim_partner_business' : 'create_business_with_defaults', {
-        ...(partnerDraft ? { p_draft: partnerDraft, p_consent_version: legal.consentVersion } : {}),
+      const setupFunction = preparedDraft?.source === 'admin' ? 'claim_admin_business_setup'
+        : preparedDraft ? 'claim_partner_business' : 'create_business_with_defaults';
+      const { data: bizData, error: bizError } = await supabase.rpc(setupFunction, {
+        ...(preparedDraft ? { p_draft: preparedDraft.id, p_consent_version: legal.consentVersion } : {}),
         p_name: businessName.trim(),
         p_slug: slugify(businessName),
         p_category: effectiveCategory,
         p_google_review_url: googleReviewUrl.trim() ? directReviewUrl(googleReviewUrl) : null,
         p_logo_url: logoUrl || null,
         p_welcome_message: `How was your experience at ${businessName.trim()}?`,
-        p_topics: partnerDraft ? parsePartnerTopics(topics.join('\n')) : topics.map((t) => t.trim()).filter(Boolean),
+        p_topics: preparedDraft ? parsePartnerTopics(topics.join('\n')) : topics.map((t) => t.trim()).filter(Boolean),
       });
 
       if (bizError || !bizData) {
@@ -242,7 +250,7 @@ export function OnboardingPage() {
       savingRef.current = false;
       setSaving(false);
     }
-  }, [user, businessName, effectiveCategory, googleReviewUrl, logoUrl, topics, partnerDraft, acceptedTerms]);
+  }, [user, businessName, effectiveCategory, googleReviewUrl, logoUrl, topics, preparedDraft, acceptedTerms]);
 
   const nextStep = async () => {
     if (step === STEP.google) {
@@ -253,7 +261,7 @@ export function OnboardingPage() {
       if (urlProblem) return;
     }
     if (step === STEP.topics) {
-      if (partnerSetup) {
+      if (preparedSetup) {
         const problem = validatePartnerDetails(businessName, effectiveCategory, googleReviewUrl, parsePartnerTopics(topics.join('\n')));
         if (problem) { setError(problem); return; }
       }
@@ -329,13 +337,13 @@ export function OnboardingPage() {
     }
     if (step === STEP.google) return true; // Google URL is optional
     if (step === STEP.logo) return true; // Logo is optional
-    if (step === STEP.topics) return partnerSetup ? acceptedTerms && Boolean(businessName.trim()) && Boolean(effectiveCategory) && parsePartnerTopics(topics.join('\n')).length > 0 : topics.length > 0;
+    if (step === STEP.topics) return preparedSetup ? acceptedTerms && Boolean(businessName.trim()) && Boolean(effectiveCategory) && parsePartnerTopics(topics.join('\n')).length > 0 : topics.length > 0;
     return true;
   };
 
   // Says why Continue is disabled, instead of leaving a greyed-out button.
   const blockedReason = (() => {
-    if (partnerSetup && step === STEP.topics) {
+    if (preparedSetup && step === STEP.topics) {
       if (!businessName.trim()) return 'Enter your business name to continue.';
       if (!effectiveCategory) return 'Enter your business category to continue.';
       if (!parsePartnerTopics(topics.join('\n')).length) return 'Add at least one review topic to continue.';
@@ -362,6 +370,15 @@ export function OnboardingPage() {
       </div>
     );
   }
+
+  if (setupUnavailable) return (
+    <main id="main-content" className="mx-auto max-w-md space-y-4 px-5 py-12">
+      <Alert variant="warning" title="Payment setup unavailable">
+        Sign in with the owner email given to Reviyo, or ask Reviyo to check the payment link.
+      </Alert>
+      <Button variant="outline" onClick={() => void signOut()}>Sign out</Button>
+    </main>
+  );
 
   if (checkFailed) {
     return (
@@ -404,8 +421,7 @@ export function OnboardingPage() {
         </div>
         <ol aria-label="Setup progress" className="mx-auto hidden max-w-2xl list-none items-center gap-2 p-0 sm:flex">
           {visibleSteps.map((i, position) => {
-            const { label, icon } = STEPS[i];
-            const Icon = partnerSetup && i === STEP.trial ? CreditCard : icon;
+            const { label, icon: Icon } = STEPS[i];
             const isActive = i === step;
             const isDone = i < step;
             return (
@@ -579,7 +595,7 @@ export function OnboardingPage() {
             </Card>
           )}
 
-          {step === STEP.topics && partnerSetup && <PartnerOwnerReview
+          {step === STEP.topics && preparedSetup && <PartnerOwnerReview
             email={user?.email ?? ''} name={businessName} category={getCategoryLabel(effectiveCategory)} google={googleReviewUrl} logo={logoUrl} topics={topics}
             accepted={acceptedTerms} busy={saving || logoPreparing} urlError={urlError} logoError={logoError}
             onName={setBusinessName} onCategory={(value) => { setCategory(OTHER_CATEGORY); setCustomCategory(value); }}
@@ -588,7 +604,7 @@ export function OnboardingPage() {
             onTopics={setTopics} onAccepted={setAcceptedTerms}
           />}
 
-          {step === STEP.topics && !partnerSetup && (
+          {step === STEP.topics && !preparedSetup && (
             <Card className="p-5 sm:p-8">
               <h1 className="text-xl font-bold text-gray-900">Choose review topics</h1>
               <p className="mt-1.5 text-sm text-gray-600">
@@ -654,10 +670,6 @@ export function OnboardingPage() {
                   remaining={MAX_TOPICS - topics.length}
                 />
               </div>
-              {partnerDraft && <div className="mt-5 space-y-3">
-                <p className="text-sm text-gray-600">Your partner prepared these details. Check them before creating your business. We store your email to run your account and your business details to build your review page.</p>
-                <ConsentCheckbox checked={acceptedTerms} onChange={setAcceptedTerms}>I agree to the <Link to="/terms" target="_blank" className="underline">Terms and conditions</Link> and <Link to="/privacy" target="_blank" className="underline">Privacy notice</Link>.</ConsentCheckbox>
-              </div>}
             </Card>
           )}
 
@@ -725,7 +737,7 @@ export function OnboardingPage() {
         {step < STEP.trial && (
           <div className="mt-6">
             <div className="flex items-center justify-between gap-3">
-              {!partnerSetup && <Button variant="ghost" onClick={prevStep} disabled={step === 0 || saving || logoPreparing}>
+              {!preparedSetup && <Button variant="ghost" onClick={prevStep} disabled={step === 0 || saving || logoPreparing}>
                 <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
               </Button>}
               <div className="flex items-center gap-2">
@@ -743,7 +755,7 @@ export function OnboardingPage() {
                   </Button>
                 )}
                 <Button onClick={nextStep} disabled={!canProceed() || saving || logoPreparing} loading={saving} aria-describedby={blockedReason ? 'onboarding-blocked' : undefined}>
-                  {step === STEP.topics ? partnerSetup ? 'Save and choose a plan' : 'Create business' : `Next: ${stepLabel(step + 1)}`}{' '}
+                  {step === STEP.topics ? preparedSetup ? 'Save and choose a plan' : 'Create business' : `Next: ${stepLabel(step + 1)}`}{' '}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>

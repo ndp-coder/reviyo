@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { useNavigate } from 'react-router-dom';
 import type { Session, User } from '@supabase/supabase-js';
 import { clearDashboardStatsCache } from '@/lib/dashboard-stats-cache';
+import { paymentSetupPath } from '@/lib/payment-setup-link';
 import type { Profile } from '@/lib/types';
 
 interface AuthContextValue {
@@ -12,7 +13,8 @@ interface AuthContextValue {
   signUp: (
     email: string,
     password: string,
-    termsConsentVersion: string
+    termsConsentVersion: string,
+    paymentSetup?: string | null,
   ) => Promise<{ error: string | null; needsConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   /** Emails a one-time sign-in code (from support@reviyo.in) to an existing account. */
@@ -140,7 +142,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signUp(
     email: string,
     password: string,
-    termsConsentVersion: string
+    termsConsentVersion: string,
+    paymentSetup?: string | null,
   ) {
     // The consent version travels in the signup metadata and is written onto
     // the profile row by the handle_new_user() trigger, so the account carries
@@ -150,10 +153,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
       options: {
-        // The confirmation email must bring the new owner straight into setup,
-        // not back to the marketing homepage. This URL has to be listed under
-        // Auth > URL Configuration > Redirect URLs.
-        emailRedirectTo: `${window.location.origin}/onboarding`,
+        // Return to the owner setup, keeping the request ID if they used a payment QR.
+        emailRedirectTo: `${window.location.origin}${paymentSetupPath('/onboarding', paymentSetup)}`,
         data: {
           terms_consent_version: termsConsentVersion,
         },
@@ -261,7 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         profile,
         loading,
-        signUp: (email, password, consent) => attemptAuth(() => signUp(email, password, consent), 'Could not create your account. Check your connection and try again.'),
+        signUp: (email, password, consent, paymentSetup) => attemptAuth(() => signUp(email, password, consent, paymentSetup), 'Could not create your account. Check your connection and try again.'),
         signIn: (email, password) => attemptAuth(() => signIn(email, password), 'Could not sign in. Check your connection and try again.'),
         sendSignInCode: email => attemptAuth(() => sendSignInCode(email.trim()), 'Could not send a sign-in code. Check your connection and try again.'),
         verifySignInCode: (email, code) => attemptAuth(() => verifySignInCode(email, code), 'Could not check your code. Check your connection and try again.'),

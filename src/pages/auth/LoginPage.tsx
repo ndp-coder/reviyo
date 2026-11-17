@@ -7,10 +7,11 @@ import { legal } from '@/config/legal';
 import { AuthLayout } from '@/pages/auth/AuthLayout';
 import { Alert, Button, Input } from '@/components/ui';
 import { AccountRedirect } from '@/components/AccountRedirect';
+import { paymentSetupPath } from '@/lib/payment-setup-link';
 
 type Mode = 'password' | 'code';
 
-export function LoginPage() {
+export function LoginPage({ paymentSetup }: { paymentSetup?: string | null } = {}) {
   const { signIn, sendSignInCode, verifySignInCode, user } = useAuth();
   const [mode, setMode] = useState<Mode>('password');
   const [email, setEmail] = useState('');
@@ -21,7 +22,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  if (user) return <AccountRedirect />;
+  if (user) return <AccountRedirect paymentSetup={paymentSetup} />;
 
   function switchMode(next: Mode) {
     setMode(next);
@@ -90,7 +91,7 @@ export function LoginPage() {
     <AuthLayout>
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-        <p className="mt-1.5 text-sm text-gray-600">Sign in to your {branding.name} dashboard.</p>
+        <p className="mt-1.5 text-sm text-gray-600">{paymentSetup ? 'Sign in with the owner email linked to your payment request.' : `Sign in to your ${branding.name} dashboard.`}</p>
 
         {mode === 'password' ? (
           <form onSubmit={handlePassword} className="mt-8 space-y-4">
@@ -180,7 +181,7 @@ export function LoginPage() {
             Forgot password?
           </Link>
           <span className="text-gray-600">
-            No account? <Link to="/signup" className="text-brand-700 hover:text-brand-800 font-medium underline underline-offset-2">Sign up</Link>
+            No account? <Link to={paymentSetupPath('/signup', paymentSetup)} className="text-brand-700 hover:text-brand-800 font-medium underline underline-offset-2">Sign up</Link>
           </span>
         </div>
       </div>

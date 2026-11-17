@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { Alert, Button, Spinner } from '@/components/ui';
+import { paymentSetupPath } from '@/lib/payment-setup-link';
 
 type Destination = {
   userId: string;
@@ -14,7 +15,7 @@ type Destination = {
  * Keep explicit owner invitation links on /onboarding; only generic auth pages
  * use this redirect, so an owner can still open their prepared business setup.
  */
-export function AccountRedirect() {
+export function AccountRedirect({ paymentSetup }: { paymentSetup?: string | null } = {}) {
   const { user, profile, loading, signOut } = useAuth();
   const [destination, setDestination] = useState<Destination | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -22,7 +23,7 @@ export function AccountRedirect() {
   const admin = profile?.id === userId && profile?.role === 'admin';
 
   useEffect(() => {
-    if (loading || !userId || admin) return;
+    if (loading || !userId || admin || paymentSetup) return;
     const accountId = userId;
     let cancelled = false;
     setDestination({ userId, path: null, failed: false });
@@ -38,10 +39,11 @@ export function AccountRedirect() {
     }
     void resolve();
     return () => { cancelled = true; };
-  }, [userId, admin, loading, attempt]);
+  }, [userId, admin, loading, attempt, paymentSetup]);
 
   if (!loading && !user) return <Navigate to="/login" replace />;
   if (!loading && admin) return <Navigate to="/admin" replace />;
+  if (!loading && paymentSetup) return <Navigate to={paymentSetupPath('/onboarding', paymentSetup)} replace />;
   if (!loading && destination && destination.userId === userId) {
     if (destination.path) return <Navigate to={destination.path} replace />;
     if (destination.failed) return <main id="main-content" className="mx-auto max-w-md space-y-4 px-5 py-12">
