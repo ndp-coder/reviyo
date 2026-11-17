@@ -685,8 +685,8 @@ export function OnboardingPage({ paymentSetup }: { paymentSetup?: string | null 
 
           {step === STEP.trial && business && delivery?.method === 'cash' && <Card className="space-y-4 p-5 sm:p-8">
             <h1 className="text-xl font-bold text-gray-900">Cash payment recorded</h1>
-            <p className="text-sm text-gray-600">Your plan begins on the date you receive your printed review QR stand at {deliveryAddressLines(delivery.address).join(', ')}.</p>
-            <Link to="/dashboard/billing" className={buttonClasses()}>View delivery status</Link>
+              <p className="text-sm text-gray-600">{delivery.delivered_on ? 'Your plan started on the recorded delivery date.' : <>Your plan begins on the date you receive your printed review QR stand at {deliveryAddressLines(delivery.address).join(', ')}.</>}</p>
+              <Link to={delivery.delivered_on ? '/dashboard' : '/dashboard/billing'} className={buttonClasses()}>{delivery.delivered_on ? 'Open dashboard' : 'View delivery status'}</Link>
           </Card>}
           {step === STEP.trial && business && delivery?.method !== 'cash' && <div className="space-y-5">
             <Card className="p-5 sm:p-8">
@@ -770,7 +770,7 @@ export function OnboardingPage({ paymentSetup }: { paymentSetup?: string | null 
                   </Button>
                 )}
                 <Button onClick={nextStep} disabled={!canProceed() || saving || logoPreparing} loading={saving} aria-describedby={blockedReason ? 'onboarding-blocked' : undefined}>
-                  {step === STEP.topics ? preparedSetup ? delivery?.method === 'cash' ? 'Confirm setup and delivery' : 'Save and choose a plan' : 'Create business' : `Next: ${stepLabel(step + 1)}`}{' '}
+                  {step === STEP.topics ? preparedSetup ? delivery?.method === 'cash' ? 'Claim dashboard access' : 'Save and choose a plan' : 'Create business' : `Next: ${stepLabel(step + 1)}`}{' '}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
