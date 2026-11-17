@@ -192,28 +192,63 @@ test('delayed confirmation retries the same payment without charging again', asy
   assert.deepEqual(flow.completed, [false, true]);
 });
 
-function owner(claim, access = async () => ({data:false})) {
+function owner(claim, access = async () => ({data:false}), { paymentSetup, adminDraft = null, business = null } = {}) {
   const requests=[];
   const user = { id: 'owner_test', email: 'owner@example.in' };
   const navigate = () => {};
   const runner = component('@/pages/onboarding/OnboardingPage', {
     'react-router-dom': { Link: 'Link', useNavigate: () => navigate },
     '@/lib/auth-context': { useAuth: () => ({ user, profile: null, signOut() {} }) },
-    qrcode: { toDataURL: async () => 'data:image/png;base64,demo' },
+    qrcode: { default: { toDataURL: async () => 'data:image/png;base64,demo' } },
     '@/lib/payment-gate': { paymentGate: async () => 'not_paid' },
     '@/lib/supabase': { supabase: {
-      from: () => ({ select() { return this; }, eq() { return this; }, maybeSingle: async () => ({ data: null }) }),
+      from: () => ({ select() { return this; }, eq() { return this; }, maybeSingle: async () => ({ data: business }) }),
       rpc: async (name, args) => {
         requests.push(name);
+        if (name === 'my_admin_business_setup') {
+          assert.equal(args.p_setup, paymentSetup ?? null);
+          return { data: adminDraft };
+        }
         return name === 'owner_setup_password_required' ? access() : name === 'my_partner_business_draft'
           ? { data: { id: 'draft_test', name: 'Prepared cafe', category: 'cafe', topics: ['Coffee'], google_review_url: null } }
           : claim(args);
       },
     } },
   });
-  const render = () => runner.render('OnboardingPage');
+  const render = () => runner.render('OnboardingPage', { paymentSetup });
   return { runner, render, requests, async ready() { render(); await runner.settle(); render(); await runner.settle(); } };
 }
+
+test('an admin payment QR loads the matching setup and requires consent before checkout', async () => {
+  const paymentSetup = 'abcdef00-3333-4444-8888-123456abcdef';
+  const adminDraft = { id: paymentSetup, name: 'Prepared shop', category: 'retail_store', topics: ['Service'], business_id: null };
+  const business = { id: 'shop_test', name: adminDraft.name, slug: 'prepared-shop' };
+  const flow = owner(async (args) => {
+    assert.equal(args.p_draft, paymentSetup);
+    assert.ok(args.p_consent_version);
+    return { data: business };
+  }, undefined, { paymentSetup, adminDraft });
+  await flow.ready();
+  const review = nodes(flow.render()).find(node => node.type === 'PartnerOwnerReview');
+  assert.equal(review.props.accepted, false);
+  assert.ok(nodes(flow.render()).find(node => node.type === 'Button' && text(node).startsWith('Save and choose')).props.disabled);
+  review.props.onAccepted(true);
+  await nodes(flow.render()).find(node => node.type === 'Button' && text(node).startsWith('Save and choose')).props.onClick();
+  assert.ok(flow.requests.includes('claim_admin_business_setup'));
+  assert.ok(!flow.requests.includes('my_partner_business_draft'));
+  assert.match(text(flow.render()), /Activate Prepared shop/);
+
+  const resumed = owner(() => assert.fail('Checkout should resume'), undefined, {
+    paymentSetup, adminDraft: { ...adminDraft, business_id: business.id }, business,
+  });
+  await resumed.ready();
+  assert.match(text(resumed.render()), /Activate Prepared shop/);
+
+  const otherOwner = owner(() => assert.fail('Setup should be blocked'), undefined, { paymentSetup, business });
+  await otherOwner.ready();
+  assert.equal(nodes(otherOwner.render()).find(node => node.type === 'Alert').props.title, 'Payment setup unavailable');
+  assert.ok(!nodes(otherOwner.render()).some(node => node.type === 'PayOncePlans'));
+});
 
 test('an owner invitation shows password creation before business review and rechecks after saving',async()=>{
   let needsPassword=true;
@@ -516,6 +551,47 @@ test('a lost connection loading saved partner setups exposes retry instead of a 
   const alert = nodes(render()).find(n => n.type === 'Alert' && text(n).includes('Could not load saved setups'));
   assert.ok(alert); failed = false; await alert.props.action.props.onClick(); await runner.settle();
   assert.match(text(render()), /No businesses prepared yet/);
+});
+
+test('the admin setup form saves a business and exposes a QR for the same setup ID', async () => {
+  const id = 'abcdef00-3333-4444-8888-123456abcdef';
+  const calls = [];
+  const setup = component('@/pages/partners/PartnerBusinessSetup', {
+    '@/lib/supabase': { supabase: {
+      from(table) {
+        assert.equal(table, 'admin_business_setups');
+        return { select() { return this; }, order() { return this; }, async limit() { return { data: [] }; } };
+      },
+      async rpc(...args) { calls.push(args); return { data: id }; },
+    } },
+  });
+  const render = () => setup.render('PartnerBusinessSetup', { admin: true });
+  const change = (label, value) => nodes(render()).find(node => node.props.label === label).props.onChange({ target: { value } });
+  change('Owner email', 'OWNER@example.in');
+  change('Business name', 'Prepared cafe');
+  change('Business category', 'cafe');
+  change('Review topics (one per line)', 'Coffee');
+  nodes(render()).find(node => node.type === 'form').props.onSubmit({ preventDefault() {} });
+  await setup.settle();
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], 'save_admin_business_setup');
+  assert.equal(calls[0][1].p_email, 'owner@example.in');
+  const saved = nodes(render()).find(node => node.type === 'PaymentSetupQr').props;
+  assert.equal(saved.id, id);
+  assert.equal(saved.name, 'Prepared cafe');
+
+  const encoded = [];
+  const image = 'data:image/png;base64,qr';
+  const qr = component('@/components/PaymentSetupQr', {
+    '@/components/ui/button-styles': { buttonClasses: () => 'button' },
+    qrcode: { default: { async toDataURL(url) { encoded.push(url); return image; } } },
+  });
+  qr.render('PaymentSetupQr', saved);
+  await qr.settle();
+  const output = nodes(qr.render('PaymentSetupQr', saved));
+  assert.deepEqual(encoded, [`https://reviyo.in/onboarding?payment_setup=${id}`]);
+  assert.equal(output.find(node => node.type === 'img').props.src, image);
+  assert.equal(output.find(node => node.type === 'a' && node.props.download).props.href, image);
 });
 
 test('rapid partner invitation submissions send only one email', async () => {
