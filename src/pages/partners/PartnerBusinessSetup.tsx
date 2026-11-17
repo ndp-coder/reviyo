@@ -15,7 +15,7 @@ import { StandOfferNotice } from '@/components/StandOfferNotice';
 import { PaymentSetupQr } from '@/components/PaymentSetupQr';
 import { Alert, Badge, Button, Card, Input, Select, Skeleton, Textarea } from '@/components/ui';
 
-type Draft = { id: string; name: string; category: string; google_review_url: string | null; logo_url: string | null; topics: string[]; invitation_sent_at?: string | null; claimed_at: string | null; email: string; admin_qr_deliveries?: { payment_method: 'cash' | 'razorpay' } | null };
+type Draft = { id: string; name: string; category: string; google_review_url: string | null; logo_url: string | null; topics: string[]; invitation_sent_at?: string | null; claimed_at: string | null; email: string; admin_qr_deliveries?: { payment_method: 'cash' | 'razorpay'; dispatched_at: string | null; delivered_on: string | null } | null };
 type PartnerDraft = Omit<Draft, 'email'> & { commission_referrals: { email: string } };
 const draftFields = 'id,name,category,google_review_url,logo_url,topics,claimed_at';
 
@@ -51,7 +51,7 @@ export function PartnerBusinessSetup({ admin = false, refresh = 0 }: { admin?: b
     setLoading(true);
     try {
       const query = admin
-        ? supabase.from('admin_business_setups').select(`${draftFields},email,admin_qr_deliveries(payment_method)`)
+        ? supabase.from('admin_business_setups').select(`${draftFields},email,admin_qr_deliveries(payment_method,dispatched_at,delivered_on)`)
         : supabase.from('partner_business_drafts').select(`${draftFields},invitation_sent_at,commission_referrals!inner(email)`);
       const { data, error: problem } = await query.order('created_at', { ascending: false }).limit(100);
       if (problem) throw problem;
@@ -104,8 +104,15 @@ export function PartnerBusinessSetup({ admin = false, refresh = 0 }: { admin?: b
       if (problem || !id) throw new Error(problem?.message ?? 'Could not save this setup. Try again.');
       saved = true;
       if (admin) {
-        setDeliveryRequest(null);
-        setPaymentRequest({ id: String(id), name: name.trim(), email: ownerEmail, cash: method === 'cash' });
+        const setup = { id: String(id), name: name.trim() };
+        if (method === 'cash') {
+          setPaymentRequest(null);
+          setDeliveryRequest(setup);
+          setNotice('Cash recorded. The review QR stand is ready to prepare for dispatch.');
+        } else {
+          setDeliveryRequest(null);
+          setPaymentRequest({ ...setup, email: ownerEmail });
+        }
         resetForm();
       } else if (send) {
         setEditing(String(id));
@@ -132,7 +139,7 @@ export function PartnerBusinessSetup({ admin = false, refresh = 0 }: { admin?: b
     <form ref={formRef} className="mt-6 space-y-5" onSubmit={(event) => void submit(event)}>
       <fieldset disabled={busy} className="grid gap-4 sm:grid-cols-2">
       <legend className="mb-3 font-semibold">Owner and business</legend>
-      <Input label="Owner email" type="email" autoComplete="email" required maxLength={254} readOnly={Boolean(editing)} value={email} onChange={(e) => setEmail(e.target.value)} hint={editing ? 'The email stays fixed for this saved setup. Start a new setup for a different owner.' : 'Check this carefully. The owner signs in and pays using this email.'} />
+      <Input label="Owner email" type="email" autoComplete="email" required maxLength={254} readOnly={Boolean(editing)} value={email} onChange={(e) => setEmail(e.target.value)} hint={editing ? 'The email stays fixed for this saved setup. Start a new setup for a different owner.' : admin && method === 'cash' ? 'The owner can use this email to claim dashboard access later.' : 'Check this carefully. The owner signs in and pays using this email.'} />
       <Input name="business-name" label="Business name" autoComplete="organization" required maxLength={200} value={name} onChange={(e) => setName(e.target.value)} />
       <Select label="Business category" required value={category} onChange={(e) => { setCategory(e.target.value); if (!topics.trim()) setTopics(getSuggestedTopics(e.target.value).join('\n')); }}><option value="">Choose a category</option>{businessCategories.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</Select>
       {category === OTHER_CATEGORY && <Input label="Describe the business" required maxLength={100} value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} placeholder="For example, real estate agency" />}
@@ -171,14 +178,14 @@ export function PartnerBusinessSetup({ admin = false, refresh = 0 }: { admin?: b
         </fieldset>
       </>}
       <section aria-label="Setup summary" className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-        <h3 className="text-sm font-semibold">{admin ? 'Check before sharing' : 'Check before inviting'}</h3>
+        <h3 className="text-sm font-semibold">{admin && method === 'cash' ? 'Check before saving' : admin ? 'Check before sharing' : 'Check before inviting'}</h3>
         <p className="mt-2 break-words text-sm">{name.trim() || 'Business name'} · {effectiveCategory ? getCategoryLabel(effectiveCategory) : 'Choose a category'}</p>
         <p className="mt-1 break-all text-sm text-gray-600">{admin ? 'Owner signs in as' : 'Invitation goes to'}: {email.trim() || 'Enter the owner’s email'}</p>
         <p className="mt-1 text-xs text-gray-600">{parsedTopics.length} review topics · {google.trim() ? 'Google link entered — test it above' : 'Google link still needs to be added'}</p>
-        <p className="mt-2 text-xs text-gray-600">{admin && method === 'cash' ? 'The owner signs in to confirm the setup and delivery address.' : 'The owner chooses a plan and pays through Razorpay.'} Customers review their own experience and post to Google themselves.</p>
+        <p className="mt-2 text-xs text-gray-600">{admin && method === 'cash' ? 'Once you record cash, you can download the review QR and manage delivery. Dashboard access is optional for the owner.' : 'The owner chooses a plan and pays through Razorpay.'} Customers review their own experience and post to Google themselves.</p>
       </section>
       <div className="flex flex-wrap gap-3">
-        {admin ? <Button type="submit" loading={busy}>{method === 'cash' ? 'Record cash and show owner setup QR' : 'Save and show payment QR code'}</Button> : <>
+        {admin ? <Button type="submit" loading={busy}>{method === 'cash' ? 'Record cash and open QR delivery' : 'Save and show payment QR code'}</Button> : <>
           <Button type="submit" name="action" value="invite" loading={busy}>Save and invite owner</Button>
           <Button type="submit" name="action" value="save" variant="outline" disabled={busy}>Save without sending</Button>
         </>}
@@ -186,18 +193,23 @@ export function PartnerBusinessSetup({ admin = false, refresh = 0 }: { admin?: b
       </div>
     </form>
     {paymentRequest && <PaymentSetupQr key={paymentRequest.id} {...paymentRequest} />}
-    {deliveryRequest && <AdminQrDelivery key={deliveryRequest.id} {...deliveryRequest} />}
+    {deliveryRequest && <AdminQrDelivery key={deliveryRequest.id} {...deliveryRequest} onSaved={() => void load().catch(() => {})} />}
     <h3 className="mt-6 text-sm font-semibold">Recent business setups</h3>
     <p className="mt-1 text-xs text-gray-600">Your latest 100 setups. Owners keep control of their accounts and payments.</p>
     <div className="mt-3"><Input label="Find a setup" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Business name or owner email" /></div>
     {loading ? <Skeleton className="mt-4 h-16" /> : loadFailed ? <Alert variant="error" className="mt-4" action={<Button variant="outline" size="sm" onClick={() => void load().catch(() => {})}>Try again</Button>}>Could not load saved setups. Your form details are safe.</Alert> : !visibleDrafts.length && <p className="mt-3 text-sm text-gray-600">{search.trim() ? 'No matching business setups.' : 'No businesses prepared yet.'}</p>}
-    {!loading && !loadFailed && <ul className="mt-2 divide-y divide-gray-200">{visibleDrafts.map((d) => (
+    {!loading && !loadFailed && <ul className="mt-2 divide-y divide-gray-200">{visibleDrafts.map((d) => {
+      const delivery = d.admin_qr_deliveries;
+      const cash = delivery?.payment_method === 'cash';
+      return (
       <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
         <div className="min-w-0">
           <p className="break-words text-sm font-medium">{d.name}</p>
           <p className="break-all text-xs text-gray-600">{d.email}</p>
-          <div className="mt-2"><Badge variant={d.claimed_at ? 'success' : d.invitation_sent_at ? 'info' : 'warning'}>
-            {d.claimed_at ? 'Owner took over setup' : admin ? 'Waiting for owner' : d.invitation_sent_at ? 'Invited · waiting for owner' : 'Saved · invitation not sent'}
+          <div className="mt-2"><Badge variant={delivery?.delivered_on || d.claimed_at ? 'success' : delivery?.dispatched_at || cash || d.invitation_sent_at ? 'info' : 'warning'}>
+            {delivery?.delivered_on ? 'Delivered' : delivery?.dispatched_at ? 'Dispatched'
+              : cash ? 'Ready for dispatch' : d.claimed_at ? 'Owner took over setup'
+              : admin ? 'Awaiting online payment' : d.invitation_sent_at ? 'Invited · waiting for owner' : 'Saved · invitation not sent'}
           </Badge></div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -207,8 +219,8 @@ export function PartnerBusinessSetup({ admin = false, refresh = 0 }: { admin?: b
             formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); formRef.current?.querySelector<HTMLInputElement>('input[name="business-name"]')?.focus({ preventScroll: true });
           }}>Edit details</Button>}
           {admin && <Button size="sm" variant="outline" disabled={busy} onClick={() => {
-            setDeliveryRequest(null); setPaymentRequest({ id: d.id, name: d.name, email: d.email, cash: d.admin_qr_deliveries?.payment_method === 'cash' });
-          }}>{d.admin_qr_deliveries?.payment_method === 'cash' ? 'Show owner setup QR' : 'Show payment QR code'}</Button>}
+            setDeliveryRequest(null); setPaymentRequest({ id: d.id, name: d.name, email: d.email, cash });
+          }}>{cash ? 'Show owner setup QR' : 'Show payment QR code'}</Button>}
           {admin && d.admin_qr_deliveries && <Button size="sm" variant="outline" onClick={() => {
             setPaymentRequest(null); setDeliveryRequest({ id: d.id, name: d.name });
           }}>Manage QR delivery</Button>}
@@ -219,6 +231,7 @@ export function PartnerBusinessSetup({ admin = false, refresh = 0 }: { admin?: b
           }}>{d.invitation_sent_at ? 'Resend invitation' : 'Send invitation'}</Button>}
         </div>
       </li>
-    ))}</ul>}
+      );
+    })}</ul>}
   </Card>;
 }
