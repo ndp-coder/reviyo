@@ -1,10 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Alert, Badge, Button, Card, EmptyState, Input, Select, Skeleton, Textarea } from '@/components/ui';
 import { PLANS } from '@/config/plans';
 import type { SubscriptionPlan } from '@/lib/types';
 import { developerDate } from '@/pages/admin/developer-types';
+import { PartnerBusinessSetup } from '@/pages/partners/PartnerBusinessSetup';
 
 interface BusinessRow {
   id: string; name: string; slug: string; category: string; is_active: boolean;
@@ -14,6 +16,7 @@ interface BusinessRow {
 interface Directory { total: number; rows: BusinessRow[] }
 
 export function BusinessDirectory({ refresh, onChange }: { refresh: number; onChange: () => void }) {
+  const [showSetup, setShowSetup] = useState(false);
   const [input, setInput] = useState('');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
@@ -51,7 +54,14 @@ export function BusinessDirectory({ refresh, onChange }: { refresh: number; onCh
   }
 
   return <section aria-labelledby="business-directory-heading" className="mt-6 space-y-4">
-    <h2 id="business-directory-heading" className="text-lg font-semibold">Business directory</h2>
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <h2 id="business-directory-heading" className="text-lg font-semibold">Business directory</h2>
+      <Button variant={showSetup ? 'outline' : 'primary'} aria-expanded={showSetup} onClick={() => setShowSetup((open) => !open)}>
+        {!showSetup && <Plus className="h-4 w-4" aria-hidden="true" />}
+        {showSetup ? 'Hide business setups' : 'Create business'}
+      </Button>
+    </div>
+    {showSetup && <PartnerBusinessSetup admin refresh={refresh} />}
     <Card className="p-4 sm:p-5"><form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={(event) => { event.preventDefault(); setOffset(0); setSearch(input.trim()); }}>
       <Input label="Search businesses or owner emails" type="search" maxLength={200} value={input} onChange={(e) => setInput(e.target.value)} />
       <Select label="Access" value={filter} onChange={(e) => { setFilter(e.target.value); setOffset(0); }}><option value="all">All businesses</option><option value="active">Paid access</option><option value="trial">Live trial</option><option value="unpaid">No subscription yet</option><option value="expired">No current access</option><option value="paused">Review page paused</option></Select>
