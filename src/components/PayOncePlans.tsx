@@ -17,6 +17,7 @@ interface PayOncePlansProps {
   userEmail: string;
   /** The paid plan the business is on now, if any: marked "Current" and offered as "Extend". */
   currentPlan?: SubscriptionPlan | null;
+  awaitDelivery?: boolean;
   heading?: string;
   onFeedback: (feedback: PaymentFeedback | null) => void;
   /** Called once Razorpay's payment has been checked, whether or not it could be confirmed yet. */
@@ -31,6 +32,7 @@ export function PayOncePlans({
   userName,
   userEmail,
   currentPlan,
+  awaitDelivery = false,
   heading = 'Pay once instead',
   onFeedback,
   onFinished,
@@ -53,7 +55,7 @@ export function PayOncePlans({
         ...payment.response,
       });
       onFeedback(result.success
-        ? { type: 'success', message: 'Payment received. Your plan is active.' }
+        ? { type: 'success', message: awaitDelivery ? 'Payment received. Your plan begins when your stand is delivered.' : 'Payment received. Your plan is active.' }
         : { type: 'error', message: result.error || 'Your payment is awaiting confirmation. Check its status below; you do not need to pay again.' });
       await onFinished(result.success);
       if (result.success) { setPendingPayment(null); checkoutBusy.current = false; }
@@ -165,7 +167,7 @@ export function PayOncePlans({
         <Button variant="outline" loading={processingPlan !== null} onClick={() => void confirmPayment(pendingPayment)}>Check payment status</Button>
       </div>}
       <p className="mt-2 text-xs text-gray-600">
-        Pay by UPI, card, or netbanking. Your plan activates once Razorpay confirms the payment.
+        Pay by UPI, card, or netbanking. {awaitDelivery ? 'Your plan starts on the date you receive the printed QR stand.' : 'Your plan activates once Razorpay confirms the payment.'}
       </p>
     </section>
   );

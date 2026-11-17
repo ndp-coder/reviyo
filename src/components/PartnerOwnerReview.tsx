@@ -16,6 +16,8 @@ interface Props {
   busy: boolean;
   urlError: string | null;
   logoError: string | null;
+  deliveryAddress?: string;
+  cashCollected?: boolean;
   onName: (value: string) => void;
   onCategory: (value: string) => void;
   onGoogle: (value: string) => void;
@@ -31,7 +33,9 @@ export function PartnerOwnerReview(props: Props) {
     <div>
       <p className="break-all text-xs font-medium text-brand-800">Prepared for {props.email}</p>
       <h1 className="mt-2 text-xl font-bold text-gray-900">Check your business details</h1>
-      <p className="mt-2 text-sm text-gray-600">Check or edit the prepared details below, then choose a plan and pay securely. Your review page activates after payment.</p>
+      <p className="mt-2 text-sm text-gray-600">{props.cashCollected ? 'Cash payment is recorded. Review your details and confirm where to deliver your stand.'
+        : props.deliveryAddress ? 'Review your details and delivery address, then choose a plan and pay securely.'
+        : 'Check or edit the prepared details below, then choose a plan and pay securely. Your review page activates after payment.'}</p>
     </div>
     <fieldset disabled={props.busy} className="space-y-6">
       <legend className="sr-only">Your business setup</legend>
@@ -51,8 +55,12 @@ export function PartnerOwnerReview(props: Props) {
       </div>
       <Textarea label="Review topics" rows={6} disabled={props.busy} value={props.topics.join('\n')} onChange={(e) => props.onTopics(e.target.value.split('\n'))} hint={`${parsePartnerTopics(props.topics.join('\n')).length} of 20 topics. One per line, up to ${MAX_PARTNER_TOPIC_LENGTH} characters each. Customers describe their own experience.`} />
       <div className="space-y-3 border-t border-gray-200 pt-5">
-        <p className="text-sm text-gray-600">You own this account and make the payment yourself. We use your email for your account and the business details for your review page. There is no free trial for this setup. Read the <Link to="/refunds" target="_blank" className="font-medium underline">refund policy</Link> before paying.</p>
-        <ConsentCheckbox checked={props.accepted} onChange={props.onAccepted}>I agree to the <Link to="/terms" target="_blank" className="underline">Terms and conditions</Link> and <Link to="/privacy" target="_blank" className="underline">Privacy notice</Link>.</ConsentCheckbox>
+        {props.deliveryAddress && <div className="rounded-lg bg-brand-50 p-3 text-sm text-gray-800">
+          <p><strong>QR stand delivery address</strong> {props.deliveryAddress}</p>
+          <p className="mt-1">Your plan begins on the date you receive your stand. Contact Reviyo before continuing if the address needs a correction.</p>
+        </div>}
+        <p className="text-sm text-gray-600">We use your email for your account and the business details for your review page. Read the <Link to="/refunds" target="_blank" className="font-medium underline">refund policy</Link> for payment details.</p>
+        <ConsentCheckbox checked={props.accepted} onChange={props.onAccepted}>I agree to the <Link to="/terms" target="_blank" className="underline">Terms and conditions</Link> and <Link to="/privacy" target="_blank" className="underline">Privacy notice</Link>.{props.deliveryAddress && ' I confirm the delivery address and agree that Reviyo and its courier may use it to deliver my stand.'}</ConsentCheckbox>
       </div>
     </fieldset>
   </Card>;
