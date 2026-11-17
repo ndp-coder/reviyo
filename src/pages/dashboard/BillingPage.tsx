@@ -1,4 +1,5 @@
 import { QrStandSetup } from '@/components/QrStandSetup';
+import { deliveryAddressLines, type AdminQrDelivery } from '@/lib/qr-stand';
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { ShieldCheck, Receipt } from 'lucide-react';
@@ -37,12 +38,14 @@ const formatDate = (iso: string, month: 'short' | 'long' = 'short') =>
   new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month, year: 'numeric' });
 
 export function BillingPage() {
-  const { business, refreshSubscription } = useOutletContext<{
+  const { business, delivery, refreshSubscription } = useOutletContext<{
     business: Business | null;
+    delivery?: AdminQrDelivery | null;
     refreshSubscription: () => Promise<void>;
   }>();
   const { user, profile } = useAuth();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const awaitingDelivery = Boolean(delivery?.paid && !delivery.delivered_on);
   const [paymentOrders, setPaymentOrders] = useState<PaymentOrder[]>([]);
   const [mandate, setMandate] = useState<AutopayMandate | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
@@ -206,7 +209,7 @@ export function BillingPage() {
           )}
 
           {/* AutoPay */}
-          {business && (
+          {business && !awaitingDelivery && (
             <Card className="p-5 sm:p-6">
               {mandateLive && mandate ? (
                 <div>
@@ -305,10 +308,16 @@ export function BillingPage() {
             </Card>
           )}
 
-          {business && <QrStandSetup business={business} />}
+          {delivery ? <Card className="space-y-2 p-5">
+            <h2 className="font-semibold">Printed review QR stand</h2>
+            <p className="text-sm text-gray-700">{delivery.delivered_on ? `Delivered ${delivery.delivered_on}` : delivery.dispatch_date ? 'Dispatched · awaiting delivery' : 'Awaiting dispatch'}</p>
+            <p className="text-sm text-gray-600">{deliveryAddressLines(delivery.address).join(', ')}</p>
+            {delivery.tracking_reference && <p className="break-all text-sm">Tracking reference {delivery.tracking_reference}</p>}
+            <Button variant="outline" size="sm" onClick={() => void Promise.all([loadData(), refreshSubscription()])}>Refresh delivery status</Button>
+          </Card> : business && <QrStandSetup business={business} />}
 
           {/* One-time payment. Secondary to AutoPay, so it is compact. */}
-          {business && (
+          {business && !awaitingDelivery && (
           <PayOncePlans
             businessId={business.id}
             userName={profile?.full_name || business.name}
@@ -332,8 +341,7 @@ export function BillingPage() {
                 <div className="px-6 py-8 text-center">
                   <p className="text-sm font-medium text-gray-800">No payments yet</p>
                   <p className="mt-1 text-sm text-gray-600">
-                    Every payment you make — AutoPay charges and one-time payments — is listed here with its Razorpay
-                    reference.
+                    Cash, Razorpay and AutoPay payments appear here with their payment references.
                   </p>
                 </div>
               ) : (
@@ -353,7 +361,7 @@ export function BillingPage() {
                             <Badge variant={status.variant}>{status.label}</Badge>
                           </div>
                           <p className="mt-0.5 text-xs text-gray-600">
-                            {formatDate(order.created_at)} · {PLANS[order.plan].label}
+                            {formatDate(order.created_at)} · {PLANS[order.plan].label}{order.kind === 'cash' && ' · Cash'}
                           </p>
                           <p className="mt-1 break-all font-mono text-xs text-gray-600">{order.payment_id || order.order_id}</p>
                         </li>
@@ -378,7 +386,7 @@ export function BillingPage() {
                         return (
                           <tr key={order.id}>
                             <td className="whitespace-nowrap px-4 py-3 text-gray-700">{formatDate(order.created_at)}</td>
-                            <td className="whitespace-nowrap px-4 py-3 text-gray-900">{PLANS[order.plan].label}</td>
+                            <td className="whitespace-nowrap px-4 py-3 text-gray-900">{PLANS[order.plan].label}{order.kind === 'cash' && ' · Cash'}</td>
                             <td className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums text-gray-900">
                               {formatRupees(order.amount / 100)}
                             </td>

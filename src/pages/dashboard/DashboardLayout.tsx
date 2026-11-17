@@ -10,6 +10,7 @@ import { Alert, Button, Skeleton } from '@/components/ui';
 import { getCategoryLabel } from '@/config/categories';
 import { hasSubscriptionAccess, PATHS_OPEN_WITHOUT_SUBSCRIPTION } from '@/lib/subscription';
 import { paymentGate, type PaymentGate } from '@/lib/payment-gate';
+import type { AdminQrDelivery } from '@/lib/qr-stand';
 import type { AutopayMandate, Business, Subscription } from '@/lib/types';
 
 export function DashboardLayout() {
@@ -25,6 +26,7 @@ export function DashboardLayout() {
   const [subscriptionCheckFailed, setSubscriptionCheckFailed] = useState(false);
   // Whether this business has ever paid; see paymentGate.
   const [gate, setGate] = useState<PaymentGate | undefined>(undefined);
+  const [delivery, setDelivery] = useState<AdminQrDelivery | null>(null);
   // Latest AutoPay setup, so Overview can say whether a charge is coming.
   const [mandate, setMandate] = useState<Pick<AutopayMandate, 'status' | 'plan' | 'method' | 'amount'> | null>(null);
   // Unread private feedback, shown next to the nav item: it is the one thing an
@@ -100,7 +102,7 @@ export function DashboardLayout() {
 
   const refreshSubscription = useCallback(async () => {
     if (!business) return;
-    const [{ data, error }, mandateRes, paid] = await Promise.all([
+    const [{ data, error }, mandateRes, paid, deliveryRes] = await Promise.all([
       supabase
         .from('subscriptions')
         .select('*')
@@ -117,6 +119,7 @@ export function DashboardLayout() {
         .limit(1)
         .maybeSingle(),
       paymentGate(business.id),
+      supabase.rpc('admin_delivery_for_business', { p_business: business.id }),
     ]);
     // A failed lookup must not lock out a paying owner. The database enforces
     // access regardless, so the UI stays open and lets that decide.
@@ -124,6 +127,7 @@ export function DashboardLayout() {
     setSubscription((data as Subscription | null) ?? null);
     setMandate((mandateRes.data as Pick<AutopayMandate, 'status' | 'plan' | 'method' | 'amount'> | null) ?? null);
     setGate(paid);
+    setDelivery(deliveryRes.data as AdminQrDelivery | null);
   }, [business]);
 
   // Owners who have never paid (the ₹1 AutoPay check or a plan) belong on
@@ -294,7 +298,10 @@ export function DashboardLayout() {
       {/* Main content */}
       <main id="main-content" tabIndex={-1} className="lg:ml-64 min-h-screen flex flex-col">
         <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto w-full">
-          {subscriptionLoaded && !hasAccess && (
+          {subscriptionLoaded && !hasAccess && delivery?.paid && !delivery.delivered_on && (
+            <Alert variant="info" className="mb-6">Payment is recorded. Your plan starts when your printed review QR stand is delivered.</Alert>
+          )}
+          {subscriptionLoaded && !hasAccess && !(delivery?.paid && !delivery.delivered_on) && (
             <Alert variant="error" className="mb-6">
               {subscription ? (
                 <>
@@ -334,7 +341,7 @@ export function DashboardLayout() {
           ) : !hasAccess && !isOpenPath(location.pathname) ? (
             <Navigate to="/dashboard/billing" replace />
           ) : (
-            <Outlet context={{ business, setBusiness, subscription, mandate, refreshSubscription, refreshFeedbackCount }} />
+            <Outlet context={{ business, setBusiness, subscription, mandate, delivery, refreshSubscription, refreshFeedbackCount }} />
           )}
         </div>
 
