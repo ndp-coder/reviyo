@@ -6,7 +6,7 @@ import { deliveryAddressLines, hasControlCharacters, standArtwork, type AdminQrD
 import { reviewUrlFor } from '@/lib/review-source';
 import { supabase } from '@/lib/supabase';
 
-export function AdminQrDelivery({ id, name }: { id: string; name: string }) {
+export function AdminQrDelivery({ id, name, onSaved }: { id: string; name: string; onSaved: () => void }) {
   const [delivery, setDelivery] = useState<Delivery | null>(null);
   const [tracking, setTracking] = useState('');
   const [date, setDate] = useState('');
@@ -34,6 +34,7 @@ export function AdminQrDelivery({ id, name }: { id: string; name: string }) {
       });
       if (problem) throw new Error(problem.message);
       setRequest(value => value + 1);
+      onSaved();
     } catch (problem) { setError(problem instanceof Error ? problem.message : 'Could not save the delivery update.'); }
     finally { setBusy(false); }
   }
@@ -68,7 +69,7 @@ export function AdminQrDelivery({ id, name }: { id: string; name: string }) {
         </div>
       </div>
       {delivery.paid && delivery.slug && <Button variant="outline" onClick={() => void downloadStand()}>Download review QR stand artwork</Button>}
-      {(!delivery.slug || !delivery.paid) && <p className="text-sm text-gray-600">The artwork becomes available when the owner confirms the setup and payment is recorded.</p>}
+      {!delivery.paid && <p className="text-sm text-gray-600">The artwork becomes available once payment is recorded.</p>}
       {delivery.paid && delivery.slug && !delivery.delivered_on && <>
         <form className="flex flex-wrap items-end gap-3" onSubmit={event => { event.preventDefault(); void update(); }}>
           <Input label="Courier tracking or dispatch reference" value={tracking} onChange={event => setTracking(event.target.value)} maxLength={160} required />
