@@ -20,6 +20,20 @@ export const DELIVERY_FIELDS = [
   { key: 'pincode', label: 'PIN code', max: 6, autoComplete: 'shipping postal-code' },
 ] as const;
 export type DeliveryAddress = Record<typeof DELIVERY_FIELDS[number]['key'], string>;
+export interface AdminQrDelivery {
+  method: 'cash' | 'razorpay';
+  cash_plan: import('@/lib/types').SubscriptionPlan | null;
+  address: DeliveryAddress;
+  slug: string | null;
+  paid: boolean;
+  dispatch_date: string | null;
+  tracking_reference: string | null;
+  delivered_on: string | null;
+}
+
+export function deliveryAddressLines(address: DeliveryAddress): string[] {
+  return [address.line1, address.line2, `${address.city}, ${address.state} ${address.pincode}`].filter(Boolean);
+}
 export const EMPTY_DELIVERY_ADDRESS: DeliveryAddress = { recipient: '', phone: '', line1: '', line2: '', city: '', state: '', pincode: '' };
 export const hasControlCharacters = (value: string) => Array.from(value).some(c => c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127);
 export function validatePrintedName(name: string): string | null {
