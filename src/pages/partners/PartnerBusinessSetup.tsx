@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { supabase } from '@/lib/supabase';
 import { prepareLogo } from '@/lib/image';
 import { directReviewUrl } from '@/lib/url-safety';
@@ -8,11 +8,14 @@ import { businessCategories, getCategoryLabel, getSuggestedTopics, isPresetCateg
 import { PLAN_SUMMARY } from '@/config/plans';
 import { GoogleReviewLinkHelp } from '@/components/GoogleReviewLinkHelp';
 import { StandOfferNotice } from '@/components/StandOfferNotice';
+import { PaymentSetupQr } from '@/components/PaymentSetupQr';
 import { Alert, Badge, Button, Card, Input, Select, Skeleton, Textarea } from '@/components/ui';
 
-type Draft = { id: string; name: string; referral_id: string; category: string; google_review_url: string | null; logo_url: string | null; topics: string[]; invitation_sent_at: string | null; claimed_at: string | null; commission_referrals: { email: string } };
+type Draft = { id: string; name: string; category: string; google_review_url: string | null; logo_url: string | null; topics: string[]; invitation_sent_at?: string | null; claimed_at: string | null; email: string };
+type PartnerDraft = Omit<Draft, 'email'> & { commission_referrals: { email: string } };
+const draftFields = 'id,name,category,google_review_url,logo_url,topics,claimed_at';
 
-export function PartnerBusinessSetup() {
+export function PartnerBusinessSetup({ admin = false, refresh = 0 }: { admin?: boolean; refresh?: number } = {}) {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -28,24 +31,29 @@ export function PartnerBusinessSetup() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [paymentRequest, setPaymentRequest] = useState<Pick<Draft, 'id' | 'name' | 'email'> | null>(null);
   const busyRef = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
   const effectiveCategory = category === OTHER_CATEGORY ? customCategory.trim() : category;
   const parsedTopics = parsePartnerTopics(topics);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error: problem } = await supabase.from('partner_business_drafts').select('id,name,referral_id,category,google_review_url,logo_url,topics,invitation_sent_at,claimed_at,commission_referrals!inner(email)').order('created_at', { ascending: false }).limit(100);
+      const query = admin
+        ? supabase.from('admin_business_setups').select(`${draftFields},email`)
+        : supabase.from('partner_business_drafts').select(`${draftFields},invitation_sent_at,commission_referrals!inner(email)`);
+      const { data, error: problem } = await query.order('created_at', { ascending: false }).limit(100);
       if (problem) throw problem;
-      setDrafts((data ?? []) as unknown as Draft[]);
+      setDrafts(admin ? (data ?? []) as unknown as Draft[] : ((data ?? []) as unknown as PartnerDraft[])
+        .map((draft) => ({ ...draft, email: draft.commission_referrals.email })));
       setLoadFailed(false);
     } catch {
       setLoadFailed(true);
       throw new Error('Could not load business setups. Refresh and try again.');
     } finally { setLoading(false); }
-  }
-  useEffect(() => { void load().catch((err: Error) => setError(err.message)); }, []);
+  }, [admin]);
+  useEffect(() => { void load().catch((err: Error) => setError(err.message)); }, [load, refresh]);
 
   async function invite(id: string) {
     const { data, error: problem } = await supabase.functions.invoke('commission-access', { body: { action: 'invite-owner', id } });
@@ -60,36 +68,44 @@ export function PartnerBusinessSetup() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busyRef.current) return;
-    const send = (event.nativeEvent as SubmitEvent).submitter?.getAttribute('value') !== 'save';
+    const send = !admin && (event.nativeEvent as SubmitEvent).submitter?.getAttribute('value') !== 'save';
     busyRef.current = true;
     setBusy(true); setError(null); setNotice(null);
     let saved = false;
     try {
       const detailsProblem = validatePartnerDetails(name, effectiveCategory, google, parsedTopics);
       if (detailsProblem) throw new Error(detailsProblem);
-      const { data: id, error: problem } = await supabase.rpc('save_partner_business_draft', {
-        p_email: email.trim().toLowerCase(), p_name: name.trim(), p_category: effectiveCategory,
+      const ownerEmail = email.trim().toLowerCase();
+      const { data: id, error: problem } = await supabase.rpc(admin ? 'save_admin_business_setup' : 'save_partner_business_draft', {
+        p_email: ownerEmail, p_name: name.trim(), p_category: effectiveCategory,
         p_google_review_url: google.trim() ? directReviewUrl(google) : null,
         p_logo_url: logo || null, p_topics: parsedTopics,
       });
       if (problem || !id) throw new Error(problem?.message ?? 'Could not save this setup. Try again.');
-      saved = true; setEditing(String(id));
-      if (send) {
+      saved = true;
+      if (admin) {
+        setPaymentRequest({ id: String(id), name: name.trim(), email: ownerEmail });
+        resetForm();
+      } else if (send) {
+        setEditing(String(id));
         await invite(String(id));
         setNotice(`Details saved and invitation sent to ${email.trim().toLowerCase()}. The owner checks the setup, accepts the terms and pays. Your referral is registered automatically.`);
         resetForm();
-      } else setNotice('Details saved. No email sent. You can edit this setup or send its invitation when it is ready.');
+      } else {
+        setEditing(String(id));
+        setNotice('Details saved. No email sent. You can edit this setup or send its invitation when it is ready.');
+      }
     } catch (err) { setError(`${saved ? 'Your business details are saved. ' : ''}${err instanceof Error ? err.message : 'Could not save setup. Try again.'}`); }
     finally { await load().catch(() => {}); setBusy(false); busyRef.current = false; }
   }
 
-  const visibleDrafts = drafts.filter((draft) => `${draft.name} ${draft.commission_referrals.email}`.toLowerCase().includes(search.trim().toLowerCase()));
+  const visibleDrafts = drafts.filter((draft) => `${draft.name} ${draft.email}`.toLowerCase().includes(search.trim().toLowerCase()));
 
   return <Card className="mt-6 p-5">
     <h2 className="font-semibold">Set up a business for an owner</h2>
-    <p className="mt-2 text-sm text-gray-600">Prepare the review page here and invite the owner using their own email. New owners create their password first, then check the details, accept the terms, pay for a plan and download their QR code.</p>
-    <p className="mt-2 text-sm font-medium text-gray-800">Paid plans only: {PLAN_SUMMARY}. Partner setups do not include a free trial.</p>
-    <StandOfferNotice partner />
+    <p className="mt-2 text-sm text-gray-600">{admin ? 'Prepare the business details and share a payment QR code with the owner.' : 'Prepare the review page here and invite the owner using their own email. New owners create their password first, then check the details, accept the terms, pay for a plan and download their QR code.'}</p>
+    <p className="mt-2 text-sm font-medium text-gray-800">Paid plans only: {PLAN_SUMMARY}.</p>
+    {!admin && <StandOfferNotice partner />}
     {error && <Alert variant="error" className="mt-4">{error}</Alert>}
     {notice && <Alert variant="success" className="mt-4">{notice}</Alert>}
     <form ref={formRef} className="mt-6 space-y-5" onSubmit={(event) => void submit(event)}>
@@ -112,29 +128,48 @@ export function PartnerBusinessSetup() {
       <Button variant="outline" size="sm" disabled={!category} onClick={() => setTopics(parsePartnerTopics(`${topics}\n${getSuggestedTopics(category).join('\n')}`).slice(0,20).join('\n'))}>Add suggested topics</Button>
       </fieldset>
       <section aria-label="Setup summary" className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-        <h3 className="text-sm font-semibold">Check before inviting</h3>
+        <h3 className="text-sm font-semibold">{admin ? 'Check before sharing' : 'Check before inviting'}</h3>
         <p className="mt-2 break-words text-sm">{name.trim() || 'Business name'} · {effectiveCategory ? getCategoryLabel(effectiveCategory) : 'Choose a category'}</p>
-        <p className="mt-1 break-all text-sm text-gray-600">Invitation goes to: {email.trim() || 'Enter the owner’s email'}</p>
+        <p className="mt-1 break-all text-sm text-gray-600">{admin ? 'Owner signs in as' : 'Invitation goes to'}: {email.trim() || 'Enter the owner’s email'}</p>
         <p className="mt-1 text-xs text-gray-600">{parsedTopics.length} review topics · {google.trim() ? 'Google link entered — test it above' : 'Google link still needs to be added'}</p>
         <p className="mt-2 text-xs text-gray-600">The owner chooses a plan and pays through Razorpay. Customers review their own experience and post to Google themselves.</p>
       </section>
       <div className="flex flex-wrap gap-3">
-        <Button type="submit" name="action" value="invite" loading={busy}>Save and invite owner</Button>
-        <Button type="submit" name="action" value="save" variant="outline" disabled={busy}>Save without sending</Button>
+        {admin ? <Button type="submit" loading={busy}>Save and show payment QR code</Button> : <>
+          <Button type="submit" name="action" value="invite" loading={busy}>Save and invite owner</Button>
+          <Button type="submit" name="action" value="save" variant="outline" disabled={busy}>Save without sending</Button>
+        </>}
         {editing && <Button variant="ghost" disabled={busy} onClick={() => { resetForm(); setError(null); setNotice(null); }}>Start a new setup</Button>}
       </div>
     </form>
+    {paymentRequest && <PaymentSetupQr key={paymentRequest.id} {...paymentRequest} />}
     <h3 className="mt-6 text-sm font-semibold">Recent business setups</h3>
     <p className="mt-1 text-xs text-gray-600">Your latest 100 setups. Owners keep control of their accounts and payments.</p>
     <div className="mt-3"><Input label="Find a setup" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Business name or owner email" /></div>
     {loading ? <Skeleton className="mt-4 h-16" /> : loadFailed ? <Alert variant="error" className="mt-4" action={<Button variant="outline" size="sm" onClick={() => void load().catch(() => {})}>Try again</Button>}>Could not load saved setups. Your form details are safe.</Alert> : !visibleDrafts.length && <p className="mt-3 text-sm text-gray-600">{search.trim() ? 'No matching business setups.' : 'No businesses prepared yet.'}</p>}
-    {!loading && !loadFailed && <ul className="mt-2 divide-y divide-gray-200">{visibleDrafts.map((d) => <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div className="min-w-0"><p className="break-words text-sm font-medium">{d.name}</p><p className="break-all text-xs text-gray-600">{d.commission_referrals.email}</p><div className="mt-2"><Badge variant={d.claimed_at ? 'success' : d.invitation_sent_at ? 'info' : 'warning'}>{d.claimed_at ? 'Owner took over setup' : d.invitation_sent_at ? 'Invited · waiting for owner' : 'Saved · invitation not sent'}</Badge></div></div>{!d.claimed_at && <div className="flex flex-wrap gap-2"><Button size="sm" variant="ghost" disabled={busy} onClick={() => {
-      setEditing(d.id); setEmail(d.commission_referrals.email); setName(d.name); setCategory(isPresetCategory(d.category) ? d.category : OTHER_CATEGORY); setCustomCategory(isPresetCategory(d.category) ? '' : d.category); setGoogle(d.google_review_url ?? ''); setLogo(d.logo_url ?? ''); setTopics(d.topics.join('\n')); setNotice('Details loaded into the form above. Save to update this setup.'); setError(null);
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); formRef.current?.querySelector<HTMLInputElement>('input[name="business-name"]')?.focus({ preventScroll: true });
-    }}>Edit details</Button><Button size="sm" variant="outline" disabled={busy} onClick={() => {
-      if (busyRef.current) return;
-      busyRef.current = true; setBusy(true); setError(null); setNotice(null);
-      void invite(d.id).then(() => setNotice(`Owner invitation sent to ${d.commission_referrals.email}.`)).catch((err: Error) => setError(err.message)).finally(() => { void load().catch(() => {}); setBusy(false); busyRef.current = false; });
-    }}>{d.invitation_sent_at ? 'Resend invitation' : 'Send invitation'}</Button></div>}</li>)}</ul>}
+    {!loading && !loadFailed && <ul className="mt-2 divide-y divide-gray-200">{visibleDrafts.map((d) => (
+      <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+        <div className="min-w-0">
+          <p className="break-words text-sm font-medium">{d.name}</p>
+          <p className="break-all text-xs text-gray-600">{d.email}</p>
+          <div className="mt-2"><Badge variant={d.claimed_at ? 'success' : d.invitation_sent_at ? 'info' : 'warning'}>
+            {d.claimed_at ? 'Owner took over setup' : admin ? 'Waiting for owner' : d.invitation_sent_at ? 'Invited · waiting for owner' : 'Saved · invitation not sent'}
+          </Badge></div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {!d.claimed_at && <Button size="sm" variant="ghost" disabled={busy} onClick={() => {
+            setPaymentRequest(null);
+            setEditing(d.id); setEmail(d.email); setName(d.name); setCategory(isPresetCategory(d.category) ? d.category : OTHER_CATEGORY); setCustomCategory(isPresetCategory(d.category) ? '' : d.category); setGoogle(d.google_review_url ?? ''); setLogo(d.logo_url ?? ''); setTopics(d.topics.join('\n')); setNotice('Details loaded into the form above. Save to update this setup.'); setError(null);
+            formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); formRef.current?.querySelector<HTMLInputElement>('input[name="business-name"]')?.focus({ preventScroll: true });
+          }}>Edit details</Button>}
+          {admin && <Button size="sm" variant="outline" disabled={busy} onClick={() => setPaymentRequest({ id: d.id, name: d.name, email: d.email })}>Show payment QR code</Button>}
+          {!admin && !d.claimed_at && <Button size="sm" variant="outline" disabled={busy} onClick={() => {
+            if (busyRef.current) return;
+            busyRef.current = true; setBusy(true); setError(null); setNotice(null);
+            void invite(d.id).then(() => setNotice(`Owner invitation sent to ${d.email}.`)).catch((err: Error) => setError(err.message)).finally(() => { void load().catch(() => {}); setBusy(false); busyRef.current = false; });
+          }}>{d.invitation_sent_at ? 'Resend invitation' : 'Send invitation'}</Button>}
+        </div>
+      </li>
+    ))}</ul>}
   </Card>;
 }
