@@ -22,6 +22,7 @@ import { AiTopicSuggestions } from '@/components/AiTopicSuggestions';
 import { GoogleReviewLinkHelp } from '@/components/GoogleReviewLinkHelp';
 import { PayOncePlans, type PaymentFeedback } from '@/components/PayOncePlans';
 import { paymentGate } from '@/lib/payment-gate';
+import { deliveryAddressLines, type AdminQrDelivery } from '@/lib/qr-stand';
 import { legal } from '@/config/legal';
 import { PartnerOwnerReview } from '@/components/PartnerOwnerReview';
 import { InvitationPasswordSetup } from '@/components/InvitationPasswordSetup';
@@ -92,6 +93,7 @@ export function OnboardingPage({ paymentSetup }: { paymentSetup?: string | null 
   const [topics, setTopics] = useState<string[]>([]);
   const [newTopic, setNewTopic] = useState('');
   const [business, setBusiness] = useState<Business | null>(null);
+  const [delivery, setDelivery] = useState<AdminQrDelivery | null>(null);
   const [payFeedback, setPayFeedback] = useState<PaymentFeedback | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState('');
 
@@ -133,6 +135,11 @@ export function OnboardingPage({ paymentSetup }: { paymentSetup?: string | null 
           navigate('/dashboard', { replace: true });
           return;
         }
+        const deliveryResult = paymentSetup ? { data: adminDraft?.delivery, error: null }
+          : await supabase.rpc('admin_delivery_for_business', { p_business: existing.id });
+        if (cancelled) return;
+        if (deliveryResult.error) throw deliveryResult.error;
+        setDelivery(deliveryResult.data ?? null);
         setBusiness(existing);
         setBusinessName(existing.name);
         setStep(STEP.trial);
@@ -143,6 +150,7 @@ export function OnboardingPage({ paymentSetup }: { paymentSetup?: string | null 
         if (cancelled) return;
         if (draftError) throw draftError;
         if (draft) {
+          setDelivery(adminDraft?.delivery ?? null);
           setPreparedDraft({ id: draft.id, source: adminDraft ? 'admin' : 'partner' });
           setBusinessName(draft.name);
           setCategory(isPresetCategory(draft.category) ? draft.category : OTHER_CATEGORY);
@@ -602,6 +610,8 @@ export function OnboardingPage({ paymentSetup }: { paymentSetup?: string | null 
             onGoogle={(value) => { setGoogleReviewUrl(value); setUrlError(null); }}
             onLogo={(event) => void handleLogoUpload(event)} onRemoveLogo={() => setLogoUrl('')}
             onTopics={setTopics} onAccepted={setAcceptedTerms}
+            deliveryAddress={delivery ? deliveryAddressLines(delivery.address).join(', ') : undefined}
+            cashCollected={delivery?.method === 'cash'}
           />}
 
           {step === STEP.topics && !preparedSetup && (
@@ -673,16 +683,21 @@ export function OnboardingPage({ paymentSetup }: { paymentSetup?: string | null 
             </Card>
           )}
 
-          {step === STEP.trial && business && <div className="space-y-5">
+          {step === STEP.trial && business && delivery?.method === 'cash' && <Card className="space-y-4 p-5 sm:p-8">
+            <h1 className="text-xl font-bold text-gray-900">Cash payment recorded</h1>
+            <p className="text-sm text-gray-600">Your plan begins on the date you receive your printed review QR stand at {deliveryAddressLines(delivery.address).join(', ')}.</p>
+            <Link to="/dashboard/billing" className={buttonClasses()}>View delivery status</Link>
+          </Card>}
+          {step === STEP.trial && business && delivery?.method !== 'cash' && <div className="space-y-5">
             <Card className="p-5 sm:p-8">
               <h1 className="text-xl font-bold text-gray-900">Activate {business.name}</h1>
-              <p className="mt-2 text-sm text-gray-600">Your business details are saved. Choose a plan below and pay securely with UPI, card or netbanking. Once payment is confirmed, you can download your QR code and use your dashboard.</p>
-              <p className="mt-2 text-sm font-medium text-gray-800">Pay once to activate your business. Renewal is your choice.</p>
+              <p className="mt-2 text-sm text-gray-600">Your business details are saved. Choose a plan and pay securely with UPI, card or netbanking. {delivery ? 'Your plan begins on the date you receive the printed review QR stand.' : 'Once payment is confirmed, you can download your QR code and use your dashboard.'}</p>
             </Card>
-            <QrStandSetup business={business} />
+            {!delivery && <QrStandSetup business={business} />}
             {payFeedback && <Alert variant={payFeedback.type}>{payFeedback.message}</Alert>}
             <PayOncePlans businessId={business.id} userName={profile?.full_name || businessName} userEmail={user?.email || ''}
-              heading="Choose your plan" onFeedback={setPayFeedback} onFinished={(paid) => {
+              heading="Choose your plan" awaitDelivery={Boolean(delivery)} onFeedback={setPayFeedback} onFinished={(paid) => {
+                if (paid && delivery) { navigate('/dashboard/billing', { replace: true }); return; }
                 if (paid) { setPayFeedback(null); setStep(STEP.qr); }
               }} />
           </div>}
@@ -755,7 +770,7 @@ export function OnboardingPage({ paymentSetup }: { paymentSetup?: string | null 
                   </Button>
                 )}
                 <Button onClick={nextStep} disabled={!canProceed() || saving || logoPreparing} loading={saving} aria-describedby={blockedReason ? 'onboarding-blocked' : undefined}>
-                  {step === STEP.topics ? preparedSetup ? 'Save and choose a plan' : 'Create business' : `Next: ${stepLabel(step + 1)}`}{' '}
+                  {step === STEP.topics ? preparedSetup ? delivery?.method === 'cash' ? 'Confirm setup and delivery' : 'Save and choose a plan' : 'Create business' : `Next: ${stepLabel(step + 1)}`}{' '}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>

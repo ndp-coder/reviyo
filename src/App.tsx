@@ -73,8 +73,8 @@ function OnboardingRoute({ children, paymentSetup }: { children: ReactNode; paym
   if (!user && paymentSetup) return (
     <AuthLayout>
       <div className="w-full max-w-sm space-y-4">
-        <h1 className="text-2xl font-bold text-gray-900">Pay for your Reviyo plan</h1>
-        <p className="text-sm text-gray-700">Use the owner email given to Reviyo to open your prepared business setup and pay securely through Razorpay.</p>
+        <h1 className="text-2xl font-bold text-gray-900">Open your Reviyo business setup</h1>
+        <p className="text-sm text-gray-700">Sign in with the owner email given to Reviyo to review your business details and payment instructions.</p>
         <div className="flex flex-wrap gap-3">
           <Link to={paymentSetupPath('/login', paymentSetup)} className={buttonClasses()}>Sign in</Link>
           <Link to={paymentSetupPath('/signup', paymentSetup)} className={buttonClasses({ variant: 'outline' })}>Create account</Link>

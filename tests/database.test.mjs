@@ -69,6 +69,50 @@ await db.exec(`INSERT INTO auth.users (id, email) VALUES ('${U1}', 'a@x.in'), ('
 await db.exec(`INSERT INTO profiles (id, email) VALUES ('${U1}','a@x.in'), ('${U2}','b@x.in') ON CONFLICT DO NOTHING;`);
 });
 
+check('cash and Razorpay delivery setups start from the proven receipt date once', async () => {
+  const admin = '65656565-0000-0000-0000-000000000001';
+  await q(`INSERT INTO auth.users(id,email) VALUES($1,'delivery-admin@example.in')`, [admin]);
+  await q(`UPDATE profiles SET role='admin' WHERE id=$1`, [admin]);
+  const address = { recipient: 'Cafe owner', phone: '9876543210', line1: '1 Main Road', city: 'Vijayawada', state: 'Andhra Pradesh', pincode: '520001', country: 'IN' };
+  const save = `SELECT save_admin_delivery_setup($1,'Cafe','Cafe',NULL,NULL,ARRAY['Service'],$2,$3,$4,$5,$6) AS id`;
+  const update = `SELECT update_admin_qr_delivery($1,$2,$3)`;
+  const { today } = await one(`SELECT to_char(now() AT TIME ZONE 'Asia/Kolkata','YYYY-MM-DD') AS today`);
+  for (const method of ['cash', 'razorpay']) {
+    const owner = `65656565-0000-0000-0000-00000000000${method === 'cash' ? 2 : 3}`;
+    const email = `${method}-delivery@example.in`;
+    const params = [email, method, method === 'cash' ? '1_month' : null, method === 'cash', address, true];
+    await q(`INSERT INTO auth.users(id,email) VALUES($1,$2)`, [owner, email]);
+    await asUser(U1, () => rejects(save, params, /Developer access required/, 'non-admin'));
+    if (method === 'cash') await asUser(admin, () => rejects(save, [...params.slice(0,3),false,address,true], /confirm cash was collected/, 'cash affirmation'));
+    const { id } = await asUser(admin, () => one(save, params));
+    assert.equal((await asUser(admin, () => one(save, params))).id, id);
+    assert.equal((await asUser(U1, () => one(`SELECT admin_qr_delivery_details($1) AS details`, [id]))).details, null);
+    await asUser(admin, () => rejects(update, [id,'Courier ref',null], /must claim the business/, 'dispatch before claim'));
+    const { business } = await asUser(owner, () => one(`SELECT claim_admin_business_setup($1,'v1','Cafe',$2,'Cafe',NULL,NULL,NULL,ARRAY['Service']) AS business`, [id, `${method}-delivery-cafe`]));
+    if (method === 'razorpay') {
+      assert.equal((await one(`SELECT stand_checkout_snapshot($1,$2) AS snapshot`, [business.id,owner])).snapshot,null);
+      await q(`INSERT INTO payment_orders(business_id,user_id,order_id,plan,amount) VALUES($1,$2,'order_delivery','1_month',29900)`,[business.id,owner]);
+      assert.equal((await one(`SELECT process_paid_order('order_delivery','pay_delivery') AS result`)).result.awaiting_delivery,true);
+      assert.equal((await one(`SELECT process_paid_order('order_delivery','pay_delivery') AS result`)).result.already_processed,true);
+    }
+    assert.equal((await one(`SELECT kind FROM payment_orders WHERE business_id=$1 AND status='paid'`,[business.id])).kind, method === 'cash' ? 'cash' : 'one_time');
+    assert.equal((await one(`SELECT count(*)::int AS n FROM subscriptions WHERE business_id=$1`,[business.id])).n,0);
+    await rejects(`SELECT stand_checkout_snapshot($1,$2)`,[business.id,owner],/Payment is already recorded/,'duplicate checkout');
+    await asUser(owner, () => rejects(update,[id,'Courier ref',null],/Developer access required/,'owner cannot self-confirm'));
+    await asUser(admin, () => rejects(update,[id,null,today],/from dispatch through today/,'delivery before dispatch'));
+    await asUser(admin, () => one(update,[id,'Courier ref',null]));
+    await asUser(admin, () => rejects(update,[id,null,'2099-01-01'],/from dispatch through today/,'future receipt'));
+    await asUser(admin, () => one(update,[id,null,today]));
+    await asUser(admin, () => one(update,[id,null,today]));
+    const subscription = await one(`SELECT status,starts_at = ($2::date::timestamp AT TIME ZONE 'Asia/Kolkata') AS correct_start,
+      expires_at = (($2::date + interval '1 month') AT TIME ZONE 'Asia/Kolkata') AS correct_end FROM subscriptions WHERE business_id=$1`,[business.id,today]);
+    assert.deepEqual(subscription,{status:'active',correct_start:true,correct_end:true});
+    assert.equal((await asUser(owner, () => one(`SELECT admin_delivery_for_business($1) AS detail`,[business.id]))).detail.tracking_reference,'Courier ref');
+    await q(`DELETE FROM auth.users WHERE id=$1`,[owner]);
+  }
+  await q(`DELETE FROM auth.users WHERE id=$1`, [admin]);
+});
+
 check('partner invitations require an Auth password before private access or business creation', async () => {
   const uid = '70707070-7070-7070-7070-707070707070';
   await db.query(`INSERT INTO auth.users(id,email,encrypted_password,raw_user_meta_data) VALUES($1,'passwordless@example.in',NULL,'{"password_set":true}')`,[uid]);

@@ -91,7 +91,7 @@ export function LoginPage({ paymentSetup }: { paymentSetup?: string | null } = {
     <AuthLayout>
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-        <p className="mt-1.5 text-sm text-gray-600">{paymentSetup ? 'Sign in with the owner email linked to your payment request.' : `Sign in to your ${branding.name} dashboard.`}</p>
+        <p className="mt-1.5 text-sm text-gray-600">{paymentSetup ? 'Sign in with the owner email linked to your business setup.' : `Sign in to your ${branding.name} dashboard.`}</p>
 
         {mode === 'password' ? (
           <form onSubmit={handlePassword} className="mt-8 space-y-4">

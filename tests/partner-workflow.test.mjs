@@ -564,6 +564,7 @@ test('the admin setup form saves a business and exposes a QR for the same setup 
       },
       async rpc(...args) { calls.push(args); return { data: id }; },
     } },
+    '@/pages/admin/AdminQrDelivery': { AdminQrDelivery: 'AdminQrDelivery' },
   });
   const render = () => setup.render('PartnerBusinessSetup', { admin: true });
   const change = (label, value) => nodes(render()).find(node => node.props.label === label).props.onChange({ target: { value } });
@@ -571,11 +572,20 @@ test('the admin setup form saves a business and exposes a QR for the same setup 
   change('Business name', 'Prepared cafe');
   change('Business category', 'cafe');
   change('Review topics (one per line)', 'Coffee');
+  change('Recipient name', 'Cafe owner');
+  change('Mobile number', '9876543210');
+  change('Address line 1', '1 Main Road');
+  change('City', 'Vijayawada');
+  change('State or union territory', 'Andhra Pradesh');
+  change('PIN code', '520001');
+  nodes(render()).find(node => node.type === 'ConsentCheckbox').props.onChange(true);
   nodes(render()).find(node => node.type === 'form').props.onSubmit({ preventDefault() {} });
   await setup.settle();
   assert.equal(calls.length, 1);
-  assert.equal(calls[0][0], 'save_admin_business_setup');
+  assert.equal(calls[0][0], 'save_admin_delivery_setup');
   assert.equal(calls[0][1].p_email, 'owner@example.in');
+  assert.equal(calls[0][1].p_method, 'razorpay');
+  assert.equal(calls[0][1].p_address.pincode, '520001');
   const saved = nodes(render()).find(node => node.type === 'PaymentSetupQr').props;
   assert.equal(saved.id, id);
   assert.equal(saved.name, 'Prepared cafe');

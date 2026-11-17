@@ -111,8 +111,8 @@ export function SignupPage({ paymentSetup }: { paymentSetup?: string | null } = 
           <p className="font-medium">What happens next</p>
           <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-brand-900">
             <li>{paymentSetup ? 'Use the owner email given to Reviyo and check your prepared business details.' : 'Add your business name, Google review link, and review topics.'}</li>
-            <li>Choose a plan and pay securely through Razorpay to activate your business.</li>
-            <li>After payment is confirmed, download your QR code and use your dashboard. No free trial.</li>
+            <li>{paymentSetup ? 'Check the payment and activation instructions for your setup.' : 'Choose a plan and pay securely through Razorpay to activate your business.'}</li>
+            <li>Once your plan starts, download your QR code and use your dashboard.</li>
           </ol>
         </div>
 

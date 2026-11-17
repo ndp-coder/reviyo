@@ -123,8 +123,8 @@ export interface PaymentOrder {
   currency: string;
   status: PaymentOrderStatus;
   receipt: string | null;
-  /** 'autopay' for charges made by AutoPay, 'one_time' for checkout purchases. */
-  kind?: 'one_time' | 'autopay';
+  /** The payment collection method stored with the order. */
+  kind?: 'one_time' | 'autopay' | 'cash';
   charge_after?: string | null;
   metadata?: Record<string, unknown>;
   created_at: string;
