@@ -31,7 +31,7 @@ export function PaymentSetupQr({ id, name, email, cash = false }: { id: string; 
         : <Skeleton className="h-40 w-40" />}
       <div className="min-w-0 space-y-3">
         <h3 ref={heading} tabIndex={-1} className="break-words text-base font-semibold">{purpose} QR code for {name}</h3>
-        <p className="break-words text-sm text-gray-700">Share this with the owner. They sign in as <strong>{email}</strong>{cash ? ' to confirm the setup and delivery address. Cash payment is already recorded.' : ', review their setup and pay for a plan through Razorpay.'}</p>
+        <p className="break-words text-sm text-gray-700">{cash ? 'The owner can sign in as ' : 'Share this with the owner. They sign in as '}<strong>{email}</strong>{cash ? ' to claim dashboard access whenever they are ready. You can manage QR stand delivery now.' : ', review their setup and pay for a plan through Razorpay.'}</p>
         <a href={url} target="_blank" rel="noreferrer" className="block break-all text-sm font-medium text-brand-800 underline">{url}</a>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" onClick={async () => setCopyMessage(await copyText(url) ? 'Link copied.' : 'Select the link above to copy it.')}>
