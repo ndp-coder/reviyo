@@ -9,8 +9,9 @@ import { Alert, Button, Input } from '@/components/ui';
 import { ConsentCheckbox } from '@/components/ConsentCheckbox';
 import { AccountRedirect } from '@/components/AccountRedirect';
 import { SetupSupportLinks } from '@/components/SetupSupportLinks';
+import { paymentSetupPath } from '@/lib/payment-setup-link';
 
-export function SignupPage() {
+export function SignupPage({ paymentSetup }: { paymentSetup?: string | null } = {}) {
   const { signUp, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +29,7 @@ export function SignupPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [consentError, setConsentError] = useState<string | null>(null);
 
-  if (user) return <AccountRedirect />;
+  if (user) return <AccountRedirect paymentSetup={paymentSetup} />;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -53,7 +54,7 @@ export function SignupPage() {
     }
 
     setSubmitting(true);
-    const { error, needsConfirmation } = await signUp(email.trim(), password, legal.consentVersion);
+    const { error, needsConfirmation } = await signUp(email.trim(), password, legal.consentVersion, paymentSetup);
     setSubmitting(false);
     if (needsConfirmation) {
       setConfirmationSentTo(email.trim());
@@ -89,7 +90,7 @@ export function SignupPage() {
           </p>
           <p className="mt-6 text-sm text-gray-600">
             Already confirmed?{' '}
-            <Link to="/login" className="font-medium text-brand-700 underline underline-offset-2">
+            <Link to={paymentSetupPath('/login', paymentSetup)} className="font-medium text-brand-700 underline underline-offset-2">
               Sign in
             </Link>
           </p>
@@ -109,7 +110,7 @@ export function SignupPage() {
         <div className="mt-6 rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-950">
           <p className="font-medium">What happens next</p>
           <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-brand-900">
-            <li>Add your business name, Google review link, and review topics.</li>
+            <li>{paymentSetup ? 'Use the owner email given to Reviyo and check your prepared business details.' : 'Add your business name, Google review link, and review topics.'}</li>
             <li>Choose a plan and pay securely through Razorpay to activate your business.</li>
             <li>After payment is confirmed, download your QR code and use your dashboard. No free trial.</li>
           </ol>
@@ -206,7 +207,7 @@ export function SignupPage() {
               action={
                 alreadyRegistered ? (
                   <span className="flex flex-wrap gap-x-4 gap-y-1">
-                    <Link to="/login" className="font-medium underline underline-offset-2">Sign in instead</Link>
+                    <Link to={paymentSetupPath('/login', paymentSetup)} className="font-medium underline underline-offset-2">Sign in instead</Link>
                     <Link to="/forgot-password" className="font-medium underline underline-offset-2">Reset your password</Link>
                   </span>
                 ) : undefined
@@ -223,7 +224,7 @@ export function SignupPage() {
 
         <p className="mt-6 text-center text-sm text-gray-600">
           Already have an account?{' '}
-          <Link to="/login" className="text-brand-700 hover:text-brand-800 font-medium underline underline-offset-2">
+          <Link to={paymentSetupPath('/login', paymentSetup)} className="text-brand-700 hover:text-brand-800 font-medium underline underline-offset-2">
             Sign in
           </Link>
         </p>
