@@ -303,15 +303,15 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // AI drafting is a paid feature: refuse once the business's trial or plan has ended.
-    const { data: hasSubscription, error: subscriptionError } = await supabase.rpc(
-      "business_has_active_subscription",
+    // Match the public QR page's access rules before using the AI provider.
+    const { data: acceptsReviews, error: accessError } = await supabase.rpc(
+      "business_accepts_public_reviews",
       { p_business_id: session.business_id }
     );
-    if (subscriptionError) {
-      throw new Error("Could not check subscription status");
+    if (accessError) {
+      throw new Error("Could not check public review access");
     }
-    if (hasSubscription !== true) {
+    if (acceptsReviews !== true) {
       return new Response(
         JSON.stringify({ error: "Review drafting is not available for this business right now." }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
