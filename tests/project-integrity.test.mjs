@@ -257,10 +257,10 @@ test('an ended subscription stops the QR page, AI drafting, and dashboard data',
   }
   assert.match(sql, /REVOKE EXECUTE ON FUNCTION business_has_active_subscription\(uuid\) FROM PUBLIC, anon;/);
 
-  // AI drafting checks before calling the provider.
-  const check = aiFn.indexOf('business_has_active_subscription');
-  assert.ok(check > 0, 'generate-review must check the subscription');
-  assert.ok(check < aiFn.indexOf('buildPrompt(trustedRequest)'), 'subscription check must run before the AI call');
+  // AI drafting checks the same access as the public QR flow before using the provider.
+  const check = aiFn.indexOf('business_accepts_public_reviews');
+  assert.ok(check > 0, 'generate-review must check public review access');
+  assert.ok(check < aiFn.indexOf('buildPrompt(trustedRequest)'), 'access check must run before the AI call');
 
   // Dashboard redirects to billing, keeps billing and settings open, and unlocks after payment.
   assert.match(layout, /<Navigate to="\/dashboard\/billing" replace \/>/);
